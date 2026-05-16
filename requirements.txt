@@ -41,7 +41,7 @@ pywebpush>=2.3.0,<3.0.0
 slowapi>=0.1.9,<1.0.0
 
 # Stripe billing
-stripe>=5.0.0,<13.0.0
+stripe>=15.1.0,<16.0.0
 
 # Error monitoring
 sentry-sdk[fastapi]>=2.58.0,<3.0.0
