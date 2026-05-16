@@ -1,6 +1,6 @@
 # AI APIs
 google-genai>=1.75.0,<2.0.0
-openai>=1.0,<2.0
+openai>=2.37.0,<3.0
 mcp>=1.27.0,<2.0.0
 
 
