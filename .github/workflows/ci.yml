@@ -22,7 +22,10 @@ jobs:
 
       - name: Run backend tests
         env:
-          JWT_SECRET: test-secret-key
+          # 32+ chars required by src/web/auth.py production check. Not a
+          # real secret — only valid inside this CI job.
+          JWT_SECRET: ci-test-secret-please-do-not-use-in-prod-32chars
+          APP_MODE: self
           TZ: America/Los_Angeles
         run: .venv/bin/python -m pytest tests/ -v --tb=short
 
