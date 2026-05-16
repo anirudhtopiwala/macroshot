@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
-    "@sentry/react": "^10.51.0",
+    "@sentry/react": "^10.53.1",
     "@tailwindcss/typography": "^0.5.19",
     "@undecaf/barcode-detector-polyfill": "^0.9.23",
     "@undecaf/zbar-wasm": "^0.11.0",
