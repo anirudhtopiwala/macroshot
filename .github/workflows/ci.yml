@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run backend tests
+        env:
+          JWT_SECRET: test-secret-key
+          TZ: America/Los_Angeles
+        run: .venv/bin/python -m pytest tests/ -v --tb=short
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit production dependencies
+        # Fail CI on any high-severity advisory in runtime deps. Dev deps
+        # (vite, vitest, build tooling) are excluded to avoid blocking PRs
+        # on advisories that don't ship to users — `npm audit fix` should
+        # still be run periodically against the full tree.
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Run frontend tests
+        run: npx vitest run
+
+      - name: Type check
+        run: npx tsc -b --noEmit
+
+      - name: Build
+        run: npx vite build

@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  /* ── Page setup ──────────────────────────────────────────────── */
+  @page {
+    size: A4;
+    margin: 12mm 14mm 18mm 14mm;
+    @bottom-left {
+      content: "MacroShot  |  {{ user_name }}";
+      font-size: 7pt;
+      color: #94a3b8;
+    }
+    @bottom-right {
+      content: "Page " counter(page) " / " counter(pages);
+      font-size: 7pt;
+      color: #94a3b8;
+    }
+    @bottom-center {
+      border-top: 0.5px solid #10b981;
+      padding-top: 3mm;
+    }
+  }
+  @page :first {
+    margin: 0;
+    @bottom-left { content: none; }
+    @bottom-right { content: none; }
+    @bottom-center { border: none; }
+  }
+  @page content-page {
+    background-color: #f8fafc;
+    @top-left {
+      content: "MacroShot Nutrition Report";
+      font-size: 7.5pt;
+      font-weight: bold;
+      color: #94a3b8;
+    }
+    @top-right {
+      content: "{{ period_label }}";
+      font-size: 7.5pt;
+      color: #94a3b8;
+    }
+    @top-center {
+      border-bottom: 0.5px solid #10b981;
+      padding-bottom: 2mm;
+    }
+  }
+
+  /* ── Base typography ─────────────────────────────────────────── */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 9pt;
+    color: #0f172a;
+    line-height: 1.4;
+  }
+  h1 { font-size: 28pt; font-weight: bold; }
+  h2 { font-size: 14pt; font-weight: bold; margin-bottom: 4mm; }
+  h3 { font-size: 10pt; font-weight: bold; margin-bottom: 2mm; }
+
+  /* ── Utility ─────────────────────────────────────────────────── */
+  .text-muted { color: #64748b; }
+  .text-secondary { color: #475569; }
+  .text-emerald { color: #10b981; }
+  .text-blue { color: #3b82f6; }
+  .text-orange { color: #f97316; }
+  .text-purple { color: #a855f7; }
+  .text-red { color: #ef4444; }
+  .text-amber { color: #f59e0b; }
+  .text-white { color: #ffffff; }
+  .text-center { text-align: center; }
+  .text-right { text-align: right; }
+  .font-bold { font-weight: bold; }
+  .text-xs { font-size: 7pt; }
+  .text-sm { font-size: 8pt; }
+  .text-lg { font-size: 12pt; }
+  .text-xl { font-size: 16pt; }
+  .text-2xl { font-size: 20pt; }
+  .mt-2 { margin-top: 2mm; }
+  .mt-4 { margin-top: 4mm; }
+  .mt-6 { margin-top: 6mm; }
+  .mb-2 { margin-bottom: 2mm; }
+  .mb-4 { margin-bottom: 4mm; }
+
+  /* ── Cards ───────────────────────────────────────────────────── */
+  .card {
+    background: #ffffff;
+    border-radius: 3mm;
+    border: 0.3px solid #e2e8f0;
+    padding: 4mm;
+    margin-bottom: 3mm;
+  }
+  .card-flat {
+    background: #ffffff;
+    border-radius: 2mm;
+    padding: 4mm;
+    margin-bottom: 3mm;
+  }
+
+  /* ── Section headers ─────────────────────────────────────────── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    margin-top: 6mm;
+    margin-bottom: 4mm;
+    padding: 2.5mm 4mm;
+    border-radius: 2mm;
+    break-after: avoid;
+  }
+  .section-header .accent-bar {
+    width: 4px;
+    height: 14pt;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── Cover page ──────────────────────────────────────────────── */
+  .cover {
+    page: auto;
+    width: 210mm;
+    height: 297mm;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #10b981 100%);
+    color: white;
+    padding: 0;
+  }
+  .cover-header {
+    text-align: center;
+    padding-top: 30mm;
+  }
+  .cover-logo {
+    width: 28mm;
+    height: 28mm;
+    border-radius: 6mm;
+    margin-bottom: 4mm;
+  }
+  .cover-title {
+    font-size: 32pt;
+    font-weight: bold;
+    letter-spacing: 0.5pt;
+  }
+  .cover-subtitle {
+    font-size: 13pt;
+    opacity: 0.9;
+    margin-top: 1mm;
+  }
+  .cover-divider {
+    width: 40mm;
+    height: 0.5px;
+    background: rgba(255,255,255,0.35);
+    margin: 5mm auto;
+  }
+  .cover-period {
+    font-size: 11pt;
+    font-weight: bold;
+    margin-bottom: 2mm;
+  }
+  .cover-user {
+    font-size: 9pt;
+    opacity: 0.8;
+  }
+
+  /* Cover stat cards */
+  .cover-stats {
+    display: flex;
+    gap: 4mm;
+    margin-top: 12mm;
+    padding: 0 14mm;
+    width: 100%;
+  }
+  .cover-stat {
+    flex: 1;
+    background: rgba(255,255,255,0.12);
+    border: 0.5px solid rgba(255,255,255,0.2);
+    border-radius: 3mm;
+    padding: 4mm 2mm;
+    text-align: center;
+  }
+  .cover-stat-value {
+    font-size: 20pt;
+    font-weight: bold;
+  }
+  .cover-stat-label {
+    font-size: 6.5pt;
+    opacity: 0.75;
+    margin-top: 1mm;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+  }
+
+  /* Cover donut rings area */
+  .cover-donuts {
+    display: flex;
+    justify-content: center;
+    gap: 10mm;
+    margin-top: 10mm;
+  }
+  .cover-donut {
+    text-align: center;
+  }
+  .cover-donut img {
+    width: 30mm;
+    height: 30mm;
+  }
+  .cover-donut-label {
+    font-size: 7pt;
+    opacity: 0.8;
+    margin-top: 1mm;
+  }
+
+  .cover-insight {
+    margin-top: 10mm;
+    padding: 0 20mm;
+    text-align: center;
+    font-size: 9pt;
+    font-style: italic;
+    opacity: 0.75;
+  }
+
+  /* ── Content pages ───────────────────────────────────────────── */
+  .content {
+    page: content-page;
+    background-color: #f8fafc;
+  }
+  .first-content {
+    break-before: page;
+  }
+  /* Section headers should avoid page breaks right after them */
+  .section-header {
+    break-after: avoid;
+  }
+  .side-by-side {
+    break-inside: avoid;
+  }
+  .stats-row {
+    break-inside: avoid;
+  }
+
+  /* ── Charts ──────────────────────────────────────────────────── */
+  .chart-img {
+    width: 100%;
+    border-radius: 2mm;
+  }
+  .chart-container {
+    text-align: center;
+  }
+
+  /* ── Side-by-side layout ─────────────────────────────────────── */
+  .side-by-side {
+    display: flex;
+    gap: 4mm;
+    align-items: flex-start;
+  }
+  .side-left { flex: 0 0 56%; min-width: 0; }
+  .side-right { flex: 0 0 40%; min-width: 0; overflow: hidden; }
+
+  /* ── Tables ──────────────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+  }
+  table th {
+    background: #1e293b;
+    color: white;
+    font-size: 7pt;
+    font-weight: bold;
+    padding: 2mm 2.5mm;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+  }
+  table th:not(:first-child) { text-align: center; }
+  table td {
+    padding: 2mm 2.5mm;
+    border-bottom: 0.3px solid #e2e8f0;
+    max-width: 50mm;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  table td:not(:first-child) { text-align: center; }
+  table tr:nth-child(even) td { background: #f8fafc; }
+
+  /* ── Compact food log table ────────────────────────────────────── */
+  .food-log-table {
+    font-size: 7pt;
+  }
+  .food-log-table th {
+    font-size: 6pt;
+    padding: 1.5mm 2mm;
+  }
+  .food-log-table td {
+    padding: 1mm 2mm;
+    font-size: 7pt;
+    white-space: nowrap;
+    max-width: 45mm;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .food-log-table td:nth-child(2) {
+    text-align: left;
+    max-width: 55mm;
+  }
+  .food-log-table tr.day-first td {
+    border-top: 1px solid #cbd5e1;
+  }
+  .food-log-table tr.day-total td {
+    border-bottom: 1.5px solid #94a3b8;
+    background: #f1f5f9;
+    padding: 1mm 2mm;
+  }
+
+  /* ── Progress bars ───────────────────────────────────────────── */
+  .progress-track {
+    background: #e2e8f0;
+    border-radius: 2mm;
+    height: 3mm;
+    width: 100%;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2mm;
+    min-width: 2mm;
+  }
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+  }
+  .progress-pct {
+    font-size: 7pt;
+    font-weight: bold;
+    width: 8mm;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── Weight summary stats ────────────────────────────────────── */
+  .stats-row {
+    display: flex;
+    gap: 3mm;
+    margin-top: 4mm;
+  }
+  .stat-box {
+    flex: 1;
+    background: #f8fafc;
+    border-radius: 2mm;
+    padding: 3mm;
+    text-align: center;
+  }
+  .stat-box-value {
+    font-size: 14pt;
+    font-weight: bold;
+  }
+  .stat-box-label {
+    font-size: 6.5pt;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.3pt;
+    margin-bottom: 1mm;
+  }
+  .stat-box-sub {
+    font-size: 6.5pt;
+    color: #94a3b8;
+    margin-top: 0.5mm;
+  }
+
+  /* ── Food log ────────────────────────────────────────────────── */
+  .day-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2mm 3mm;
+    background: linear-gradient(90deg, #ecfdf5, #f8fafc);
+    border-radius: 2mm;
+    margin-bottom: 2mm;
+    border-left: 3px solid #10b981;
+  }
+  .meal-row {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    padding: 1.5mm 0;
+    border-bottom: 0.2px solid #f1f5f9;
+  }
+  .meal-photo {
+    width: 16mm;
+    height: 16mm;
+    border-radius: 2mm;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  .meal-info { flex: 1; }
+  .meal-name { font-weight: bold; font-size: 8pt; }
+  .meal-meta { font-size: 6.5pt; color: #64748b; }
+  .meal-macros {
+    display: flex;
+    gap: 3mm;
+    font-size: 7pt;
+    margin-top: 0.5mm;
+  }
+
+  /* ── Macro color dots ────────────────────────────────────────── */
+  .dot {
+    display: inline-block;
+    width: 2.5mm;
+    height: 2.5mm;
+    border-radius: 50%;
+    margin-right: 1mm;
+    vertical-align: middle;
+  }
+  .dot-emerald { background: #10b981; }
+  .dot-blue { background: #3b82f6; }
+  .dot-orange { background: #f97316; }
+  .dot-purple { background: #a855f7; }
+  .dot-red { background: #ef4444; }
+  .dot-amber { background: #f59e0b; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ COVER PAGE ═══════════════════════════════ -->
+<div class="cover">
+  <div class="cover-header">
+    {% if logo_b64 %}
+    <img class="cover-logo" src="data:image/png;base64,{{ logo_b64 }}" alt="">
+    {% endif %}
+    <div class="cover-title">MacroShot</div>
+    <div class="cover-subtitle">Nutrition Report</div>
+    <div class="cover-divider"></div>
+    <div class="cover-period">{{ period_label }}</div>
+    <div class="cover-user">
+      {% if user_name %}{{ user_name }}<br>{% endif %}
+      {{ email }}
+    </div>
+  </div>
+
+  <div class="cover-stats">
+    <div class="cover-stat">
+      <div class="cover-stat-value text-emerald">{{ total_meals }}</div>
+      <div class="cover-stat-label">Meals Logged</div>
+    </div>
+    <div class="cover-stat">
+      <div class="cover-stat-value text-blue">{{ avg_cal|round|int }}</div>
+      <div class="cover-stat-label">Avg kcal/day</div>
+    </div>
+    <div class="cover-stat">
+      <div class="cover-stat-value text-purple">{{ streak }}</div>
+      <div class="cover-stat-label">Day Streak</div>
+    </div>
+    <div class="cover-stat">
+      <div class="cover-stat-value text-amber">{{ days_logged }}/{{ num_days }}</div>
+      <div class="cover-stat-label">Days Tracked</div>
+    </div>
+  </div>
+
+  {% if donut_charts %}
+  <div class="cover-donuts">
+    {% for d in donut_charts %}
+    <div class="cover-donut">
+      <img src="data:image/png;base64,{{ d.img_b64 }}" alt="{{ d.label }}">
+      <div class="cover-donut-label">{{ d.label }} {{ d.pct_text }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if insight %}
+  <div class="cover-insight">"{{ insight }}"</div>
+  {% endif %}
+</div>
+
+<!-- ═══════════ ALL CONTENT IN ONE FLOWING BLOCK ════════════════ -->
+<div class="content first-content">
+
+<!-- ── CALORIE OVERVIEW ─────────────────────────────────────────── -->
+  <div class="section-header" style="background: rgba(16,185,129,0.08);">
+    <div class="accent-bar" style="background: #10b981;"></div>
+    <h2 style="margin:0">Calorie Overview</h2>
+  </div>
+
+  <div class="card">
+    <img class="chart-img" src="data:image/png;base64,{{ cal_chart_b64 }}" alt="Daily calories">
+  </div>
+
+  <div class="side-by-side mt-4">
+    <div class="side-left">
+      <div class="card">
+        <h3><span class="dot dot-emerald"></span>Daily Averages vs Targets</h3>
+        <table>
+          <tr><th>Macro</th><th>Average</th><th>Target</th><th>% of Target</th></tr>
+          {% for row in macro_rows %}
+          <tr>
+            <td><span class="dot dot-{{ row.dot }}"></span><strong class="text-{{ row.dot }}">{{ row.label }}</strong></td>
+            <td>{{ row.avg }}</td>
+            <td>{{ row.target }}</td>
+            <td>
+              <div class="progress-row">
+                <div class="progress-track">
+                  <div class="progress-fill" style="width: {{ [row.pct, 100]|min }}%; background: {{ row.color }};"></div>
+                </div>
+                <span class="progress-pct" style="color: {{ row.color }};">{{ row.pct|round|int }}%</span>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+    <div class="side-right">
+      <div class="card text-center">
+        <h3>Macro Split</h3>
+        {% if pie_chart_b64 %}
+        <img src="data:image/png;base64,{{ pie_chart_b64 }}" style="width: 90%; margin: 0 auto;" alt="Macro split">
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if cal_stats %}
+  <div class="stats-row mt-4">
+    {% for s in cal_stats %}
+    <div class="stat-box">
+      <div class="stat-box-label">{{ s.label }}</div>
+      <div class="stat-box-value" style="color: {{ s.color }};">{{ s.value }}</div>
+      <div class="stat-box-sub">{{ s.sub }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+<!-- ── WEIGHT TREND ─────────────────────────────────────────────── -->
+{% if weight_chart_b64 %}
+  <div class="section-header" style="background: rgba(59,130,246,0.08);">
+    <div class="accent-bar" style="background: #3b82f6;"></div>
+    <h2 style="margin:0">Weight Trend</h2>
+  </div>
+
+  <div class="card">
+    <img class="chart-img" src="data:image/png;base64,{{ weight_chart_b64 }}" alt="Weight trend">
+  </div>
+
+  <div class="stats-row">
+    {% for s in weight_stats %}
+    <div class="stat-box">
+      <div class="stat-box-label">{{ s.label }}</div>
+      <div class="stat-box-value" style="color: {{ s.color }};">{{ s.value }}</div>
+      <div class="stat-box-sub">{{ s.sub }}</div>
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<!-- ── MEAL PATTERNS ────────────────────────────────────────────── -->
+  <div class="section-header" style="background: rgba(168,85,247,0.08);">
+    <div class="accent-bar" style="background: #a855f7;"></div>
+    <h2 style="margin:0">Meal Patterns</h2>
+  </div>
+
+  <div class="side-by-side">
+    <div class="side-left">
+      <div class="card">
+        <h3>Average Calories by Day of Week</h3>
+        <img class="chart-img" src="data:image/png;base64,{{ dow_chart_b64 }}" alt="Day of week">
+      </div>
+    </div>
+    <div class="side-right">
+      <div class="card">
+        <h3><span class="dot dot-purple"></span>Meals by Type</h3>
+        <table>
+          <tr><th>Type</th><th>Count</th><th>Avg kcal</th><th>%</th></tr>
+          {% for mt in meal_types %}
+          <tr>
+            <td><strong style="color: {{ mt.color }};">{{ mt.name }}</strong></td>
+            <td>{{ mt.count }}</td>
+            <td>{{ mt.avg_cal|round|int }}</td>
+            <td>{{ mt.pct|round|int }}%</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-row mt-2">
+    {% for cs in consistency_stats %}
+    <div class="stat-box">
+      <div class="stat-box-label">{{ cs.label }}</div>
+      <div class="stat-box-value" style="color: {{ cs.color }};">{{ cs.value }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+<!-- ── TOP FOODS ────────────────────────────────────────────────── -->
+  <div class="section-header" style="background: rgba(245,158,11,0.08);">
+    <div class="accent-bar" style="background: #f59e0b;"></div>
+    <h2 style="margin:0">Top Foods</h2>
+  </div>
+
+  <div class="card">
+    <h3><span class="dot dot-emerald"></span>Most Logged</h3>
+    <table>
+      <tr><th>#</th><th>Food</th><th>Times</th><th>Avg kcal</th><th>Avg Protein</th></tr>
+      {% for f in top_foods %}
+      <tr>
+        <td><strong>{{ loop.index }}</strong></td>
+        <td>{{ f.name }}</td>
+        <td>{{ f.count }}</td>
+        <td>{{ f.avg_cal|round|int }}</td>
+        <td>{{ f.avg_pro|round|int }}g</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="side-by-side mt-4">
+    <div class="side-left">
+      <div class="card">
+        <h3><span class="dot dot-red"></span>Highest Calorie Meals</h3>
+        <table>
+          <tr><th>Meal</th><th>Calories</th><th>Date</th></tr>
+          {% for m in highest_cal %}
+          <tr>
+            <td>{{ m.name }}</td>
+            <td class="text-red font-bold">{{ m.cal|round|int }}</td>
+            <td class="text-muted">{{ m.date }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+    <div class="side-right">
+      <div class="card">
+        <h3><span class="dot dot-blue"></span>Protein Champions</h3>
+        <table>
+          <tr><th>Meal</th><th>Protein</th></tr>
+          {% for m in highest_pro %}
+          <tr>
+            <td>{{ m.name }}</td>
+            <td class="text-blue font-bold">{{ m.pro|round|int }}g</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+<!-- ── DAILY FOOD LOG (compact table) ────────────────────────────── -->
+{% if food_log_days %}
+  <div class="section-header" style="background: rgba(59,130,246,0.08);">
+    <div class="accent-bar" style="background: #3b82f6;"></div>
+    <h2 style="margin:0">Daily Food Log</h2>
+  </div>
+
+  <div class="card" style="padding: 2mm 3mm;">
+    <table class="food-log-table">
+      <thead>
+        <tr><th>Date</th><th>Meal</th><th>Type</th><th>kcal</th><th>P</th><th>C</th><th>F</th></tr>
+      </thead>
+      <tbody>
+      {% for day in food_log_days %}
+        {% for meal in day.meals %}
+        <tr{% if loop.first %} class="day-first"{% endif %}>
+          <td class="text-muted text-xs">{% if loop.first %}{{ day.date }}{% endif %}</td>
+          <td>{{ meal.name }}</td>
+          <td class="text-muted text-xs">{{ meal.type }}</td>
+          <td class="text-emerald">{{ meal.cal|round|int }}</td>
+          <td class="text-blue">{{ meal.pro|round|int }}g</td>
+          <td class="text-orange">{{ meal.carb|round|int }}g</td>
+          <td class="text-purple">{{ meal.fat|round|int }}g</td>
+        </tr>
+        {% endfor %}
+        <tr class="day-total">
+          <td></td>
+          <td class="font-bold text-xs">Day total ({{ day.meals|length }} meals)</td>
+          <td></td>
+          <td class="font-bold text-emerald">{{ day.total_cal|round|int }}</td>
+          <td class="font-bold text-blue">{{ day.total_pro|round|int }}g</td>
+          <td></td>
+          <td></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+
+</div><!-- end .content -->
+
+</body>
+</html>

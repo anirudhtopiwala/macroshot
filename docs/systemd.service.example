@@ -1,0 +1,15 @@
+[Unit]
+Description=MacroShot Web - FastAPI PWA
+After=network-online.target
+
+[Service]
+Type=simple
+User={APP_USER}
+WorkingDirectory={APP_ROOT}
+EnvironmentFile={APP_ROOT}/.env
+ExecStart={APP_ROOT}/.venv/bin/uvicorn src.web.app:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

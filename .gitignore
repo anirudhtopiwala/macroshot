@@ -1,0 +1,92 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+service-account*.json
+gcs-key*.json
+
+# Operator-only Claude Code instructions - never commit. Defensive ignore
+# in case a fork uses Claude Code locally and accidentally `git add`s
+# their CLAUDE.md.
+CLAUDE.md
+CLAUDE.local.md
+CLAUDE.*.local.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SQLite database + WAL-mode sidecars (runtime artifacts). The -wal / -shm
+# files MUST be gitignored - long-running uvicorn processes hold open file
+# descriptors to them, and any tool that runs `git clean -fd` on the worktree
+# will silently unlink them from under the service, leaving it reading a
+# deleted (and soon-to-be-checkpointed-back) WAL.
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+
+# Test coverage artifacts
+.coverage
+htmlcov/
+
+# Node / Frontend
+node_modules/
+web/dist/
+web/.vite/
+
+# Uploaded images (runtime data)
+data/images/
+
+# DB backups (runtime)
+backups/
+logs/
+
+# Meal-analysis eval: real meals + images + run outputs are private to the
+# operator. README and the sanitized example dataset are explicitly kept.
+eval/*
+!eval/README.md
+!eval/meals_groundtruth.example.json
+
+# Offline validation review - pulled via scripts/pull_validation_dataset.py.
+# Private per-user meal images + text; never commit.
+validation_dataset/

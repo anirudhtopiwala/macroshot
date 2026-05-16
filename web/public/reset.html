@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reset App</title>
+<style>
+  body{background:#060a14;color:#f1f5f9;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+  .box{text-align:center;padding:2rem;max-width:420px}
+  .btn{background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;padding:12px 24px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;margin:4px}
+  .btn.safe{background:rgba(148,163,184,0.15);border-color:rgba(148,163,184,0.3);color:#cbd5e1}
+  .status{margin-top:1rem;font-size:13px;color:#94a3b8}
+  .warn{margin-top:1rem;font-size:13px;line-height:1.5;color:#fbbf24;text-align:left;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:8px;padding:12px 14px}
+  .warn strong{display:block;margin-bottom:6px;color:#fcd34d}
+  .warn ul{margin:0;padding-left:18px}
+  .warn li{margin:2px 0}
+</style></head>
+<body><div class="box">
+  <h2>Reset App Data</h2>
+  <p class="status">This removes <em>your</em> local browser state. It does <strong>not</strong> delete your account or server data.</p>
+  <div class="warn">
+    <strong>You will lose:</strong>
+    <ul>
+      <li>Any meals in the offline queue that haven't synced yet</li>
+      <li>Your login session on this device</li>
+      <li>Cached dashboard, settings, and theme preferences</li>
+    </ul>
+    Your server-side meal history and account are untouched.
+  </div>
+  <p id="status" class="status" aria-live="polite"></p>
+  <button id="confirm" class="btn">Reset this device</button>
+  <button id="cancel" class="btn safe" onclick="window.location.href='/macro_app/'">Cancel</button>
+<script>
+(() => {
+  const confirmBtn = document.getElementById('confirm');
+  const s = document.getElementById('status');
+  confirmBtn.addEventListener('click', async () => {
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Resetting...';
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+      s.textContent = `Unregistered ${regs.length} service worker(s).`;
+
+      const names = await caches.keys();
+      await Promise.all(names.map(n => caches.delete(n)));
+      s.textContent = `Cleared ${names.length} cache(s). Wiping storage...`;
+
+      localStorage.clear();
+      sessionStorage.clear();
+
+      s.textContent = 'Done. Redirecting in 3s...';
+      setTimeout(() => { window.location.href = '/macro_app/'; }, 3000);
+    } catch (e) {
+      s.textContent = 'Error: ' + e.message;
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Try again';
+    }
+  });
+})();
+</script>
+<noscript><p>JavaScript required.</p></noscript>
+</div></body></html>

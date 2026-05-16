@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/macro_app/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/macro_app/favicon-192.png" />
+    <link rel="manifest" href="/macro_app/manifest.json" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/macro_app/icons/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#060a14" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="preload" href="/macro_app/logo-login.png" as="image" />
+    <!-- Inter font is self-hosted via @fontsource-variable/inter (loaded
+         in src/main.tsx) - no Google Fonts on first load. -->
+    <!-- Splash + skeleton styles (B26 - externalized so CSP drops 'unsafe-inline'). -->
+    <link rel="stylesheet" href="/macro_app/splash.css" />
+    <title>MacroShot - Open-source AI macro tracker</title>
+    <meta name="description" content="Snap a photo, skip the database. MacroShot is the open-source AI macro tracker with a coach that reads your real data. Log meals by photo, text, or barcode. Runs on every device. Self-host for free." />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MacroShot" />
+    <meta property="og:title" content="MacroShot - Open-source AI macro tracker" />
+    <meta property="og:description" content="Snap a photo, skip the database. The open-source macro tracker with a coach that actually reads your data." />
+    <meta property="og:image" content="%VITE_OG_IMAGE_URL%" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:url" content="%VITE_APP_URL%about" />
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MacroShot - Open-source AI macro tracker" />
+    <meta name="twitter:description" content="Snap a photo, skip the database. The open-source macro tracker with a coach that actually reads your data." />
+    <meta name="twitter:image" content="%VITE_OG_IMAGE_URL%" />
+    <!-- B27: theme-flash one-liner externalized so CSP drops the sha256 hash.
+         Loaded synchronously (no async/defer) so it runs BEFORE the React
+         tree paints. -->
+    <script src="/macro_app/theme-init.js"></script>
+  </head>
+  <body>
+    <!-- Splash screen - OUTSIDE root so React doesn't destroy it on mount -->
+    <div id="splash" class="splash">
+      <img src="/macro_app/logo-login.png" alt="MacroShot" />
+      <h1>MacroShot</h1>
+      <p>AI-powered meal tracking</p>
+    </div>
+
+    <div id="root">
+      <!-- Pre-React skeleton: visible until React mounts, then replaced -->
+      <div class="sk">
+        <div class="sk-hdr"><div class="sk-bar" style="width:120px;height:24px;border-radius:8px"></div><div class="sk-bar" style="width:36px;height:36px;border-radius:50%"></div></div>
+        <div class="sk-week"><div class="sk-day"><div class="sk-bar" style="width:24px;height:12px;border-radius:6px"></div><div class="sk-bar" style="width:40px;height:40px;border-radius:50%"></div></div><div class="sk-day"><div class="sk-bar" style="width:24px;height:12px;border-radius:6px"></div><div class="sk-bar" style="width:40px;height:40px;border-radius:50%"></div></div><div class="sk-day"><div class="sk-bar" style="width:24px;height:12px;border-radius:6px"></div><div class="sk-bar" style="width:40px;height:40px;border-radius:50%"></div></div><div class="sk-day"><div class="sk-bar" style="width:24px;height:12px;border-radius:6px"></div><div class="sk-bar" style="width:40px;height:40px;border-radius:50%"></div></div><div class="sk-day"><div class="sk-bar" style="width:24px;height:12px;border-radius:6px"></div><div class="sk-bar" style="width:40px;height:40px;border-radius:50%"></div></div><div class="sk-day"><div class="sk-bar" style="width:24px;height:12px;border-radius:6px"></div><div class="sk-bar" style="width:40px;height:40px;border-radius:50%"></div></div><div class="sk-day"><div class="sk-bar" style="width:24px;height:12px;border-radius:6px"></div><div class="sk-bar" style="width:40px;height:40px;border-radius:50%"></div></div></div>
+        <div class="sk-bar sk-hero"></div>
+        <div class="sk-macros"><div class="sk-bar sk-macro"></div><div class="sk-bar sk-macro"></div><div class="sk-bar sk-macro"></div></div>
+        <div class="sk-bar sk-meal"></div>
+        <div class="sk-bar sk-meal"></div>
+        <div class="sk-bar sk-meal"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

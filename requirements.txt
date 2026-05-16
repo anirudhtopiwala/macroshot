@@ -1,0 +1,55 @@
+# AI APIs
+google-genai>=1.75.0,<2.0.0
+openai>=1.0,<2.0
+mcp>=1.27.0,<2.0.0
+
+
+# Validation & config
+pydantic>=2.13.3,<3.0
+python-dotenv>=1.0.0,<2.0.0
+
+# Fuzzy matching (meal alias lookup)
+rapidfuzz>=3.0,<4.0
+
+# SQLite async driver
+aiosqlite>=0.19.0,<1.0.0
+
+# HTTP client (FatSecret API)
+httpx>=0.25.0,<1.0.0
+
+# Web App (FastAPI + auth)
+fastapi>=0.136.1,<1.0.0
+uvicorn[standard]>=0.27.0,<1.0.0
+# python-jose: pin upper bound. <4 to keep JWS compat. Watch CVEs:
+# python-jose has had algorithm-confusion + DoS issues in older versions.
+python-jose[cryptography]>=3.3.0,<4.0.0
+cryptography>=47.0.0,<48.0.0
+# passlib: 1.7.x is the only stable line; 2.x is unreleased. Pin upper bound
+# so a pre-release doesn't get pulled in from requirements.txt unhashed.
+passlib[bcrypt]>=1.7.4,<2.0.0
+python-multipart>=0.0.7,<1.0.0
+# Pillow: CVE-2023-50447 fixed in 10.2; CVE-2024-28219 in 10.3; further
+# advisories in 10.4. CVE-2026-25990 / 40192 / 42308-42311 fixed in
+# 12.1.1 / 12.2.0 (audited 2026-05). Floor bumped to 12.2.0 to clear
+# all known CVEs; ceiling raised to <14 to allow the next major.
+Pillow>=12.2.0,<14.0.0
+pydantic[email]>=2.13.3,<3.0
+resend>=2.0.0,<3.0.0
+pywebpush>=2.3.0,<3.0.0
+
+# Rate limiting
+slowapi>=0.1.9,<1.0.0
+
+# Stripe billing
+stripe>=5.0.0,<13.0.0
+
+# Error monitoring
+sentry-sdk[fastapi]>=2.58.0,<3.0.0
+
+# Google Cloud Storage (image serving from GCS)
+google-cloud-storage>=2.14.0,<4.0.0
+fpdf2==2.8.7
+matplotlib==3.10.8
+numpy>=1.24.0,<3.0.0
+weasyprint==68.1
+jinja2==3.1.6

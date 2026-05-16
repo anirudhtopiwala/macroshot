@@ -1,0 +1,417 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #060a14;
+  --bg-card: rgba(255, 255, 255, 0.05);
+  --bg-card-hover: rgba(255, 255, 255, 0.08);
+  --bg-elevated: rgba(255, 255, 255, 0.04);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-highlight: rgba(255, 255, 255, 0.14);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --color-protein: #2dd4bf;
+  --color-carbs: #f97316;
+  --color-fat: #22c55e;
+  --color-calories: #34d399;
+  --color-flame: #f97316;
+  --color-weight: #f59e0b;
+  --color-ai: #a855f7;
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-glass-lg: 0 16px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  --nav-bg: rgba(6, 10, 20, 0.82);
+  --header-bg: rgba(6, 10, 20, 0.85);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --track-bg: rgba(255, 255, 255, 0.1);
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --bg-frosted-overlay: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] {
+  --bg-base: #f0f2f5;
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-card-hover: rgba(255, 255, 255, 0.85);
+  --bg-elevated: rgba(255, 255, 255, 0.5);
+  --border-glass: rgba(0, 0, 0, 0.12);
+  --border-glass-highlight: rgba(0, 0, 0, 0.18);
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --color-protein: #0d9488;
+  --color-carbs: #ea580c;
+  --color-fat: #16a34a;
+  --color-calories: #059669;
+  --color-flame: #ea580c;
+  --color-weight: #b45309;
+  --color-ai: #7c3aed;
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-glass-lg: 0 16px 48px rgba(0, 0, 0, 0.12);
+  --nav-bg: rgba(240, 242, 245, 0.82);
+  --header-bg: rgba(240, 242, 245, 0.85);
+  --input-bg: rgba(255, 255, 255, 0.6);
+  --track-bg: rgba(0, 0, 0, 0.08);
+  --bg-frosted-overlay: rgba(255, 255, 255, 0.5);
+  --overlay-bg: rgba(0, 0, 0, 0.3);
+}
+
+html, body {
+  overscroll-behavior-y: contain;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+@layer components {
+  .glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glass);
+    border-top-color: var(--border-glass-highlight);
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-card-hover {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-glass);
+    border-top-color: var(--border-glass-highlight);
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-glass);
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .glass-card-hover:hover {
+    background: var(--bg-card-hover);
+    transform: translateY(-1px);
+  }
+
+  .glass-card-hover:active {
+    transform: translateY(0);
+  }
+
+  .glass-input {
+    background: var(--input-bg);
+    border: 1px solid var(--border-glass);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    transition: all 0.2s;
+  }
+
+  .glass-input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .glass-input:focus {
+    border-color: rgba(16, 185, 129, 0.5);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15), 0 0 20px rgba(16, 185, 129, 0.1);
+  }
+
+  .btn-primary {
+    @apply bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl px-6 py-3 transition-all duration-200;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.25), 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 0 28px rgba(16, 185, 129, 0.35), 0 6px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .pill-active {
+    @apply bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full px-4 py-1.5 text-sm font-medium;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+  }
+
+  .pill-inactive {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    color: var(--text-muted);
+    @apply rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-200;
+  }
+
+  .pill-inactive:hover {
+    background: var(--bg-card-hover);
+  }
+
+  .section-heading {
+    @apply uppercase tracking-wider text-xs font-bold;
+    color: var(--text-secondary);
+    letter-spacing: 0.1em;
+  }
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .glass-card,
+[data-theme="light"] .glass-card-hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] select option {
+  background: #fff;
+  color: #1e293b;
+}
+
+/* In light mode the dark-mode emerald glows vanish against white
+   backgrounds. These overrides boost contrast for focus, active
+   pills, and primary buttons without changing the dark-mode look. */
+[data-theme="light"] .glass-input:focus {
+  border-color: rgba(16, 185, 129, 0.7);
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.18), 0 0 12px rgba(16, 185, 129, 0.22);
+}
+
+[data-theme="light"] .btn-primary {
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35), 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+[data-theme="light"] .btn-primary:hover {
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.45), 0 6px 16px rgba(0, 0, 0, 0.14);
+}
+
+[data-theme="light"] .pill-active {
+  @apply bg-emerald-100 text-emerald-700 border-emerald-300;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
+}
+
+[data-theme="light"] .glass-btn-primary {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #059669;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.3), var(--shadow-glass);
+}
+[data-theme="light"] .glass-btn-primary:hover {
+  background: rgba(16, 185, 129, 0.22);
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.4), var(--shadow-glass);
+}
+
+/* Celebration / BadgeCelebration overlays use bg-black/50-60 which
+   reads as mid-gray over a light page - white text on gray has poor
+   contrast. Scope a darker backdrop to these overlays in light mode
+   so the white text they render stays readable. Containers opt in
+   via the .celebration-overlay class. */
+[data-theme="light"] .celebration-overlay {
+  background: rgba(0, 0, 0, 0.75) !important;
+}
+
+/* Glass button system - outside @layer to prevent tree-shaking */
+.glass-btn {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-top-color: var(--border-glass-highlight);
+}
+
+.glass-btn-primary {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.15), var(--shadow-glass);
+}
+.glass-btn-primary:hover {
+  background: rgba(16, 185, 129, 0.18);
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.25), var(--shadow-glass);
+}
+
+.glass-btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-glass);
+}
+.glass-btn-secondary:hover {
+  background: var(--bg-card-hover);
+}
+
+.glass-btn-destructive {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  box-shadow: var(--shadow-glass);
+}
+.glass-btn-destructive:hover {
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.glass-btn-accent {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  box-shadow: var(--shadow-glass);
+}
+.glass-btn-accent:hover {
+  background: rgba(59, 130, 246, 0.14);
+}
+
+/* Light-theme glass button overrides */
+[data-theme="light"] .glass-btn-primary {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.25);
+  color: #059669;
+}
+[data-theme="light"] .glass-btn-primary:hover {
+  background: rgba(16, 185, 129, 0.14);
+}
+
+[data-theme="light"] .glass-btn-destructive {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(239, 68, 68, 0.18);
+  color: #dc2626;
+}
+[data-theme="light"] .glass-btn-destructive:hover {
+  background: rgba(239, 68, 68, 0.12);
+}
+
+[data-theme="light"] .glass-btn-accent {
+  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(59, 130, 246, 0.18);
+  color: #2563eb;
+}
+[data-theme="light"] .glass-btn-accent:hover {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+/* Alert variant classes */
+.alert-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+.alert-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+}
+.alert-info {
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+}
+
+/* Light-theme alert overrides */
+[data-theme="light"] .alert-error {
+  background: rgba(239, 68, 68, 0.06);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: #dc2626;
+}
+[data-theme="light"] .alert-warning {
+  background: rgba(245, 158, 11, 0.06);
+  border-color: rgba(180, 83, 9, 0.2);
+  color: #b45309;
+}
+[data-theme="light"] .alert-info {
+  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(37, 99, 235, 0.2);
+  color: #2563eb;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Staggered card entry animation */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-slide-up {
+  animation: fadeSlideUp 400ms ease-out both;
+}
+
+/* FAB-style card entrance for barcode not-found options */
+@keyframes fabIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Bottom sheet slide-up animation */
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Tier glow animation for gold & diamond badges */
+@keyframes tierGlow {
+  0%, 100% { box-shadow: var(--glow-shadow-min); }
+  50% { box-shadow: var(--glow-shadow-max); }
+}
+.animate-tier-glow {
+  animation: tierGlow 4.5s ease-in-out infinite;
+}
+
+/* Pulsing ring around the Plus FAB - draws attention for brand-new users
+   who haven't logged any meals yet. Two rings offset 900ms for a steady,
+   radar-style pulse. Stops the moment the user logs their first meal. */
+@keyframes fabPulseRing {
+  0%   { transform: translate(-50%, -50%) scale(0.85); opacity: 0.7; }
+  70%  { transform: translate(-50%, -50%) scale(1.9);  opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1.9);  opacity: 0; }
+}
+.animate-fab-pulse-ring {
+  animation: fabPulseRing 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+.animate-fab-pulse-ring-delayed {
+  animation: fabPulseRing 1.8s cubic-bezier(0.4, 0, 0.6, 1) 0.9s infinite;
+}
+
+/* Text input pulse glow - draws attention when navigating from FAB */
+@keyframes textGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(16, 185, 129, 0); }
+  50% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.35), 0 0 32px rgba(16, 185, 129, 0.15); }
+}
+.animate-text-glow {
+  animation: textGlow 1.5s ease-in-out 2;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+}
+
+/* "Macros updated" pill - subtle pulse so it reads as tappable, not
+   just a label. Runs a bounded number of times so it doesn't pulse
+   forever after the user has already seen it. */
+@keyframes macrosUpdatedPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    transform: translateY(-1px);
+  }
+}
+.macros-updated-pulse {
+  animation: macrosUpdatedPulse 1.4s ease-in-out 4;
+}
+
+@keyframes thinkingDotBlink {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+.thinking-dot {
+  display: inline-block;
+  font-size: 18px;
+  line-height: 0.5;
+  animation: thinkingDotBlink 1.2s infinite ease-in-out;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
