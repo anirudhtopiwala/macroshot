@@ -58,6 +58,12 @@ export default function Settings() {
   const [subExpanded, setSubExpanded] = useState(false);
   const [updatePhase, setUpdatePhase] = useState<UpdateProgressPhase | null>(null);
   const [updateProgress, setUpdateProgress] = useState({ done: 0, total: 0 });
+  // Aborts an in-flight checkForUpdate on unmount so a route change away from
+  // Settings doesn't leave the SW lifecycle subscription dangling — and, more
+  // importantly, doesn't fire applyUpdate() (which triggers a page reload)
+  // under a user who is now mid-task on another page.
+  const updateAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => updateAbortRef.current?.abort(), []);
 
   // Surface a warning dot on the compact Subscription row when any quota
   // is ≥70% of its limit - signals the user to tap for details. Free-tier
@@ -859,7 +865,14 @@ export default function Settings() {
             }
 
             setUpdatePhase('checking');
-            const found = await checkForUpdate(() => setUpdatePhase('downloading'));
+            // Abort any previous in-flight check (e.g. user double-tapped)
+            // before starting a new one.
+            updateAbortRef.current?.abort();
+            updateAbortRef.current = new AbortController();
+            const found = await checkForUpdate(
+              () => setUpdatePhase('downloading'),
+              updateAbortRef.current.signal,
+            );
             if (found) {
               setUpdatePhase('applying');
               applyUpdate();

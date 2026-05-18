@@ -93,6 +93,11 @@ function notifyPrecacheProgress(p: PrecacheProgress) {
  * `onDownloading` fires once a new SW enters `installing` state, so callers
  * can swap a "Checking..." UI for "Downloading update...".
  *
+ * `signal` lets the caller abort cleanly on unmount/navigation. Without it,
+ * a route change away from Settings mid-check would leave the interval
+ * polling for the full timeout window and could trigger an applyUpdate()
+ * (and page reload) under a user who is now mid-task on another route.
+ *
  * Observes the SW lifecycle through the same notifyUpdateAvailable signal
  * that the long-lived updatefound listener (initServiceWorker) and the
  * UpdateToast rely on. The previous approach polled reg.installing /
@@ -105,10 +110,22 @@ function notifyPrecacheProgress(p: PrecacheProgress) {
  * "App is on latest version" modal. Subscribing here means the tap path,
  * the popstate path, and the reload path all converge on one signal.
  *
- * Budget: 60s. Precache is ~10 MB; slow mobile networks regularly take 30-60s.
+ * Two timeouts:
+ *  - 10s detection window: if no installing/waiting worker has appeared by
+ *    then and no other path has fired notifyUpdateAvailable, declare no-update.
+ *    The post-update() state-machine race resolves within 3-5s on even slow
+ *    networks; 10s is generous cover. The UpdateToast remains subscribed
+ *    via the long-lived listener, so a late-arriving install is still
+ *    surfaced — just not by this modal.
+ *  - 60s total cap: once an install is observably in flight, give the
+ *    ~10 MB precache enough time to complete on slow mobile networks.
  */
-export async function checkForUpdate(onDownloading?: () => void): Promise<boolean> {
+export async function checkForUpdate(
+  onDownloading?: () => void,
+  signal?: AbortSignal,
+): Promise<boolean> {
   if (!_registration) return false;
+  if (signal?.aborted) return false;
   const reg = _registration;
   if (reg.waiting) return true;
 
@@ -117,6 +134,7 @@ export async function checkForUpdate(onDownloading?: () => void): Promise<boolea
   } catch {
     return false;
   }
+  if (signal?.aborted) return false;
   if (reg.waiting) return true;
 
   return new Promise<boolean>((resolve) => {
@@ -126,22 +144,31 @@ export async function checkForUpdate(onDownloading?: () => void): Promise<boolea
     const finish = (value: boolean) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timeoutId);
+      clearTimeout(detectionTimeoutId);
+      clearTimeout(totalTimeoutId);
       clearInterval(installingWatcher);
       unsubAvailable();
+      signal?.removeEventListener('abort', onAbort);
       resolve(value);
     };
+
+    const onAbort = () => finish(false);
+    signal?.addEventListener('abort', onAbort);
 
     // Primary signal: fires when any install (ours, popstate's, or
     // visibilitychange's) transitions a worker to `installed` (waiting).
     const unsubAvailable = onUpdateAvailable(() => finish(true));
 
-    // Secondary: switch the UI from "Checking…" to "Downloading…" the
-    // moment the browser actually assigns an installing worker. Polled
-    // because there's no DOM event that fires on the installing→null
-    // transition into installing, and we don't want to attach a one-shot
-    // updatefound listener (the long-lived one in initServiceWorker
-    // already handles the install→waiting bookkeeping).
+    // Load-bearing for two cases:
+    //  (a) onDownloading callback — fires the moment the browser transitions
+    //      a worker into `installing`. There's no DOM event for that
+    //      null→installing transition on the registration, so we poll.
+    //  (b) First-install fallback — notifyUpdateAvailable in the long-lived
+    //      updatefound listener (line ~314) gates on
+    //      navigator.serviceWorker.controller being truthy, so on a brand-new
+    //      install (no prior controller) it never fires even when the SW
+    //      reaches waiting. The `if (reg.waiting) finish(true)` below is the
+    //      only path that catches that — do NOT remove it as "redundant".
     const installingWatcher = setInterval(() => {
       if (settled) return;
       if (reg.waiting) {
@@ -154,7 +181,14 @@ export async function checkForUpdate(onDownloading?: () => void): Promise<boolea
       }
     }, 100);
 
-    const timeoutId = setTimeout(() => finish(!!reg.waiting), 60_000);
+    // Fast bail when there's nothing to wait on (no update available).
+    const detectionTimeoutId = setTimeout(() => {
+      if (settled) return;
+      if (!reg.installing && !reg.waiting) finish(false);
+    }, 10_000);
+
+    // Hard cap once an install IS in flight — covers slow precache downloads.
+    const totalTimeoutId = setTimeout(() => finish(!!reg.waiting), 60_000);
   });
 }
 
