@@ -105,6 +105,7 @@ export default function SettingsReminders() {
     setSavedSnapshot(togglePayloadJson);
 
     let subscribedHere = false;
+    let unsubscribedHere = false;
     if (enabling && pushSupported && !(pushSubscribed && pushServerSubscribed)) {
       setPushLoading(true);
       try {
@@ -122,7 +123,12 @@ export default function SettingsReminders() {
         console.warn('[reminders] subscribe threw:', e);
       } finally { setPushLoading(false); }
     } else if (!enabling && pushSubscribed) {
-      try { await unsubscribeFromPush(); setPushSubscribed(false); setPushServerSubscribed(false); } catch (e) {
+      try {
+        await unsubscribeFromPush();
+        unsubscribedHere = true;
+        setPushSubscribed(false);
+        setPushServerSubscribed(false);
+      } catch (e) {
         console.warn('[reminders] unsubscribe threw:', e);
       }
     }
@@ -136,12 +142,27 @@ export default function SettingsReminders() {
       // or timezone edits the user made while the PUT was in flight.
       setPrefs(p => p ? { ...p, reminders_on: enabling ? 0 : 1 } : p);
       setSavedSnapshot(previousSnapshot);
-      // If we subscribed to push as part of this toggle, undo it so the
-      // server doesn't keep a stale subscription for reminders_on=0.
+      // Symmetric push-state rollback: undo whatever side-effect this toggle
+      // produced on the push subscription, otherwise the user is left with
+      // reminders_on=1 but no subscription (disable rollback) or a stale
+      // server subscription for reminders_on=0 (enable rollback).
       if (subscribedHere) {
         unsubscribeFromPush().catch((e) => console.warn('[reminders] rollback unsubscribe failed:', e));
         setPushSubscribed(false);
         setPushServerSubscribed(false);
+      } else if (unsubscribedHere) {
+        // Best-effort re-subscribe. Permission is still granted from before,
+        // and we're inside the same `toggleReminders` call so no new user
+        // gesture is required for the browser-side subscribe. If this fails,
+        // the user will see the warning banner prompting them to re-enable.
+        subscribeToPushDetailed().then((r) => {
+          if (r.ok) {
+            setPushSubscribed(true);
+            setPushServerSubscribed(true);
+          } else {
+            console.warn('[reminders] rollback re-subscribe failed:', r.reason);
+          }
+        }).catch((e) => console.warn('[reminders] rollback re-subscribe threw:', e));
       }
       toast('Failed to save reminder setting', 'error');
     }
