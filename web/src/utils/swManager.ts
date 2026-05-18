@@ -87,109 +87,109 @@ function notifyPrecacheProgress(p: PrecacheProgress) {
 }
 
 /**
- * Check for a new SW version. Returns true if an update was found and
- * fully precached (i.e. reload will be instant).
+ * Check for a new SW version. Returns true once an update is found and fully
+ * precached (i.e. reload will be instant).
  *
  * `onDownloading` fires once a new SW enters `installing` state, so callers
  * can swap a "Checking..." UI for "Downloading update...".
  *
- * Resilient to in-flight background update() calls (visibilitychange handler,
- * etc.). If the worker we're tracking goes `redundant`, we look for the
- * registration's next installing/waiting worker rather than reporting failure.
- * Total budget for install: 90s (precache is ~10 MB; slow mobile networks
- * regularly take 30-60s).
+ * `signal` lets the caller abort cleanly on unmount/navigation. Without it,
+ * a route change away from Settings mid-check would leave the interval
+ * polling for the full timeout window and could trigger an applyUpdate()
+ * (and page reload) under a user who is now mid-task on another route.
+ *
+ * Observes the SW lifecycle through the same notifyUpdateAvailable signal
+ * that the long-lived updatefound listener (initServiceWorker) and the
+ * UpdateToast rely on. The previous approach polled reg.installing /
+ * reg.waiting for 3s after reg.update() resolved and bailed if neither was
+ * set — a structural blind spot, because the browser (especially iOS Safari)
+ * routinely resolves update() before transitioning the new worker into
+ * `installing`. The install would complete seconds later, the long-lived
+ * listener would fire notifyUpdateAvailable, and the user would see the
+ * "New version available" toast appear moments after dismissing our
+ * "App is on latest version" modal. Subscribing here means the tap path,
+ * the popstate path, and the reload path all converge on one signal.
+ *
+ * Two timeouts:
+ *  - 10s detection window: if no installing/waiting worker has appeared by
+ *    then and no other path has fired notifyUpdateAvailable, declare no-update.
+ *    The post-update() state-machine race resolves within 3-5s on even slow
+ *    networks; 10s is generous cover. The UpdateToast remains subscribed
+ *    via the long-lived listener, so a late-arriving install is still
+ *    surfaced — just not by this modal.
+ *  - 60s total cap: once an install is observably in flight, give the
+ *    ~10 MB precache enough time to complete on slow mobile networks.
  */
-export async function checkForUpdate(onDownloading?: () => void): Promise<boolean> {
+export async function checkForUpdate(
+  onDownloading?: () => void,
+  signal?: AbortSignal,
+): Promise<boolean> {
   if (!_registration) return false;
+  if (signal?.aborted) return false;
   const reg = _registration;
   if (reg.waiting) return true;
-
-  // Register an updatefound listener BEFORE calling update() so we don't
-  // miss the event due to a race between update()'s resolve and the
-  // browser's installing-worker assignment. iOS Safari has been seen to
-  // resolve reg.update() before the new SW transitions into `installing`,
-  // which made the old poll-only approach declare "no update" on a real
-  // pending install. Updatefound is the spec-blessed signal here.
-  let updateFoundFired = false;
-  const onUpdateFound = () => { updateFoundFired = true; };
-  reg.addEventListener('updatefound', onUpdateFound);
 
   try {
     await reg.update();
   } catch {
-    reg.removeEventListener('updatefound', onUpdateFound);
     return false;
   }
-
-  if (reg.waiting) {
-    reg.removeEventListener('updatefound', onUpdateFound);
-    return true;
-  }
-
-  // Give the browser up to 3s to assign an installing worker. We bail
-  // early the moment updatefound fires or installing/waiting is set so
-  // the common "no update" path still feels snappy (~50ms typical).
-  const deadline = Date.now() + 3000;
-  while (Date.now() < deadline) {
-    if (reg.waiting) {
-      reg.removeEventListener('updatefound', onUpdateFound);
-      return true;
-    }
-    if (reg.installing || updateFoundFired) break;
-    await new Promise((r) => setTimeout(r, 50));
-  }
-  reg.removeEventListener('updatefound', onUpdateFound);
-  if (!reg.installing && !reg.waiting) return false;
+  if (signal?.aborted) return false;
   if (reg.waiting) return true;
 
-  try { onDownloading?.(); } catch { /* best effort */ }
+  return new Promise<boolean>((resolve) => {
+    let settled = false;
+    let downloadingFired = false;
 
-  return waitForInstall(reg, 90_000);
-}
+    const finish = (value: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(detectionTimeoutId);
+      clearTimeout(totalTimeoutId);
+      clearInterval(installingWatcher);
+      unsubAvailable();
+      signal?.removeEventListener('abort', onAbort);
+      resolve(value);
+    };
 
-/**
- * Wait for the registration to reach `waiting` (install complete). Follows
- * redundant→next-installing transitions caused by overlapping update() calls,
- * which previously made checkForUpdate falsely return "no update" while the
- * background SW lifecycle silently completed the install on the next try.
- */
-async function waitForInstall(
-  reg: ServiceWorkerRegistration,
-  totalMs: number
-): Promise<boolean> {
-  const deadline = Date.now() + totalMs;
+    const onAbort = () => finish(false);
+    signal?.addEventListener('abort', onAbort);
 
-  while (Date.now() < deadline) {
-    if (reg.waiting) return true;
-    const w = reg.installing;
-    if (!w) return !!reg.waiting;
+    // Primary signal: fires when any install (ours, popstate's, or
+    // visibilitychange's) transitions a worker to `installed` (waiting).
+    const unsubAvailable = onUpdateAvailable(() => finish(true));
 
-    const result = await new Promise<'installed' | 'redundant' | 'timeout'>((resolve) => {
-      const remaining = Math.max(0, deadline - Date.now());
-      const t = setTimeout(() => {
-        w.removeEventListener('statechange', onState);
-        resolve('timeout');
-      }, remaining);
-      const onState = () => {
-        if (w.state === 'installed') {
-          clearTimeout(t);
-          w.removeEventListener('statechange', onState);
-          resolve('installed');
-        } else if (w.state === 'redundant') {
-          clearTimeout(t);
-          w.removeEventListener('statechange', onState);
-          resolve('redundant');
-        }
-      };
-      w.addEventListener('statechange', onState);
-    });
+    // Load-bearing for two cases:
+    //  (a) onDownloading callback — fires the moment the browser transitions
+    //      a worker into `installing`. There's no DOM event for that
+    //      null→installing transition on the registration, so we poll.
+    //  (b) First-install fallback — notifyUpdateAvailable in the long-lived
+    //      updatefound listener (line ~314) gates on
+    //      navigator.serviceWorker.controller being truthy, so on a brand-new
+    //      install (no prior controller) it never fires even when the SW
+    //      reaches waiting. The `if (reg.waiting) finish(true)` below is the
+    //      only path that catches that — do NOT remove it as "redundant".
+    const installingWatcher = setInterval(() => {
+      if (settled) return;
+      if (reg.waiting) {
+        finish(true);
+        return;
+      }
+      if (reg.installing && !downloadingFired) {
+        downloadingFired = true;
+        try { onDownloading?.(); } catch { /* best effort */ }
+      }
+    }, 100);
 
-    if (result === 'installed') return true;
-    if (result === 'timeout') return !!reg.waiting;
-    // redundant: loop and pick up whatever new installing worker the
-    // registration now holds (or fall through to no-update if neither).
-  }
-  return !!reg.waiting;
+    // Fast bail when there's nothing to wait on (no update available).
+    const detectionTimeoutId = setTimeout(() => {
+      if (settled) return;
+      if (!reg.installing && !reg.waiting) finish(false);
+    }, 10_000);
+
+    // Hard cap once an install IS in flight — covers slow precache downloads.
+    const totalTimeoutId = setTimeout(() => finish(!!reg.waiting), 60_000);
+  });
 }
 
 /**
