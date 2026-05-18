@@ -1,19 +1,16 @@
 import { api } from './client';
 
-// `navigator.serviceWorker.ready` hangs forever when no SW is registered
-// (post-nuclearReset sw-nuked flag, iOS PWA quirks). Gate on getRegistration()
-// — which resolves fast — instead of `controller`, which is null on legitimate
-// states (first install before controllerchange, after a hard reload, after
-// an SW update is applied) and would silently break user-initiated actions.
-async function getReadyRegistration(timeoutMs = 3000): Promise<ServiceWorkerRegistration | null> {
+// Prefer getRegistration() (returns the registration immediately if one exists)
+// over `ready` (which can hang on hard-reloaded / uncontrolled pages even when
+// an active SW is registered for the scope). Fall back to `ready` only when no
+// registration is found yet — covers the just-registered race window.
+async function getReadyRegistration(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) return null;
-  if (!navigator.serviceWorker.controller) {
-    const reg = await navigator.serviceWorker.getRegistration();
-    if (!reg) return null;
-  }
+  const existing = await navigator.serviceWorker.getRegistration();
+  if (existing) return existing;
   return Promise.race([
     navigator.serviceWorker.ready,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
   ]);
 }
 
@@ -43,6 +40,20 @@ export async function subscribeToPush(): Promise<boolean> {
     return false;
   }
 
+  // iOS Safari PWA: Notification.requestPermission() must run inside the
+  // user-gesture frame. Any `await` before it consumes the gesture and the
+  // prompt silently never appears. Call it first, before VAPID/SW awaits.
+  if (Notification.permission === 'default') {
+    const result = await Notification.requestPermission();
+    if (result !== 'granted') {
+      console.warn('[push] subscribe: permission not granted:', result);
+      return false;
+    }
+  } else if (Notification.permission !== 'granted') {
+    console.warn('[push] subscribe: permission already denied');
+    return false;
+  }
+
   const vapidKey = await getVapidKey();
   if (!vapidKey) {
     console.warn('[push] subscribe: VAPID key fetch failed');
@@ -57,10 +68,16 @@ export async function subscribeToPush(): Promise<boolean> {
   let subscription = await registration.pushManager.getSubscription();
 
   if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
-    });
+    try {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
+      });
+    } catch (err) {
+      const e = err as { name?: string; message?: string };
+      console.warn('[push] subscribe: pushManager.subscribe failed:', e?.name, e?.message);
+      return false;
+    }
   }
 
   const subJson = subscription.toJSON();
