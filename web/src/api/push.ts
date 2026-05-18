@@ -1,20 +1,52 @@
 import { api } from './client';
 
-// `navigator.serviceWorker.ready` hangs forever when no SW is registered
-// (post-nuclearReset sw-nuked flag, iOS PWA quirks). Gate on getRegistration()
-// — which resolves fast — instead of `controller`, which is null on legitimate
-// states (first install before controllerchange, after a hard reload, after
-// an SW update is applied) and would silently break user-initiated actions.
-async function getReadyRegistration(timeoutMs = 3000): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator)) return null;
-  if (!navigator.serviceWorker.controller) {
-    const reg = await navigator.serviceWorker.getRegistration();
-    if (!reg) return null;
+// Get an active SW registration for /macro_app/. swManager normally registers
+// on `window.load`, but on a fresh PWA install (or any code path that reaches
+// here before that listener fires) there's nothing to find. Register on demand
+// so a user-gesture-initiated subscribe never silently fails for missing SW.
+// Returns { reg, debug } where debug describes which state we ended in — so
+// the caller can surface the failure mode in the user-visible toast.
+async function getReadyRegistration(): Promise<{ reg: ServiceWorkerRegistration | null; debug: string }> {
+  if (!('serviceWorker' in navigator)) return { reg: null, debug: 'no-sw-api' };
+  let reg = await navigator.serviceWorker.getRegistration('/macro_app/');
+  let source = 'existing';
+  if (!reg) {
+    try {
+      reg = await navigator.serviceWorker.register('/macro_app/sw.js', { updateViaCache: 'none' });
+      source = 'fresh-register';
+    } catch (err) {
+      const e = err as { name?: string; message?: string };
+      console.warn('[push] register sw.js failed:', e?.name, e?.message);
+      return { reg: null, debug: `register-throw:${e?.name || 'Error'}` };
+    }
   }
-  return Promise.race([
+  if (reg.active) return { reg, debug: `active-${source}` };
+
+  // Wait for an installing worker to finish (or 20s, whichever first).
+  if (reg.installing) {
+    const w = reg.installing;
+    const finalState = await new Promise<string>((resolve) => {
+      const timer = setTimeout(() => resolve(`timeout-state:${w.state}`), 20000);
+      w.addEventListener('statechange', () => {
+        if (w.state === 'activated' || w.state === 'redundant') {
+          clearTimeout(timer);
+          resolve(w.state);
+        }
+      });
+    });
+    if (reg.active) return { reg, debug: `installing->${finalState}-${source}` };
+    return { reg: null, debug: `installing->${finalState}-${source}` };
+  }
+
+  if (reg.waiting) return { reg: null, debug: `stuck-waiting-${source}` };
+
+  // No active, no installing, no waiting — try `ready` once as a last resort.
+  const ready = await Promise.race([
     navigator.serviceWorker.ready,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
   ]);
+  if (ready?.active) return { reg: ready, debug: `late-ready-${source}` };
+  return { reg: null, debug: `no-worker-${source}` };
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -37,43 +69,74 @@ async function getVapidKey(): Promise<string | null> {
   }
 }
 
+export type SubscribeResult =
+  | { ok: true }
+  | { ok: false; reason: string };
+
+// Backwards-compat wrapper for callers that still expect a boolean. New
+// callers should use `subscribeToPushDetailed` to surface the failure reason.
 export async function subscribeToPush(): Promise<boolean> {
+  return (await subscribeToPushDetailed()).ok;
+}
+
+export async function subscribeToPushDetailed(): Promise<SubscribeResult> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.warn('[push] subscribe: browser lacks serviceWorker or PushManager');
-    return false;
+    return { ok: false, reason: 'browser-unsupported' };
+  }
+
+  // iOS Safari PWA: Notification.requestPermission() must run inside the
+  // user-gesture frame. Any `await` before it consumes the gesture and the
+  // prompt silently never appears. Call it first, before VAPID/SW awaits.
+  if (Notification.permission === 'default') {
+    const result = await Notification.requestPermission();
+    if (result !== 'granted') {
+      return { ok: false, reason: `permission:${result}` };
+    }
+  } else if (Notification.permission !== 'granted') {
+    return { ok: false, reason: 'permission:denied' };
   }
 
   const vapidKey = await getVapidKey();
   if (!vapidKey) {
-    console.warn('[push] subscribe: VAPID key fetch failed');
-    return false;
+    return { ok: false, reason: 'vapid-fetch-failed' };
   }
 
-  const registration = await getReadyRegistration();
+  const { reg: registration, debug: regDebug } = await getReadyRegistration();
   if (!registration) {
-    console.warn('[push] subscribe: no service worker registration ready');
-    return false;
+    return { ok: false, reason: `sw-not-ready:${regDebug}` };
   }
   let subscription = await registration.pushManager.getSubscription();
 
   if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
-    });
+    try {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
+      });
+    } catch (err) {
+      const e = err as { name?: string; message?: string };
+      console.warn('[push] subscribe: pushManager.subscribe failed:', e?.name, e?.message);
+      return { ok: false, reason: `subscribe-throw:${e?.name || 'Error'}:${e?.message?.slice(0, 80) || ''}` };
+    }
   }
 
   const subJson = subscription.toJSON();
-  await api.post('/settings/push/subscribe', {
-    endpoint: subJson.endpoint,
-    keys: subJson.keys,
-  });
+  try {
+    await api.post('/settings/push/subscribe', {
+      endpoint: subJson.endpoint,
+      keys: subJson.keys,
+    });
+  } catch (err) {
+    const e = err as { name?: string; message?: string };
+    console.warn('[push] subscribe: server POST failed:', e?.name, e?.message);
+    return { ok: false, reason: `server-post:${e?.name || 'Error'}` };
+  }
 
-  return true;
+  return { ok: true };
 }
 
 export async function unsubscribeFromPush(): Promise<boolean> {
-  const registration = await getReadyRegistration();
+  const { reg: registration } = await getReadyRegistration();
   if (!registration) return false;
 
   const subscription = await registration.pushManager.getSubscription();
@@ -100,7 +163,7 @@ export async function getPushStatus(): Promise<{
   const permission = Notification.permission;
   let subscribed = false;
   try {
-    const registration = await getReadyRegistration();
+    const { reg: registration } = await getReadyRegistration();
     if (registration) {
       const sub = await registration.pushManager.getSubscription();
       subscribed = sub !== null;
