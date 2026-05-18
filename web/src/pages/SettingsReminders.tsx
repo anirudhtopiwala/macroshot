@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Bell } from '../components/icons';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
@@ -68,14 +68,17 @@ export default function SettingsReminders() {
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [pushServerSubscribed, setPushServerSubscribed] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
-  const savedRef = useRef<string>(cachedPrefs ? JSON.stringify(cachedPrefs) : '');
+  // Saved-snapshot must be state (not ref) so that updating it after an
+  // async PUT triggers a re-render — otherwise `dirty` stays stale and the
+  // Save Changes button stays visible until something else re-renders.
+  const [savedSnapshot, setSavedSnapshot] = useState<string>(cachedPrefs ? JSON.stringify(cachedPrefs) : '');
 
-  const dirty = prefs ? JSON.stringify(prefs) !== savedRef.current : false;
+  const dirty = prefs ? JSON.stringify(prefs) !== savedSnapshot : false;
 
   useEffect(() => {
     api.get<Prefs>('/settings/prefs').then((p) => {
       setPrefs(p);
-      savedRef.current = JSON.stringify(p);
+      setSavedSnapshot(JSON.stringify(p));
       setCache('settings_reminders', p);
     }).catch(() => {}).finally(() => setLoading(false));
 
@@ -92,7 +95,7 @@ export default function SettingsReminders() {
     const enabling = !prefs.reminders_on;
     // Save the toggle independently of any unsaved time/timezone edits, so
     // flipping the switch doesn't silently commit other pending changes.
-    const saved: Prefs = JSON.parse(savedRef.current);
+    const saved: Prefs = JSON.parse(savedSnapshot);
     const togglePayload: Prefs = { ...saved, reminders_on: enabling ? 1 : 0 };
     setPrefs({ ...prefs, reminders_on: enabling ? 1 : 0 });
 
@@ -113,7 +116,7 @@ export default function SettingsReminders() {
 
     try {
       await api.put('/settings/prefs', togglePayload);
-      savedRef.current = JSON.stringify(togglePayload);
+      setSavedSnapshot(JSON.stringify(togglePayload));
       setCache('settings_reminders', togglePayload);
       navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_API_CACHE' });
     } catch {
@@ -126,7 +129,7 @@ export default function SettingsReminders() {
     if (!prefs) return;
     try {
       await api.put('/settings/prefs', prefs);
-      savedRef.current = JSON.stringify(prefs);
+      setSavedSnapshot(JSON.stringify(prefs));
       setCache('settings_reminders', prefs);
       navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_API_CACHE' });
       hapticLight();
