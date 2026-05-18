@@ -1,10 +1,10 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { Check, Bell } from '../components/icons';
+import { useEffect, useState, useCallback } from 'react';
+import { Bell } from '../components/icons';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { api } from '../api/client';
-import { subscribeToPush, subscribeToPushDetailed, unsubscribeFromPush, getPushStatus } from '../api/push';
+import { subscribeToPushDetailed, unsubscribeFromPush, getPushStatus } from '../api/push';
 import { hapticLight } from '../utils/haptics';
 import { useToast } from '../components/Toast';
 import { getCached, setCache } from '../utils/apiCache';
@@ -68,14 +68,17 @@ export default function SettingsReminders() {
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [pushServerSubscribed, setPushServerSubscribed] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
-  const savedRef = useRef<string>(cachedPrefs ? JSON.stringify(cachedPrefs) : '');
+  // Saved-snapshot must be state (not ref) so that updating it after an
+  // async PUT triggers a re-render — otherwise `dirty` stays stale and the
+  // Save Changes button stays visible until something else re-renders.
+  const [savedSnapshot, setSavedSnapshot] = useState<string>(cachedPrefs ? JSON.stringify(cachedPrefs) : '');
 
-  const dirty = prefs ? JSON.stringify(prefs) !== savedRef.current : false;
+  const dirty = prefs ? JSON.stringify(prefs) !== savedSnapshot : false;
 
   useEffect(() => {
     api.get<Prefs>('/settings/prefs').then((p) => {
       setPrefs(p);
-      savedRef.current = JSON.stringify(p);
+      setSavedSnapshot(JSON.stringify(p));
       setCache('settings_reminders', p);
     }).catch(() => {}).finally(() => setLoading(false));
 
@@ -90,30 +93,77 @@ export default function SettingsReminders() {
   const toggleReminders = async () => {
     if (!prefs) return;
     const enabling = !prefs.reminders_on;
-    const updatedPrefs = { ...prefs, reminders_on: enabling ? 1 : 0 };
-    setPrefs(updatedPrefs);
+    // Save the toggle independently of any unsaved time/timezone edits, so
+    // flipping the switch doesn't silently commit other pending changes.
+    const previousSnapshot = savedSnapshot;
+    const saved: Prefs = JSON.parse(savedSnapshot);
+    const togglePayload: Prefs = { ...saved, reminders_on: enabling ? 1 : 0 };
+    const togglePayloadJson = JSON.stringify(togglePayload);
+    // Optimistically update snapshot so `dirty` doesn't flash true during the
+    // async PUT — the Save Changes button must not appear for a pure toggle.
+    setPrefs({ ...prefs, reminders_on: enabling ? 1 : 0 });
+    setSavedSnapshot(togglePayloadJson);
 
+    let subscribedHere = false;
+    let unsubscribedHere = false;
     if (enabling && pushSupported && !(pushSubscribed && pushServerSubscribed)) {
       setPushLoading(true);
       try {
-        const ok = await subscribeToPush();
-        if (ok) { setPushSubscribed(true); setPushServerSubscribed(true); setPushPermission('granted'); }
+        const result = await subscribeToPushDetailed();
+        if (result.ok) {
+          subscribedHere = true;
+          setPushSubscribed(true); setPushServerSubscribed(true); setPushPermission('granted');
+        }
         else if (Notification.permission === 'denied') {
           setPushPermission('denied');
         } else {
-          // Subscribe failed - user will see the warning banner
+          toast(`Could not enable push (${result.reason})`, 'error');
         }
-      } catch { /* */ } finally { setPushLoading(false); }
+      } catch (e) {
+        console.warn('[reminders] subscribe threw:', e);
+      } finally { setPushLoading(false); }
     } else if (!enabling && pushSubscribed) {
-      try { await unsubscribeFromPush(); setPushSubscribed(false); setPushServerSubscribed(false); } catch { /* */ }
+      try {
+        await unsubscribeFromPush();
+        unsubscribedHere = true;
+        setPushSubscribed(false);
+        setPushServerSubscribed(false);
+      } catch (e) {
+        console.warn('[reminders] unsubscribe threw:', e);
+      }
     }
 
     try {
-      await api.put('/settings/prefs', updatedPrefs);
-      savedRef.current = JSON.stringify(updatedPrefs);
+      await api.put('/settings/prefs', togglePayload);
+      setCache('settings_reminders', togglePayload);
       navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_API_CACHE' });
     } catch {
-      setPrefs(prefs);
+      // Revert only the toggled field, preserving any concurrent meal-time
+      // or timezone edits the user made while the PUT was in flight.
+      setPrefs(p => p ? { ...p, reminders_on: enabling ? 0 : 1 } : p);
+      setSavedSnapshot(previousSnapshot);
+      // Symmetric push-state rollback: undo whatever side-effect this toggle
+      // produced on the push subscription, otherwise the user is left with
+      // reminders_on=1 but no subscription (disable rollback) or a stale
+      // server subscription for reminders_on=0 (enable rollback).
+      if (subscribedHere) {
+        unsubscribeFromPush().catch((e) => console.warn('[reminders] rollback unsubscribe failed:', e));
+        setPushSubscribed(false);
+        setPushServerSubscribed(false);
+      } else if (unsubscribedHere) {
+        // Best-effort re-subscribe. Permission is still granted from before,
+        // and we're inside the same `toggleReminders` call so no new user
+        // gesture is required for the browser-side subscribe. If this fails,
+        // the user will see the warning banner prompting them to re-enable.
+        subscribeToPushDetailed().then((r) => {
+          if (r.ok) {
+            setPushSubscribed(true);
+            setPushServerSubscribed(true);
+          } else {
+            console.warn('[reminders] rollback re-subscribe failed:', r.reason);
+          }
+        }).catch((e) => console.warn('[reminders] rollback re-subscribe threw:', e));
+      }
       toast('Failed to save reminder setting', 'error');
     }
   };
@@ -122,7 +172,7 @@ export default function SettingsReminders() {
     if (!prefs) return;
     try {
       await api.put('/settings/prefs', prefs);
-      savedRef.current = JSON.stringify(prefs);
+      setSavedSnapshot(JSON.stringify(prefs));
       setCache('settings_reminders', prefs);
       navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_API_CACHE' });
       hapticLight();
@@ -214,7 +264,10 @@ export default function SettingsReminders() {
                   } else {
                     toast(`Could not enable push (${result.reason})`, 'error');
                   }
-                } catch { toast('Could not enable push', 'error'); }
+                } catch (e) {
+                  const err = e as { name?: string; message?: string };
+                  toast(`Push error: ${err?.name || 'Error'}`, 'error');
+                }
                 finally { setPushLoading(false); }
               }}
             >
@@ -243,15 +296,18 @@ export default function SettingsReminders() {
           </div>
         )}
 
-        {/* Save */}
-        <Button
-          variant={dirty ? 'primary' : 'secondary'}
-          className="w-full"
-          onClick={savePrefs}
-          disabled={!dirty}
-        >
-          {dirty ? 'Save Changes' : <><Check className="w-3.5 h-3.5" /> Saved</>}
-        </Button>
+        {/* Save — only shown when there are unsaved timezone/meal-time edits.
+            The Push reminders toggle saves itself on flip, so it never needs
+            this button. */}
+        {dirty && (
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={savePrefs}
+          >
+            Save Changes
+          </Button>
+        )}
       </div>
     </div>
   );
