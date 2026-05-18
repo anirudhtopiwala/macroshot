@@ -12,6 +12,11 @@ async function getReadyRegistration(): Promise<{ reg: ServiceWorkerRegistration 
   let source = 'existing';
   if (!reg) {
     try {
+      // Intentionally re-registers even after a nuclearReset() set the
+      // `sw-nuked` flag. swManager skips its load-time register to avoid a
+      // controllerchange→reload loop, but this path runs inside a user-
+      // gesture subscribe and does not reload, so it's safe to bring the SW
+      // back here.
       reg = await navigator.serviceWorker.register('/macro_app/sw.js', { updateViaCache: 'none' });
       source = 'fresh-register';
     } catch (err) {
