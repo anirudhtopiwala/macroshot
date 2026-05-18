@@ -60,6 +60,12 @@ export default defineConfig({
       manifest: false,
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,wasm,mjs}'],
+        // reset.html is intentionally 404'd by the backend (B21 security
+        // block — prevents hostile links from wiping device data). It must
+        // not be in the SW precache manifest, otherwise install fetches it,
+        // gets 404, throws, and the SW goes redundant — which silently
+        // breaks push subscribe on iOS PWA. See src/web/app.py:_SPA_BLOCKED_PATHS.
+        globIgnores: ['reset.html'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),

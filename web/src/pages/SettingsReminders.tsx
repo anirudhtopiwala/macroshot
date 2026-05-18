@@ -4,7 +4,7 @@ import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { api } from '../api/client';
-import { subscribeToPush, unsubscribeFromPush, getPushStatus } from '../api/push';
+import { subscribeToPush, subscribeToPushDetailed, unsubscribeFromPush, getPushStatus } from '../api/push';
 import { hapticLight } from '../utils/haptics';
 import { useToast } from '../components/Toast';
 import { getCached, setCache } from '../utils/apiCache';
@@ -199,8 +199,12 @@ export default function SettingsReminders() {
               onClick={async () => {
                 setPushLoading(true);
                 try {
-                  const ok = await subscribeToPush();
-                  if (ok) {
+                  // This is the explicit diagnostic surface — surface the
+                  // failure reason in the toast so a user (or we, debugging
+                  // their report) can see which step broke without needing
+                  // Safari remote-debugger on iOS PWA.
+                  const result = await subscribeToPushDetailed();
+                  if (result.ok) {
                     setPushSubscribed(true);
                     setPushServerSubscribed(true);
                     setPushPermission('granted');
@@ -208,7 +212,7 @@ export default function SettingsReminders() {
                   } else if (Notification.permission === 'denied') {
                     setPushPermission('denied');
                   } else {
-                    toast('Could not enable push - try again', 'error');
+                    toast(`Could not enable push (${result.reason})`, 'error');
                   }
                 } catch { toast('Could not enable push', 'error'); }
                 finally { setPushLoading(false); }
