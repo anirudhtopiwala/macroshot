@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Check, Bell } from '../components/icons';
+import { Bell } from '../components/icons';
 import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -90,8 +90,11 @@ export default function SettingsReminders() {
   const toggleReminders = async () => {
     if (!prefs) return;
     const enabling = !prefs.reminders_on;
-    const updatedPrefs = { ...prefs, reminders_on: enabling ? 1 : 0 };
-    setPrefs(updatedPrefs);
+    // Save the toggle independently of any unsaved time/timezone edits, so
+    // flipping the switch doesn't silently commit other pending changes.
+    const saved: Prefs = JSON.parse(savedRef.current);
+    const togglePayload: Prefs = { ...saved, reminders_on: enabling ? 1 : 0 };
+    setPrefs({ ...prefs, reminders_on: enabling ? 1 : 0 });
 
     if (enabling && pushSupported && !(pushSubscribed && pushServerSubscribed)) {
       setPushLoading(true);
@@ -109,8 +112,9 @@ export default function SettingsReminders() {
     }
 
     try {
-      await api.put('/settings/prefs', updatedPrefs);
-      savedRef.current = JSON.stringify(updatedPrefs);
+      await api.put('/settings/prefs', togglePayload);
+      savedRef.current = JSON.stringify(togglePayload);
+      setCache('settings_reminders', togglePayload);
       navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_API_CACHE' });
     } catch {
       setPrefs(prefs);
@@ -239,15 +243,18 @@ export default function SettingsReminders() {
           </div>
         )}
 
-        {/* Save */}
-        <Button
-          variant={dirty ? 'primary' : 'secondary'}
-          className="w-full"
-          onClick={savePrefs}
-          disabled={!dirty}
-        >
-          {dirty ? 'Save Changes' : <><Check className="w-3.5 h-3.5" /> Saved</>}
-        </Button>
+        {/* Save — only shown when there are unsaved timezone/meal-time edits.
+            The Push reminders toggle saves itself on flip, so it never needs
+            this button. */}
+        {dirty && (
+          <Button
+            variant="primary"
+            className="w-full"
+            onClick={savePrefs}
+          >
+            Save Changes
+          </Button>
+        )}
       </div>
     </div>
   );
