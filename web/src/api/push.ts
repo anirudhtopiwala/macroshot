@@ -4,25 +4,49 @@ import { api } from './client';
 // on `window.load`, but on a fresh PWA install (or any code path that reaches
 // here before that listener fires) there's nothing to find. Register on demand
 // so a user-gesture-initiated subscribe never silently fails for missing SW.
-async function getReadyRegistration(): Promise<ServiceWorkerRegistration | null> {
-  if (!('serviceWorker' in navigator)) return null;
+// Returns { reg, debug } where debug describes which state we ended in — so
+// the caller can surface the failure mode in the user-visible toast.
+async function getReadyRegistration(): Promise<{ reg: ServiceWorkerRegistration | null; debug: string }> {
+  if (!('serviceWorker' in navigator)) return { reg: null, debug: 'no-sw-api' };
   let reg = await navigator.serviceWorker.getRegistration('/macro_app/');
+  let source = 'existing';
   if (!reg) {
     try {
       reg = await navigator.serviceWorker.register('/macro_app/sw.js', { updateViaCache: 'none' });
+      source = 'fresh-register';
     } catch (err) {
       const e = err as { name?: string; message?: string };
       console.warn('[push] register sw.js failed:', e?.name, e?.message);
-      return null;
+      return { reg: null, debug: `register-throw:${e?.name || 'Error'}` };
     }
   }
-  if (reg.active) return reg;
-  // Wait up to 10s for install→activate. Fresh PWA installs can be slow.
+  if (reg.active) return { reg, debug: `active-${source}` };
+
+  // Wait for an installing worker to finish (or 20s, whichever first).
+  if (reg.installing) {
+    const w = reg.installing;
+    const finalState = await new Promise<string>((resolve) => {
+      const timer = setTimeout(() => resolve(`timeout-state:${w.state}`), 20000);
+      w.addEventListener('statechange', () => {
+        if (w.state === 'activated' || w.state === 'redundant') {
+          clearTimeout(timer);
+          resolve(w.state);
+        }
+      });
+    });
+    if (reg.active) return { reg, debug: `installing->${finalState}-${source}` };
+    return { reg: null, debug: `installing->${finalState}-${source}` };
+  }
+
+  if (reg.waiting) return { reg: null, debug: `stuck-waiting-${source}` };
+
+  // No active, no installing, no waiting — try `ready` once as a last resort.
   const ready = await Promise.race([
     navigator.serviceWorker.ready,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000)),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),
   ]);
-  return ready ?? null;
+  if (ready?.active) return { reg: ready, debug: `late-ready-${source}` };
+  return { reg: null, debug: `no-worker-${source}` };
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
@@ -77,9 +101,9 @@ export async function subscribeToPushDetailed(): Promise<SubscribeResult> {
     return { ok: false, reason: 'vapid-fetch-failed' };
   }
 
-  const registration = await getReadyRegistration();
+  const { reg: registration, debug: regDebug } = await getReadyRegistration();
   if (!registration) {
-    return { ok: false, reason: 'sw-not-ready' };
+    return { ok: false, reason: `sw-not-ready:${regDebug}` };
   }
   let subscription = await registration.pushManager.getSubscription();
 
@@ -112,7 +136,7 @@ export async function subscribeToPushDetailed(): Promise<SubscribeResult> {
 }
 
 export async function unsubscribeFromPush(): Promise<boolean> {
-  const registration = await getReadyRegistration();
+  const { reg: registration } = await getReadyRegistration();
   if (!registration) return false;
 
   const subscription = await registration.pushManager.getSubscription();
@@ -139,7 +163,7 @@ export async function getPushStatus(): Promise<{
   const permission = Notification.permission;
   let subscribed = false;
   try {
-    const registration = await getReadyRegistration();
+    const { reg: registration } = await getReadyRegistration();
     if (registration) {
       const sub = await registration.pushManager.getSubscription();
       subscribed = sub !== null;
