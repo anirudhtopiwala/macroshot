@@ -95,9 +95,14 @@ export default function SettingsReminders() {
     const enabling = !prefs.reminders_on;
     // Save the toggle independently of any unsaved time/timezone edits, so
     // flipping the switch doesn't silently commit other pending changes.
+    const previousSnapshot = savedSnapshot;
     const saved: Prefs = JSON.parse(savedSnapshot);
     const togglePayload: Prefs = { ...saved, reminders_on: enabling ? 1 : 0 };
+    const togglePayloadJson = JSON.stringify(togglePayload);
+    // Optimistically update snapshot so `dirty` doesn't flash true during the
+    // async PUT — the Save Changes button must not appear for a pure toggle.
     setPrefs({ ...prefs, reminders_on: enabling ? 1 : 0 });
+    setSavedSnapshot(togglePayloadJson);
 
     if (enabling && pushSupported && !(pushSubscribed && pushServerSubscribed)) {
       setPushLoading(true);
@@ -116,11 +121,11 @@ export default function SettingsReminders() {
 
     try {
       await api.put('/settings/prefs', togglePayload);
-      setSavedSnapshot(JSON.stringify(togglePayload));
       setCache('settings_reminders', togglePayload);
       navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_API_CACHE' });
     } catch {
       setPrefs(prefs);
+      setSavedSnapshot(previousSnapshot);
       toast('Failed to save reminder setting', 'error');
     }
   };

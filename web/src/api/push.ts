@@ -1,17 +1,28 @@
 import { api } from './client';
 
-// Prefer getRegistration() (returns the registration immediately if one exists)
-// over `ready` (which can hang on hard-reloaded / uncontrolled pages even when
-// an active SW is registered for the scope). Fall back to `ready` only when no
-// registration is found yet — covers the just-registered race window.
+// Get an active SW registration for /macro_app/. swManager normally registers
+// on `window.load`, but on a fresh PWA install (or any code path that reaches
+// here before that listener fires) there's nothing to find. Register on demand
+// so a user-gesture-initiated subscribe never silently fails for missing SW.
 async function getReadyRegistration(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) return null;
-  const existing = await navigator.serviceWorker.getRegistration();
-  if (existing) return existing;
-  return Promise.race([
+  let reg = await navigator.serviceWorker.getRegistration('/macro_app/');
+  if (!reg) {
+    try {
+      reg = await navigator.serviceWorker.register('/macro_app/sw.js', { updateViaCache: 'none' });
+    } catch (err) {
+      const e = err as { name?: string; message?: string };
+      console.warn('[push] register sw.js failed:', e?.name, e?.message);
+      return null;
+    }
+  }
+  if (reg.active) return reg;
+  // Wait up to 10s for install→activate. Fresh PWA installs can be slow.
+  const ready = await Promise.race([
     navigator.serviceWorker.ready,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 10000)),
   ]);
+  return ready ?? null;
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
