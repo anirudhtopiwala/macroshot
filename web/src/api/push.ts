@@ -45,10 +45,19 @@ async function getVapidKey(): Promise<string | null> {
   }
 }
 
+export type SubscribeResult =
+  | { ok: true }
+  | { ok: false; reason: string };
+
+// Backwards-compat wrapper for callers that still expect a boolean. New
+// callers should use `subscribeToPushDetailed` to surface the failure reason.
 export async function subscribeToPush(): Promise<boolean> {
+  return (await subscribeToPushDetailed()).ok;
+}
+
+export async function subscribeToPushDetailed(): Promise<SubscribeResult> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.warn('[push] subscribe: browser lacks serviceWorker or PushManager');
-    return false;
+    return { ok: false, reason: 'browser-unsupported' };
   }
 
   // iOS Safari PWA: Notification.requestPermission() must run inside the
@@ -57,24 +66,20 @@ export async function subscribeToPush(): Promise<boolean> {
   if (Notification.permission === 'default') {
     const result = await Notification.requestPermission();
     if (result !== 'granted') {
-      console.warn('[push] subscribe: permission not granted:', result);
-      return false;
+      return { ok: false, reason: `permission:${result}` };
     }
   } else if (Notification.permission !== 'granted') {
-    console.warn('[push] subscribe: permission already denied');
-    return false;
+    return { ok: false, reason: 'permission:denied' };
   }
 
   const vapidKey = await getVapidKey();
   if (!vapidKey) {
-    console.warn('[push] subscribe: VAPID key fetch failed');
-    return false;
+    return { ok: false, reason: 'vapid-fetch-failed' };
   }
 
   const registration = await getReadyRegistration();
   if (!registration) {
-    console.warn('[push] subscribe: no service worker registration ready');
-    return false;
+    return { ok: false, reason: 'sw-not-ready' };
   }
   let subscription = await registration.pushManager.getSubscription();
 
@@ -87,17 +92,23 @@ export async function subscribeToPush(): Promise<boolean> {
     } catch (err) {
       const e = err as { name?: string; message?: string };
       console.warn('[push] subscribe: pushManager.subscribe failed:', e?.name, e?.message);
-      return false;
+      return { ok: false, reason: `subscribe-throw:${e?.name || 'Error'}:${e?.message?.slice(0, 80) || ''}` };
     }
   }
 
   const subJson = subscription.toJSON();
-  await api.post('/settings/push/subscribe', {
-    endpoint: subJson.endpoint,
-    keys: subJson.keys,
-  });
+  try {
+    await api.post('/settings/push/subscribe', {
+      endpoint: subJson.endpoint,
+      keys: subJson.keys,
+    });
+  } catch (err) {
+    const e = err as { name?: string; message?: string };
+    console.warn('[push] subscribe: server POST failed:', e?.name, e?.message);
+    return { ok: false, reason: `server-post:${e?.name || 'Error'}` };
+  }
 
-  return true;
+  return { ok: true };
 }
 
 export async function unsubscribeFromPush(): Promise<boolean> {

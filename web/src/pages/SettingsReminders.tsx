@@ -4,7 +4,7 @@ import BackButton from '../components/BackButton';
 import Button from '../components/Button';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { api } from '../api/client';
-import { subscribeToPush, unsubscribeFromPush, getPushStatus } from '../api/push';
+import { subscribeToPushDetailed, unsubscribeFromPush, getPushStatus } from '../api/push';
 import { hapticLight } from '../utils/haptics';
 import { useToast } from '../components/Toast';
 import { getCached, setCache } from '../utils/apiCache';
@@ -107,12 +107,12 @@ export default function SettingsReminders() {
     if (enabling && pushSupported && !(pushSubscribed && pushServerSubscribed)) {
       setPushLoading(true);
       try {
-        const ok = await subscribeToPush();
-        if (ok) { setPushSubscribed(true); setPushServerSubscribed(true); setPushPermission('granted'); }
+        const result = await subscribeToPushDetailed();
+        if (result.ok) { setPushSubscribed(true); setPushServerSubscribed(true); setPushPermission('granted'); }
         else if (Notification.permission === 'denied') {
           setPushPermission('denied');
         } else {
-          // Subscribe failed - user will see the warning banner
+          toast(`Push failed: ${result.reason}`, 'error');
         }
       } catch { /* */ } finally { setPushLoading(false); }
     } else if (!enabling && pushSubscribed) {
@@ -211,8 +211,8 @@ export default function SettingsReminders() {
               onClick={async () => {
                 setPushLoading(true);
                 try {
-                  const ok = await subscribeToPush();
-                  if (ok) {
+                  const result = await subscribeToPushDetailed();
+                  if (result.ok) {
                     setPushSubscribed(true);
                     setPushServerSubscribed(true);
                     setPushPermission('granted');
@@ -220,9 +220,12 @@ export default function SettingsReminders() {
                   } else if (Notification.permission === 'denied') {
                     setPushPermission('denied');
                   } else {
-                    toast('Could not enable push - try again', 'error');
+                    toast(`Push failed: ${result.reason}`, 'error');
                   }
-                } catch { toast('Could not enable push', 'error'); }
+                } catch (e) {
+                  const err = e as { name?: string; message?: string };
+                  toast(`Push error: ${err?.name || 'Error'}`, 'error');
+                }
                 finally { setPushLoading(false); }
               }}
             >
