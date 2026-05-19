@@ -27,7 +27,7 @@ cryptography>=47.0.0,<48.0.0
 # passlib: 1.7.x is the only stable line; 2.x is unreleased. Pin upper bound
 # so a pre-release doesn't get pulled in from requirements.txt unhashed.
 passlib[bcrypt]>=1.7.4,<2.0.0
-python-multipart>=0.0.7,<1.0.0
+python-multipart>=0.0.29,<1.0.0
 # Pillow: CVE-2023-50447 fixed in 10.2; CVE-2024-28219 in 10.3; further
 # advisories in 10.4. CVE-2026-25990 / 40192 / 42308-42311 fixed in
 # 12.1.1 / 12.2.0 (audited 2026-05). Floor bumped to 12.2.0 to clear
