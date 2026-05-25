@@ -140,8 +140,13 @@ export default function TargetWizard() {
   // in the DB without ever seeing the popup.
   const [newBadges, setNewBadges] = useState<NewBadge[]>([]);
   const pendingNavRef = useRef<(() => void) | null>(null);
+  const macrosCardRef = useRef<HTMLDivElement>(null);
 
   const session = useTargetSession();
+
+  const scrollToMacros = () => {
+    macrosCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   // Load the user's saved unit preference in every mode - onboarding users
   // may have visited before and set imperial, and we want BodySliders to
@@ -650,7 +655,7 @@ export default function TargetWizard() {
 
         {/* Step 3: AI Recommendation + Edit */}
         {step === 3 && (
-          <div className="glass-card p-8">
+          <div ref={macrosCardRef} className="glass-card p-8" style={{ scrollMarginTop: 16 }}>
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4">
               <Sparkles className="w-6 h-6 text-emerald-400" />
             </div>
@@ -730,6 +735,7 @@ export default function TargetWizard() {
                     disabled={session.refining}
                     placeholder="Refine your targets..."
                     expanded
+                    onScrollToMacros={scrollToMacros}
                   />
                 </div>
 
