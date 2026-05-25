@@ -9,6 +9,10 @@ interface Message {
   /** When true on an assistant message, render a "Macros updated" pill
    *  below the bubble so the user knows to scroll up to the totals. */
   macrosUpdated?: boolean;
+  /** When true on an assistant message, the model replied but did not
+   *  propose new numbers - show a small inline hint so the user knows
+   *  why the totals above didn't move. */
+  noUpdateHint?: boolean;
 }
 
 interface CorrectionLimitInfo {
@@ -125,6 +129,14 @@ function ChatBubble({
       </div>
       {message.role === 'assistant' && message.macrosUpdated && (
         <MacrosUpdatedPill onTap={onScrollToMacros} isLatest={isLatestAssistant} />
+      )}
+      {message.role === 'assistant' && message.noUpdateHint && (
+        <p
+          className="mt-1.5 text-[11px] italic max-w-[85%]"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          The numbers above didn't change. Try a more specific change, e.g. "set protein to 200g" or "I'm training for a marathon".
+        </p>
       )}
     </div>
   );

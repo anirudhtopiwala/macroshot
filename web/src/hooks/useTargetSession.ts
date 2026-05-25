@@ -5,6 +5,8 @@ import type { Targets } from '../types';
 interface ChatMessage {
   role: 'user' | 'assistant';
   text: string;
+  macrosUpdated?: boolean;
+  noUpdateHint?: boolean;
 }
 
 export function useTargetSession() {
@@ -45,10 +47,19 @@ export function useTargetSession() {
     try {
       setMessages((prev) => [...prev, { role: 'user', text }]);
       const res = await targetsApi.refine(sessionId, text);
+      const hadTargets = !!res.targets;
       if (res.targets) setTargets(res.targets);
       if (res.explanation) setExplanation(res.explanation);
       if (res.reply_text) {
-        setMessages((prev) => [...prev, { role: 'assistant', text: res.reply_text }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            text: res.reply_text,
+            macrosUpdated: hadTargets,
+            noUpdateHint: !hadTargets,
+          },
+        ]);
       }
       if (res.error) setError(res.error);
       return res;

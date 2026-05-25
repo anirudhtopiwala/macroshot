@@ -17,6 +17,7 @@ from src.gemini import (
     _response_to_targets,
     gemini_analyze_meal,
     gemini_eod_check,
+    gemini_suggest_targets,
 )
 
 
@@ -919,3 +920,177 @@ class TestQuestionsField:
         })
         result = _extract_json(raw)
         assert result["questions"] == []
+
+
+# ---------------------------------------------------------------------------
+# gemini_suggest_targets — single-call structured-output path
+# ---------------------------------------------------------------------------
+
+
+def _make_client_cls_for_target_call(text: str):
+    """Patch genai.Client so the single call returns a fake response with the given text."""
+    resp = _make_response([{"text": text}])
+    mock_aclient = AsyncMock()
+    mock_aclient.models.generate_content = AsyncMock(return_value=resp)
+
+    mock_aio = MagicMock()
+    mock_aio.__aenter__ = AsyncMock(return_value=mock_aclient)
+    mock_aio.__aexit__ = AsyncMock(return_value=False)
+
+    mock_client = MagicMock()
+    mock_client.aio = mock_aio
+    return MagicMock(return_value=mock_client), mock_aclient
+
+
+_INITIAL_TARGETS_PAYLOAD = {
+    "reply_text": "Based on your stats, I'd recommend 2100 calories, 160g protein, 230g carbs, 65g fat.",
+    "targets_changed": True,
+    "calories": 2100,
+    "protein": 160,
+    "carbs": 230,
+    "fat": 65,
+    "explanation": "Maintains weight at your stated activity level.",
+    "profile": {"age": 28, "sex": "male", "weight_kg": 82.0, "height_cm": 180.0},
+}
+
+
+@pytest.mark.asyncio
+class TestGeminiSuggestTargets:
+    """Single structured-output call: chat reply + optional target update."""
+
+    async def test_targets_changed_true_populates_targets(self):
+        """Initial suggest: model returns targets_changed=true with valid numbers."""
+        client_cls, mock_aclient = _make_client_cls_for_target_call(
+            json.dumps(_INITIAL_TARGETS_PAYLOAD)
+        )
+        conversation: list[dict] = []
+
+        with patch("src.gemini.genai.Client", client_cls), \
+             patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
+            reply, parsed = await gemini_suggest_targets(
+                user_context="33yo male, 82kg, maintain weight",
+                conversation=conversation,
+            )
+
+        assert mock_aclient.models.generate_content.call_count == 1, \
+            "Single structured call - no second extraction"
+        assert parsed is not None
+        assert parsed["calories"] == 2100
+        assert parsed["protein"] == 160
+        assert "2100" in reply
+        # The conversation must store reply_text only, never the JSON payload.
+        assert conversation[-1]["role"] == "model"
+        assert conversation[-1]["text"] == _INITIAL_TARGETS_PAYLOAD["reply_text"]
+        assert "targets_changed" not in conversation[-1]["text"]
+
+    async def test_marathon_refine_emits_new_targets(self):
+        """Regression: 'I am preparing for a marathon' must produce new numbers, not a 'I'll recalculate' stall."""
+        marathon_payload = {
+            "reply_text": "Marathon training - I'd bump you to 3000 calories, 130g protein, 410g carbs, 80g fat.",
+            "targets_changed": True,
+            "calories": 3000,
+            "protein": 130,
+            "carbs": 410,
+            "fat": 80,
+            "explanation": "Higher carbs to fuel endurance training.",
+            "profile": None,
+        }
+        client_cls, _ = _make_client_cls_for_target_call(json.dumps(marathon_payload))
+        # Prior conversation: initial suggest already happened.
+        conversation = [
+            {"role": "user", "text": "My profile: age 33, male, 82 kg\n\nmaintain weight"},
+            {"role": "model", "text": "I'd recommend 2800 calories, 158g protein, 320g carbs, 88g fat."},
+        ]
+
+        with patch("src.gemini.genai.Client", client_cls), \
+             patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
+            reply, parsed = await gemini_suggest_targets(
+                user_context="I am preparing for a marathon",
+                conversation=conversation,
+            )
+
+        assert parsed is not None, "Marathon turn must update targets - this is the bug we're fixing"
+        assert parsed["calories"] == 3000
+        assert parsed["carbs"] == 410
+        assert "marathon" in reply.lower()
+
+    async def test_targets_changed_false_keeps_targets_null(self):
+        """Informational question: model sets targets_changed=false, no update."""
+        info_payload = {
+            "reply_text": "Fiber is a non-digestible carbohydrate that supports gut health and satiety.",
+            "targets_changed": False,
+            "calories": None,
+            "protein": None,
+            "carbs": None,
+            "fat": None,
+            "explanation": None,
+            "profile": None,
+        }
+        client_cls, _ = _make_client_cls_for_target_call(json.dumps(info_payload))
+        conversation = [
+            {"role": "user", "text": "intro"},
+            {"role": "model", "text": "I'd recommend 2100 calories, 160g protein, 230g carbs, 65g fat."},
+        ]
+
+        with patch("src.gemini.genai.Client", client_cls), \
+             patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
+            reply, parsed = await gemini_suggest_targets(
+                user_context="what does fiber do?",
+                conversation=conversation,
+            )
+
+        assert parsed is None, "Info-only turn must not overwrite targets"
+        assert "fiber" in reply.lower()
+
+    async def test_targets_changed_true_with_insane_numbers_rejected(self):
+        """Hallucination protection: sanity bounds reject calories outside the 1200-6000 window."""
+        bad_payload = {
+            **_INITIAL_TARGETS_PAYLOAD,
+            "calories": 99999,  # way outside _MAX_CALORIES
+        }
+        client_cls, _ = _make_client_cls_for_target_call(json.dumps(bad_payload))
+
+        with patch("src.gemini.genai.Client", client_cls), \
+             patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
+            reply, parsed = await gemini_suggest_targets(
+                user_context="set my targets",
+                conversation=[],
+            )
+
+        assert parsed is None, "Sanity bounds must reject hallucinated calories"
+        # reply_text still surfaces so the user isn't stranded
+        assert reply  # non-empty
+
+    async def test_non_json_output_treated_as_no_update(self):
+        """If the model violates response_schema and emits plain prose, treat as conversational with no target update."""
+        client_cls, _ = _make_client_cls_for_target_call(
+            "Sorry, I had trouble formatting that. Could you rephrase?"
+        )
+        conversation: list[dict] = []
+
+        with patch("src.gemini.genai.Client", client_cls), \
+             patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
+            reply, parsed = await gemini_suggest_targets(
+                user_context="hi",
+                conversation=conversation,
+            )
+
+        assert parsed is None
+        assert "Sorry" in reply
+        # The fallback still appends a model turn so the conversation stays well-formed.
+        assert conversation[-1]["role"] == "model"
+
+    async def test_call_uses_response_schema(self):
+        """The single call must be configured with response_mime_type=application/json and a response_schema."""
+        client_cls, mock_aclient = _make_client_cls_for_target_call(
+            json.dumps(_INITIAL_TARGETS_PAYLOAD)
+        )
+
+        with patch("src.gemini.genai.Client", client_cls), \
+             patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
+            await gemini_suggest_targets(user_context="hi", conversation=[])
+
+        kwargs = mock_aclient.models.generate_content.call_args_list[0][1]
+        config = kwargs["config"]
+        assert getattr(config, "response_mime_type", None) == "application/json"
+        assert getattr(config, "response_schema", None) is not None
