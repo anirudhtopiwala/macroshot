@@ -414,3 +414,61 @@ def test_build_context_unknown_goal():
     req = TargetSuggestRequest(goal="custom_goal")
     ctx = _build_context(req)
     assert "custom_goal" in ctx
+
+
+# ── seed_message wiring (refine-flow lazy-suggest) ────────────────────
+
+
+@pytest.mark.asyncio
+@patch("src.web.routes.targets.gemini_suggest_targets", new_callable=AsyncMock)
+async def test_suggest_seed_message_threaded_into_context(mock_gemini, auth_client):
+    """seed_message is appended to user_context so the initial Gemini call
+    already factors in the user's first refine message."""
+    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED, True)
+
+    resp = await auth_client.post(f"{API}/settings/targets/suggest", json={
+        "age": 30, "sex": "male", "weight_kg": 75, "height_cm": 178,
+        "goal": "maintain", "activity_level": "active",
+        "seed_message": "I'm training for a marathon, bump my carbs",
+    })
+    assert resp.status_code == 200
+
+    # First positional or kw arg passed to gemini_suggest_targets is user_context.
+    call = mock_gemini.call_args
+    user_context = call.kwargs.get("user_context") if call.kwargs else call.args[0]
+    assert "Training for a marathon" in user_context or "training for a marathon" in user_context
+    assert "User's first message:" in user_context
+
+
+@pytest.mark.asyncio
+@patch("src.web.routes.targets.gemini_suggest_targets", new_callable=AsyncMock)
+async def test_suggest_without_seed_message_unchanged(mock_gemini, auth_client):
+    """Omitting seed_message preserves the legacy context shape (no
+    'User's first message:' marker) so the onboarding flow is untouched."""
+    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED, True)
+
+    resp = await auth_client.post(f"{API}/settings/targets/suggest", json={
+        "age": 30, "sex": "male", "weight_kg": 75, "height_cm": 178,
+        "goal": "maintain", "activity_level": "active",
+    })
+    assert resp.status_code == 200
+    call = mock_gemini.call_args
+    user_context = call.kwargs.get("user_context") if call.kwargs else call.args[0]
+    assert "User's first message:" not in user_context
+
+
+@pytest.mark.asyncio
+@patch("src.web.routes.targets.gemini_suggest_targets", new_callable=AsyncMock)
+async def test_suggest_seed_message_whitespace_only_ignored(mock_gemini, auth_client):
+    """Whitespace-only seed_message is treated as not provided (no marker)."""
+    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED, True)
+
+    resp = await auth_client.post(f"{API}/settings/targets/suggest", json={
+        "age": 30, "sex": "male", "weight_kg": 75, "height_cm": 178,
+        "goal": "maintain", "activity_level": "active",
+        "seed_message": "   ",
+    })
+    assert resp.status_code == 200
+    call = mock_gemini.call_args
+    user_context = call.kwargs.get("user_context") if call.kwargs else call.args[0]
+    assert "User's first message:" not in user_context

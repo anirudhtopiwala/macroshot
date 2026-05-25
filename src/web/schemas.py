@@ -313,6 +313,11 @@ class TargetSuggestRequest(BaseModel):
     activity_level: str = "lightly_active"
     workouts_per_week: int | None = None
     weight_change_rate_kg: float | None = None
+    # Optional first-turn user message folded into the Gemini prompt so the
+    # AI's initial suggestion already reflects the user's stated intent
+    # (e.g. "I'm training for a marathon, give me more carbs"). Used by the
+    # refine flow to avoid the legacy two-step suggest→refine round-trip.
+    seed_message: str | None = Field(default=None, max_length=2000)
 
 
 class TargetRefineRequest(BaseModel):
