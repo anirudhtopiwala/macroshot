@@ -1,0 +1,60 @@
+[
+  {
+    "dish_id": "dish_1562871537",
+    "source": "dish_metadata_cafe2",
+    "image_view_c": "data/images/dish_1562871537_view_c.jpg",
+    "image_overhead": "data/images/dish_1562871537_overhead.png",
+    "ground_truth": {
+      "totals": {
+        "calories": 685.772949,
+        "mass_g": 554.0,
+        "fat_g": 30.779623,
+        "carb_g": 53.014832,
+        "protein_g": 50.176342
+      },
+      "ingredients": [
+        {"name": "squash",           "grams": 86.8,  "calories": 17.8,  "fat_g": 0.0,  "carb_g": 0.0,  "protein_g": 0.8},
+        {"name": "white rice",       "grams": 93.0,  "calories": 120.9, "fat_g": 0.0,  "carb_g": 0.0,  "protein_g": 2.5},
+        {"name": "grilled chicken",  "grams": 161.0, "calories": 364.2, "fat_g": 0.0,  "carb_g": 0.0,  "protein_g": 36.4},
+        {"name": "pepper",           "grams": 0.1,   "calories": 0.0,   "fat_g": 0.0,  "carb_g": 0.0,  "protein_g": 0.0},
+        {"name": "cheese pizza",     "grams": 47.0,  "calories": 125.0, "fat_g": 0.0,  "carb_g": 0.0,  "protein_g": 5.3},
+        {"name": "salt",             "grams": 0.6,   "calories": 0.0,   "fat_g": 0.0,  "carb_g": 0.0,  "protein_g": 0.0},
+        {"name": "brussels sprouts", "grams": 47.2,  "calories": 20.3,  "fat_g": 0.0,  "carb_g": 0.0,  "protein_g": 1.6},
+        {"name": "olive oil",        "grams": 1.3,   "calories": 11.8,  "fat_g": 0.0,  "carb_g": 0.0,  "protein_g": 0.0},
+        {"name": "mushroom",         "grams": 117.0, "calories": 25.7,  "fat_g": 0.0,  "carb_g": 0.0,  "protein_g": 3.6}
+      ]
+    },
+    "ingredient_list_paper1_format": "squash; white rice; grilled chicken; pepper; cheese pizza; salt; brussels sprouts; olive oil; mushroom",
+    "text_descriptions": {
+      "terse": "had grilled chicken with white rice, mushrooms, squash, brussels sprouts, and a slice of cheese pizza",
+      "detailed": "lunch was about a palm-sized portion of grilled chicken, around a cup of white rice, a side of sauteed mushrooms, some roasted squash, a few brussels sprouts, and a slice of cheese pizza"
+    }
+  },
+  {
+    "dish_id": "dish_1566931620",
+    "source": "dish_metadata_cafe2",
+    "image_view_c": "data/images/dish_1566931620_view_c.jpg",
+    "image_overhead": "data/images/dish_1566931620_overhead.png",
+    "ground_truth": {
+      "totals": {
+        "calories": 494.579987,
+        "mass_g": 461.0,
+        "fat_g": 26.081001,
+        "carb_g": 22.006001,
+        "protein_g": 48.034
+      },
+      "ingredients": [
+        {"name": "avocado",      "grams": 72.0,  "calories": 115.2, "fat_g": 10.8, "carb_g": 6.5, "protein_g": 1.4},
+        {"name": "olives",       "grams": 91.0,  "calories": 104.7, "fat_g": 9.7,  "carb_g": 5.7, "protein_g": 0.7},
+        {"name": "mixed greens", "grams": 91.0,  "calories": 25.5,  "fat_g": 0.4,  "carb_g": 4.8, "protein_g": 2.0},
+        {"name": "chicken",      "grams": 136.0, "calories": 224.4, "fat_g": 4.9,  "carb_g": 0.0, "protein_g": 42.2},
+        {"name": "broccoli",     "grams": 71.0,  "calories": 24.9,  "fat_g": 0.3,  "carb_g": 5.0, "protein_g": 1.7}
+      ]
+    },
+    "ingredient_list_paper1_format": "avocado; olives; mixed greens; chicken; broccoli",
+    "text_descriptions": {
+      "terse": "had a chicken salad with avocado, olives, broccoli, and mixed greens",
+      "detailed": "lunch was a salad bowl with about a palm-sized portion of grilled chicken, half an avocado, a handful of black olives, some steamed broccoli florets, and a generous bed of mixed greens"
+    }
+  }
+]

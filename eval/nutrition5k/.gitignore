@@ -1,0 +1,4 @@
+data/images/
+runs/
+__pycache__/
+*.pyc
