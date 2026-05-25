@@ -290,7 +290,7 @@ function ChallengeCard({ challenge, onTap }: { challenge: Challenge; onTap: () =
 
 export default function Achievements() {
   const { isPremium } = useSubscription();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const cached = getCached<AchievementsResponse>('achievements');
   const cachedChallenges = getCached<ChallengesResponse>('challenges');
   const [data, setData] = useState<AchievementsResponse | null>(cached);
@@ -337,8 +337,30 @@ export default function Achievements() {
     return () => { cancelled = true; };
   }, []);
 
-  // Auto-scroll to section
+  // Auto-scroll to section, OR deep-link to a specific badge: ?badge=<id>
+  // scrolls to the badges section and opens that badge's detail popup.
+  // Used by BadgeCelebration's "View" so users land on the badge they just
+  // earned, not just somewhere on the page.
+  const deepLinkedRef = useRef<string | null>(null);
   useEffect(() => {
+    if (loading) return;
+    const badgeId = searchParams.get('badge');
+    if (badgeId && deepLinkedRef.current !== badgeId) {
+      const all = data?.badges || [];
+      const target = all.find((b) => b.badge_id === badgeId);
+      if (target) {
+        deepLinkedRef.current = badgeId;
+        setTimeout(() => badgeSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
+        // Open the detail popup just after the scroll kicks off so the user
+        // doesn't have to hunt for the card themselves.
+        setTimeout(() => setSelectedBadge(target), 450);
+        // Strip the deep-link param so a later refresh / back-nav doesn't
+        // re-pop the modal after the user closes it. The ref guards against
+        // re-firing the open in the same lifetime; this guards across mounts.
+        setSearchParams({}, { replace: true });
+        return;
+      }
+    }
     const section = searchParams.get('section');
     if (section === 'shields' && shieldSectionRef.current) {
       setTimeout(() => shieldSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
@@ -347,7 +369,7 @@ export default function Achievements() {
     } else if (section === 'milestones' && milestoneSectionRef.current) {
       setTimeout(() => milestoneSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300);
     }
-  }, [searchParams, loading]);
+  }, [searchParams, loading, data, setSearchParams]);
 
   const badges = data?.badges || [];
   const earned = badges.filter((b) => b.tier >= 0).length;

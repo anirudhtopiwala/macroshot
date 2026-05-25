@@ -57,7 +57,7 @@ export default function BadgeCelebration({ badges, onDone, onView }: Props) {
     fadeTimerRef.current = setTimeout(onDone, 400);
   }, [onDone]);
 
-  const handleViewAchievements = useCallback(() => {
+  const handleViewAchievements = useCallback((badgeId?: string) => {
     clearTimeout(timerRef.current);
     clearTimeout(fadeTimerRef.current);
     // Let the parent settle any pre-navigation state (e.g. onboarding flag)
@@ -66,7 +66,13 @@ export default function BadgeCelebration({ badges, onDone, onView }: Props) {
     // Run onDone next so any parent-side navigation in onDone doesn't
     // clobber our navigate to the achievements page.
     onDone();
-    navigate('/settings/achievements?section=badges');
+    // Deep-link to a specific badge when we know which one was tapped so the
+    // achievements page can scroll to it and open the detail popup. Falls back
+    // to the badges section when no id is given (e.g. multi-badge "View All").
+    const target = badgeId
+      ? `/settings/achievements?badge=${encodeURIComponent(badgeId)}`
+      : '/settings/achievements?section=badges';
+    navigate(target);
   }, [navigate, onDone, onView]);
 
   useEffect(() => {
@@ -141,7 +147,7 @@ export default function BadgeCelebration({ badges, onDone, onView }: Props) {
                 ? `0 0 80px ${color}80, 0 0 140px ${color}40, 0 0 200px ${color}15`
                 : `0 0 50px ${color}60, 0 0 100px ${color}20`,
             }}
-            onClick={handleViewAchievements}
+            onClick={() => handleViewAchievements(badge.badge_id)}
           >
             <span
               className={`text-5xl ${isStreakHighTier ? 'animate-pulse' : ''}`}
@@ -177,12 +183,12 @@ export default function BadgeCelebration({ badges, onDone, onView }: Props) {
           <p className="text-lg font-bold text-white">
             {isMilestone ? 'Milestone Unlocked!' : (badge.is_new ? 'Badge Unlocked!' : 'Badge Upgraded!')}
           </p>
-          <p className="text-base font-semibold cursor-pointer" style={{ color }} onClick={handleViewAchievements}>{badge.name}</p>
+          <p className="text-base font-semibold cursor-pointer" style={{ color }} onClick={() => handleViewAchievements(badge.badge_id)}>{badge.name}</p>
 
           {/* Action buttons */}
           <div className="flex items-center gap-3 mt-2">
             <button
-              onClick={handleViewAchievements}
+              onClick={() => handleViewAchievements(badge.badge_id)}
               className="px-5 py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
               style={{
                 background: `${color}15`,
@@ -247,7 +253,7 @@ export default function BadgeCelebration({ badges, onDone, onView }: Props) {
               <div
                 key={badge.badge_id}
                 className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl cursor-pointer active:scale-95 transition-transform"
-                onClick={handleViewAchievements}
+                onClick={() => handleViewAchievements(badge.badge_id)}
                 style={{
                   background: `${color}10`,
                   border: `1px solid ${color}30`,
@@ -282,7 +288,7 @@ export default function BadgeCelebration({ badges, onDone, onView }: Props) {
         {/* Action buttons */}
         <div className="flex items-center gap-3 mt-1">
           <button
-            onClick={handleViewAchievements}
+            onClick={() => handleViewAchievements()}
             className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95"
             style={{
               background: 'rgba(255,255,255,0.08)',
