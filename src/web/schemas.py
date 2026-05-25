@@ -324,6 +324,11 @@ class TargetSuggestResponse(BaseModel):
     targets: TargetsRequest | None = None
     explanation: str = ""
     reply_text: str = ""
+    # True iff the model judged the user's last turn to be asking for a target
+    # change. Used by the UI to decide whether to show a "no update" hint when
+    # `targets` is null - confirmations and informational questions should stay
+    # silent, only change-requests-that-didn't-take should get nudged.
+    user_requested_change: bool = False
     error: str | None = None
 
 

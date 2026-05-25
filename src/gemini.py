@@ -314,33 +314,48 @@ The totals must equal the sum of item values. The user will review and may send 
 TARGET_CHAT_SYSTEM_PROMPT = """\
 You are a friendly, knowledgeable nutrition coach helping set personalised daily macro targets.
 
-Guidelines:
-- Be conversational, helpful, and concise (2-4 sentences per reply).
-- If the user's message already contains goal + activity level + body stats (age, sex, weight, height), calculate targets immediately on the first reply. DO NOT ask clarifying questions about the provided fields.
-- "Activity level" refers to the user's daily lifestyle / non-exercise movement (NEAT). "Workouts per week" is a separate measure of structured training volume. A sedentary activity level with frequent workouts is a normal, valid combination - do not treat it as contradictory.
-- CRITICAL: Never invent details the user did not state. Do NOT assume or mention a specific job (construction, office, nurse, etc.), sport, lifestyle, or any other context beyond the exact fields provided. When referencing their activity, use only the generic level they gave (e.g. "very active lifestyle", not "construction job").
-- Only ask a clarifying question if a required field (weight, height, age, sex, goal, or activity level) is genuinely missing.
-- State targets clearly in natural language, e.g. "I'd recommend 2100 calories, 160g protein, 230g carbs, 65g fat."
-- Base calculations on Mifflin-St Jeor for BMR with appropriate activity multipliers, then add a small bump per workout/week on top of the NEAT multiplier.
-- Protein: 1.6-2.2g/kg for active individuals, adjust for goal.
-- Fat: 25-35% of calories. Fill remaining with carbs.
+You return STRUCTURED JSON with these fields:
+- reply_text: the conversational reply shown to the user (2-4 sentences, friendly, natural language - never JSON or code).
+- targets_changed: boolean. True iff this turn produces new daily macro targets that should replace the current ones.
+- user_requested_change: boolean. True iff the user's most recent message was asking for or implying a target change. This is independent of whether YOU produced new numbers - see below.
+- calories, protein, carbs, fat: numbers. Set ONLY when targets_changed=true.
+- explanation: one short sentence summarising why these targets fit the user. Set ONLY when targets_changed=true.
+- profile: any profile fields the user just stated or revised (age, sex, weight_kg, height_cm). May be omitted or null.
+
+SET targets_changed=true WHEN:
+- The user just stated their initial goal + body stats - emit the initial targets.
+- The user revised a goal (cut/bulk/maintain/recomp), sport, training event (e.g. marathon training, lifting program), or training load.
+- The user revised a body stat (weight, age, height, sex) or activity level.
+- The user asked for a specific change ("more protein", "lower carbs", "bump calories by 200").
+
+SET targets_changed=false WHEN:
+- The user is asking an informational question ("what does fiber do?", "is creatine safe?").
+- The user is chatting / venting / not asking for a change.
+- A required field is genuinely missing AND you cannot make a reasonable assumption.
+- The user is confirming or asking about targets you already proposed ("does this look right?", "are you sure?", "thanks") - reply naturally, do not re-emit targets.
+
+SET user_requested_change=true WHEN:
+- The user's message asked for or implied a target change, even if you didn't produce new numbers this turn (e.g. you asked a clarifying question instead).
+
+SET user_requested_change=false WHEN:
+- The user asked an informational question, made small talk, or is confirming / questioning prior targets ("does this look right?", "thanks").
+- Note: it is normal for user_requested_change=true and targets_changed=true together. It is unusual for user_requested_change=true and targets_changed=false - only do that when you literally cannot compute targets without more information.
+
+NEVER say "I'll recalculate", "let me adjust those", "we'll need to adjust" without actually emitting the new numbers in this SAME response. If you intend to recalculate, do it now in this turn with targets_changed=true and the four numbers filled in.
+
+Conversational guidelines (apply to reply_text):
+- 2-4 sentences. Friendly, encouraging but honest. No JSON, no code blocks.
+- When targets_changed=true, state the numbers naturally in reply_text, e.g. "Based on marathon training, I'd recommend 3000 calories, 130g protein, 410g carbs, 80g fat."
+- "Activity level" = the user's daily lifestyle / NEAT. "Workouts per week" = structured training volume. A sedentary lifestyle with frequent workouts is a valid combination - do not flag it as contradictory.
+- Never invent details the user did not state - no assumed job, sport, lifestyle beyond what they wrote. Use only the generic level they gave (e.g. "very active lifestyle", not "construction job").
+- Only ask a clarifying question if a required field (weight, height, age, sex, goal, activity level) is genuinely missing.
+
+Calculation guidelines:
+- Mifflin-St Jeor for BMR, then activity multiplier on NEAT, then a small bump per workout/week on top.
+- Protein: 1.6-2.2 g/kg for active individuals, adjusted for goal.
+- Fat: 25-35% of calories. Remainder goes to carbs.
 - Calories must be >= 1200 (women) / 1500 (men). Never suggest extreme deficits.
-- protein*4 + carbs*4 + fat*9 should approximately equal total calories.
-- When the user provides new information that changes the calculation, ALWAYS recalculate and state the updated numbers.
-- Be encouraging but honest.
-
-IMPORTANT: Always respond in natural language. Never output raw JSON or code blocks.\
-"""
-
-TARGET_EXTRACT_PROMPT = """\
-Based on the nutrition coaching conversation below, extract the latest agreed-upon daily macro targets.
-If the coach suggested specific targets and the user hasn't rejected them, use the most recent ones.
-If no specific targets were discussed yet, set has_targets to false.
-
-Conversation:
-{conversation_summary}
-
-Current user profile: {profile_summary}\
+- protein*4 + carbs*4 + fat*9 should approximately equal total calories.\
 """
 
 
@@ -417,108 +432,25 @@ def _build_profile_summary(user_profile: dict | None) -> str:
     return ", ".join(parts) if parts else "No profile data available."
 
 
-def _should_extract_targets(text: str) -> bool:
-    """Heuristic: does the conversational reply likely contain macro targets?"""
-    import re
-    has_calorie_number = bool(re.search(r'\b\d{3,4}\s*(?:cal|kcal|calories)', text, re.IGNORECASE))
-    has_macro_keyword = bool(re.search(r'\b(?:protein|carbs?|fat)\b.*\b\d+\s*g', text, re.IGNORECASE))
-    has_recommend = bool(re.search(r'\b(?:recommend|suggest|target|goal|aim|set|updated|recalculated|adjusted)\b', text, re.IGNORECASE))
-    return (has_calorie_number or has_macro_keyword) and has_recommend
-
-
-def _conversation_summary(conversation: list[dict]) -> str:
-    """Build a concise summary for the extraction prompt."""
-    lines = []
-    for turn in conversation:
-        role = "User" if turn["role"] == "user" else "Coach"
-        text = turn["text"]
-        # Strip system prompt from first turn
-        if role == "User" and "\nUser: " in text:
-            text = text.split("\nUser: ", 1)[1]
-        lines.append(f"{role}: {text}")
-    return "\n".join(lines)
-
-
-async def _extract_targets_structured(
-    conversation: list[dict],
-    user_profile: dict | None,
-) -> dict | None:
-    """Call 2: Extract structured targets from conversation using response_schema."""
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        return None
-
-    summary = _conversation_summary(conversation)
-    profile_str = _build_profile_summary(user_profile)
-    prompt = TARGET_EXTRACT_PROMPT.format(
-        conversation_summary=summary,
-        profile_summary=profile_str,
-    )
-
-    config = types.GenerateContentConfig(
-        temperature=0.1,
-        max_output_tokens=512,
-        response_mime_type="application/json",
-        response_schema=types.Schema(
-            type="OBJECT",
-            properties={
-                "has_targets": types.Schema(type="BOOLEAN"),
-                "calories": types.Schema(type="NUMBER"),
-                "protein": types.Schema(type="NUMBER"),
-                "carbs": types.Schema(type="NUMBER"),
-                "fat": types.Schema(type="NUMBER"),
-                "explanation": types.Schema(type="STRING"),
-                "profile": types.Schema(
-                    type="OBJECT",
-                    properties={
-                        "age": types.Schema(type="NUMBER", nullable=True),
-                        "weight_kg": types.Schema(type="NUMBER", nullable=True),
-                        "height_cm": types.Schema(type="NUMBER", nullable=True),
-                        "sex": types.Schema(type="STRING", nullable=True),
-                    },
-                ),
-            },
-            required=["has_targets"],
-        ),
-    )
-
-    try:
-        async with _GEMINI_SEM:
-            client = genai.Client(api_key=api_key)
-            async with client.aio as aclient:
-                response = await asyncio.wait_for(
-                    aclient.models.generate_content(
-                        model="gemini-2.5-flash-lite",
-                        contents=[types.Content(role="user", parts=[types.Part(text=prompt)])],
-                        config=config,
-                    ),
-                    timeout=15.0,
-                )
-        text = _extract_response_text(response)
-        if not text:
-            return None
-        raw = json.loads(text)
-        if not raw.get("has_targets"):
-            return None
-        # Validate through sanity checks
-        return _response_to_targets(json.dumps(raw))
-    except Exception as e:
-        logger.warning("Target extraction failed: %s", e)
-        return None
-
-
 async def gemini_suggest_targets(
     user_context: str,
     conversation: list[dict],
     db_path: str | None = None,
     user_id: int = 0,
     user_profile: dict | None = None,
-) -> tuple[str, dict | None]:
-    """Two-call target-setting: conversational reply + structured extraction.
+) -> tuple[str, dict | None, bool]:
+    """Single structured-output call: conversational reply + optional new targets.
 
-    Call 1: Conversational response (system prompt = nutrition coach, no JSON).
-    Call 2: Structured extraction (only if reply contains macro keywords).
-    Returns (conversational_reply, parsed_targets_or_None).
+    The model returns a JSON object with `reply_text`, `targets_changed`, and
+    `user_requested_change`. When `targets_changed` is true, the four macro
+    numbers are also populated. This replaces the older two-call (chat →
+    extraction) flow whose regex gate could silently drop a turn where the
+    model said "I'll recalculate" without emitting numbers.
+
+    Returns (conversational_reply, parsed_targets_or_None, user_requested_change).
+    The conversation list is mutated in place: the user turn is appended on
+    entry, the model turn (reply_text only - never the raw JSON) is appended
+    on success.
     """
     profile_summary = _build_profile_summary(user_profile)
 
@@ -530,10 +462,9 @@ async def gemini_suggest_targets(
         # Subsequent turns: re-inject context to prevent loss at turn 15+
         conversation.append({"role": "user", "text": f"[My profile: {profile_summary}]\n\n{user_context}"})
 
-    # Call 1: Conversational response
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        return "Sorry, AI is not configured.", None
+        return "Sorry, AI is not configured.", None, False
 
     if db_path:
         from src.web.budget_gate import assert_gemini_budget
@@ -544,6 +475,31 @@ async def gemini_suggest_targets(
         temperature=0.4,
         max_output_tokens=1024,
         system_instruction=TARGET_CHAT_SYSTEM_PROMPT,
+        response_mime_type="application/json",
+        response_schema=types.Schema(
+            type="OBJECT",
+            properties={
+                "reply_text": types.Schema(type="STRING"),
+                "targets_changed": types.Schema(type="BOOLEAN"),
+                "user_requested_change": types.Schema(type="BOOLEAN"),
+                "calories": types.Schema(type="NUMBER", nullable=True),
+                "protein": types.Schema(type="NUMBER", nullable=True),
+                "carbs": types.Schema(type="NUMBER", nullable=True),
+                "fat": types.Schema(type="NUMBER", nullable=True),
+                "explanation": types.Schema(type="STRING", nullable=True),
+                "profile": types.Schema(
+                    type="OBJECT",
+                    nullable=True,
+                    properties={
+                        "age": types.Schema(type="NUMBER", nullable=True),
+                        "weight_kg": types.Schema(type="NUMBER", nullable=True),
+                        "height_cm": types.Schema(type="NUMBER", nullable=True),
+                        "sex": types.Schema(type="STRING", nullable=True),
+                    },
+                ),
+            },
+            required=["reply_text", "targets_changed", "user_requested_change"],
+        ),
     )
 
     try:
@@ -561,10 +517,8 @@ async def gemini_suggest_targets(
     except Exception as e:
         raise RuntimeError(f"Target chat failed: {e}") from e
 
-    reply_text = _extract_response_text(response)
-    conversation.append({"role": "model", "text": reply_text})
+    raw_text = _extract_response_text(response)
 
-    # Log Call 1
     if db_path and response:
         try:
             from src.db import log_gemini_call
@@ -577,12 +531,36 @@ async def gemini_suggest_targets(
         except Exception:
             pass
 
-    # Call 2: Only if the reply likely contains targets
-    parsed = None
-    if _should_extract_targets(reply_text):
-        parsed = await _extract_targets_structured(conversation, user_profile)
+    try:
+        payload = json.loads(raw_text) if raw_text else {}
+    except (ValueError, TypeError):
+        # Model violated response_schema - treat the whole output as a
+        # conversational reply with no target update.
+        logger.warning("Target chat returned non-JSON despite response_schema; user_id=%s", user_id)
+        conversation.append({"role": "model", "text": raw_text})
+        return raw_text, None, False
 
-    return reply_text, parsed
+    reply_text = str(payload.get("reply_text") or "").strip()
+    if not reply_text:
+        # Schema satisfied but reply was empty - surface a friendly fallback.
+        reply_text = "Sorry, I couldn't generate a reply just now - could you try rephrasing?"
+    conversation.append({"role": "model", "text": reply_text})
+
+    user_requested_change = bool(payload.get("user_requested_change"))
+
+    if not payload.get("targets_changed"):
+        return reply_text, None, user_requested_change
+
+    parsed = _response_to_targets(json.dumps({
+        "calories": payload.get("calories"),
+        "protein": payload.get("protein"),
+        "carbs": payload.get("carbs"),
+        "fat": payload.get("fat"),
+        "explanation": payload.get("explanation") or "",
+        "profile": payload.get("profile") or {},
+    }))
+
+    return reply_text, parsed, user_requested_change
 
 
 def build_reference_hint(

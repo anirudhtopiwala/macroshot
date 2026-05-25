@@ -83,7 +83,7 @@ GEMINI_RAW_TEXT = json.dumps(GEMINI_RESPONSE_PARSED)
 @patch("src.web.routes.targets.gemini_suggest_targets", new_callable=AsyncMock)
 async def test_suggest_success(mock_gemini, auth_client):
     """Happy path: Gemini returns valid targets."""
-    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED)
+    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED, True)
 
     resp = await auth_client.post(f"{API}/settings/targets/suggest", json={
         "age": 28, "sex": "male", "weight_kg": 82, "height_cm": 180,
@@ -137,7 +137,7 @@ async def test_suggest_gemini_failure_returns_error_not_500(mock_gemini, auth_cl
 @patch("src.web.routes.targets.gemini_suggest_targets", new_callable=AsyncMock)
 async def test_suggest_no_parsed_targets(mock_gemini, auth_client):
     """Gemini returns text but no parseable targets (asks clarifying question)."""
-    mock_gemini.return_value = ("I need more info. What's your current weight?", None)
+    mock_gemini.return_value = ("I need more info. What's your current weight?", None, True)
 
     resp = await auth_client.post(f"{API}/settings/targets/suggest", json={
         "goal": "lose_weight", "activity_level": "lightly_active",
@@ -159,7 +159,7 @@ async def test_suggest_saves_conversation_with_system_prompt(mock_gemini, auth_c
     def side_effect(user_context, conversation, **kwargs):
         conversation.append({"role": "user", "text": "SYSTEM_PROMPT + " + user_context})
         conversation.append({"role": "model", "text": GEMINI_RAW_TEXT})
-        return (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED)
+        return (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED, True)
 
     mock_gemini.side_effect = side_effect
 
@@ -178,7 +178,7 @@ async def test_suggest_saves_conversation_with_system_prompt(mock_gemini, auth_c
 @patch("src.web.routes.targets.gemini_suggest_targets", new_callable=AsyncMock)
 async def test_suggest_saves_profile_from_gemini(mock_gemini, auth_client):
     """Profile data extracted by Gemini is saved to the user profile."""
-    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED)
+    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED, True)
 
     await auth_client.post(f"{API}/settings/targets/suggest", json={
         "goal": "maintain", "activity_level": "active",
@@ -193,7 +193,7 @@ async def test_suggest_saves_profile_from_gemini(mock_gemini, auth_client):
 @patch("src.web.routes.targets.gemini_suggest_targets", new_callable=AsyncMock)
 async def test_suggest_minimal_request(mock_gemini, auth_client):
     """Sending only defaults (no optional fields) doesn't crash."""
-    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED)
+    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED, True)
 
     resp = await auth_client.post(f"{API}/settings/targets/suggest", json={})
     assert resp.status_code == 200
@@ -218,7 +218,7 @@ async def test_refine_success(mock_gemini, auth_client):
     def suggest_side_effect(user_context, conversation, **kw):
         conversation.append({"role": "user", "text": "initial prompt + " + user_context})
         conversation.append({"role": "model", "text": GEMINI_RAW_TEXT})
-        return (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED)
+        return (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED, True)
 
     mock_gemini.side_effect = suggest_side_effect
     resp = await auth_client.post(f"{API}/settings/targets/suggest", json={
@@ -232,7 +232,7 @@ async def test_refine_success(mock_gemini, auth_client):
     def refine_side_effect(user_context, conversation, **kw):
         conversation.append({"role": "user", "text": user_context})
         conversation.append({"role": "model", "text": json.dumps(refined)})
-        return (json.dumps(refined), refined)
+        return (json.dumps(refined), refined, True)
 
     mock_gemini.side_effect = refine_side_effect
     resp = await auth_client.post(f"{API}/settings/targets/suggest/{session_id}/refine", json={
@@ -279,7 +279,7 @@ async def test_refine_wrong_session_type(auth_client):
 @patch("src.web.routes.targets.gemini_suggest_targets", new_callable=AsyncMock)
 async def test_accept_saves_targets(mock_gemini, auth_client):
     """Accept saves the provided targets to user_targets."""
-    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED)
+    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED, True)
 
     resp = await auth_client.post(f"{API}/settings/targets/suggest", json={
         "goal": "maintain", "activity_level": "active",
@@ -331,7 +331,7 @@ async def test_accept_wrong_session_type(auth_client):
 @patch("src.web.routes.targets.gemini_suggest_targets", new_callable=AsyncMock)
 async def test_cross_user_cannot_access_session(mock_gemini, override_db):
     """User B cannot refine or accept User A's session."""
-    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED)
+    mock_gemini.return_value = (GEMINI_RAW_TEXT, GEMINI_RESPONSE_PARSED, True)
 
     # Create User A
     user_a_id = await create_web_user(override_db, "userA@example.com")

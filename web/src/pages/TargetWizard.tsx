@@ -140,8 +140,13 @@ export default function TargetWizard() {
   // in the DB without ever seeing the popup.
   const [newBadges, setNewBadges] = useState<NewBadge[]>([]);
   const pendingNavRef = useRef<(() => void) | null>(null);
+  const macrosCardRef = useRef<HTMLDivElement>(null);
 
   const session = useTargetSession();
+
+  const scrollToMacros = () => {
+    macrosCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   // Load the user's saved unit preference in every mode - onboarding users
   // may have visited before and set imperial, and we want BodySliders to
@@ -385,7 +390,7 @@ export default function TargetWizard() {
 
         {/* Step 0: Welcome (onboarding only) */}
         {step === 0 && (
-          <div className="glass-card p-8 text-center">
+          <div className="glass-card py-6 px-4 sm:px-6 text-center">
             <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center mx-auto mb-6">
               <Target className="w-8 h-8 text-emerald-400" />
             </div>
@@ -406,7 +411,7 @@ export default function TargetWizard() {
 
         {/* Step 1: About You */}
         {step === 1 && (
-          <div className="glass-card p-8">
+          <div className="glass-card py-6 px-4 sm:px-6">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: 'var(--bg-elevated)' }}>
               <User className="w-6 h-6" style={{ color: 'var(--text-secondary)' }} />
             </div>
@@ -490,7 +495,7 @@ export default function TargetWizard() {
           const recPct = ((recommended - rateMin) / (rateMax - rateMin)) * 100;
 
           return (
-          <div className="glass-card p-8">
+          <div className="glass-card py-6 px-4 sm:px-6">
             <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-4" style={{ background: 'var(--bg-elevated)' }}>
               <Target className="w-6 h-6 text-emerald-400" />
             </div>
@@ -650,7 +655,7 @@ export default function TargetWizard() {
 
         {/* Step 3: AI Recommendation + Edit */}
         {step === 3 && (
-          <div className="glass-card p-8">
+          <div ref={macrosCardRef} className="glass-card py-6 px-4 sm:px-6" style={{ scrollMarginTop: 16 }}>
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4">
               <Sparkles className="w-6 h-6 text-emerald-400" />
             </div>
@@ -730,6 +735,7 @@ export default function TargetWizard() {
                     disabled={session.refining}
                     placeholder="Refine your targets..."
                     expanded
+                    onScrollToMacros={scrollToMacros}
                   />
                 </div>
 
@@ -761,7 +767,7 @@ export default function TargetWizard() {
 
         {/* Step 4: Trial welcome (onboarding only) */}
         {step === 4 && (
-          <div className="glass-card p-8 text-center">
+          <div className="glass-card py-6 px-4 sm:px-6 text-center">
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6" style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)' }}>
               <Sparkles className="w-8 h-8" style={{ color: '#f59e0b' }} />
             </div>
@@ -834,7 +840,7 @@ export default function TargetWizard() {
           const ipadDevice = isIpad();
           const nativeAvailable = canNativeInstall();
           return (
-            <div className="glass-card p-8">
+            <div className="glass-card py-6 px-4 sm:px-6">
               <div
                 className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
                 style={{ background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}
