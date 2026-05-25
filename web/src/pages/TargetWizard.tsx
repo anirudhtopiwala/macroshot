@@ -655,7 +655,7 @@ export default function TargetWizard() {
 
         {/* Step 3: AI Recommendation + Edit */}
         {step === 3 && (
-          <div ref={macrosCardRef} className="glass-card p-8" style={{ scrollMarginTop: 16 }}>
+          <div ref={macrosCardRef} className="glass-card py-6 px-4 sm:px-6" style={{ scrollMarginTop: 16 }}>
             <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4">
               <Sparkles className="w-6 h-6 text-emerald-400" />
             </div>
