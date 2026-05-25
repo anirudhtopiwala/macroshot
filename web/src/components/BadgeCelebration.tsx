@@ -25,9 +25,13 @@ const MILESTONE_BADGE_IDS = new Set([
 interface Props {
   badges: NewBadge[];
   onDone: () => void;
+  // Fires synchronously just before navigating to the achievements page when
+  // the user taps "View". Lets the parent settle any state (e.g. mark the
+  // user onboarded) so the navigate isn't bounced by a route guard.
+  onView?: () => void;
 }
 
-export default function BadgeCelebration({ badges, onDone }: Props) {
+export default function BadgeCelebration({ badges, onDone, onView }: Props) {
   const navigate = useNavigate();
   const [phase, setPhase] = useState<'show' | 'fading'>('show');
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -56,11 +60,14 @@ export default function BadgeCelebration({ badges, onDone }: Props) {
   const handleViewAchievements = useCallback(() => {
     clearTimeout(timerRef.current);
     clearTimeout(fadeTimerRef.current);
-    // Run onDone first so any parent-side navigation in onDone doesn't
+    // Let the parent settle any pre-navigation state (e.g. onboarding flag)
+    // before the route changes — otherwise a route guard may bounce us back.
+    onView?.();
+    // Run onDone next so any parent-side navigation in onDone doesn't
     // clobber our navigate to the achievements page.
     onDone();
     navigate('/settings/achievements?section=badges');
-  }, [navigate, onDone]);
+  }, [navigate, onDone, onView]);
 
   useEffect(() => {
     // Auto-dismiss after 4s for multi-badge, 3s for single
