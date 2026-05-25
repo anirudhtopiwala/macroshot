@@ -88,6 +88,16 @@ export default function BadgeCelebration({ badges, onDone, onView }: Props) {
     return () => { document.body.style.overflow = ''; };
   }, []);
 
+  // Escape dismisses the modal so keyboard-only users aren't trapped. Gated
+  // on a visible modal so we don't add a stray window listener on empty
+  // renders or during the fade-out (where it would re-fire onDone).
+  useEffect(() => {
+    if (badges.length === 0 || phase === 'fading') return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleDismiss(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [handleDismiss, badges.length, phase]);
+
   if (badges.length === 0) return null;
 
   // Single badge view
@@ -102,7 +112,7 @@ export default function BadgeCelebration({ badges, onDone, onView }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={isMilestone ? 'Milestone unlocked' : (badge.is_new ? 'Badge unlocked' : 'Badge upgraded')}
-        className={`celebration-overlay fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-[400ms] ${
+        className={`celebration-overlay fixed inset-0 z-[210] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-[400ms] ${
           phase === 'fading' ? 'opacity-0' : 'opacity-100'
         }`}
         onClick={handleDismiss}
@@ -202,7 +212,7 @@ export default function BadgeCelebration({ badges, onDone, onView }: Props) {
   // Multi-badge grid view
   return (
     <div
-      className={`celebration-overlay fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-[400ms] ${
+      className={`celebration-overlay fixed inset-0 z-[210] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-[400ms] ${
         phase === 'fading' ? 'opacity-0' : 'opacity-100'
       }`}
       onClick={handleDismiss}

@@ -59,18 +59,24 @@ async def update_targets(request: Request, req: TargetsRequest, user: CurrentUse
         carbs=req.carbs, fat=req.fat,
         set_by="manual",
     )
-    # Evaluate target_set badges (skip when saving defaults during onboarding skip)
+    # Evaluate target_set badges (skip when saving defaults during onboarding skip).
+    # Only the *first* real target set triggers evaluation - Goal Setter is a
+    # milestone, so re-saving targets in Settings → Goals shouldn't burn a
+    # second badge_engine pass (badge_earned's UNIQUE constraint already blocks
+    # a duplicate row, but the work is wasted).
     new_badges = []
     if not req.skip:
         try:
             from src.badge_engine import evaluate_badges
-            from src.db import increment_target_set_count, get_user_prefs
+            from src.db import increment_target_set_count, get_target_set_count, get_user_prefs
             from src.services import user_today_str
+            prior_count = await get_target_set_count(db_path, user["user_id"])
             await increment_target_set_count(db_path, user["user_id"])
-            today = await user_today_str(db_path, user["user_id"])
-            prefs = await get_user_prefs(db_path, user["user_id"])
-            if prefs.get("gamification", "full") != "off":
-                new_badges = await evaluate_badges(db_path, user["user_id"], "target_set", {"today_str": today})
+            if prior_count == 0:
+                today = await user_today_str(db_path, user["user_id"])
+                prefs = await get_user_prefs(db_path, user["user_id"])
+                if prefs.get("gamification", "full") != "off":
+                    new_badges = await evaluate_badges(db_path, user["user_id"], "target_set", {"today_str": today})
         except Exception:
             logger.exception("Badge evaluation failed for target_set")
     return {"message": "Targets updated", "new_badges": new_badges, **req.model_dump()}
