@@ -13,6 +13,7 @@ import CorrectionChat from '../components/CorrectionChat';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 import { useSubscription } from '../context/SubscriptionContext';
+import { useDisablePullToRefresh } from '../context/PullToRefreshContext';
 import {
   markTargetsSetForInstallPrompt,
   markInstallPromptSeen,
@@ -105,6 +106,34 @@ function PillButton({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
+// Onboarding-only sessionStorage key for surviving an accidental refresh
+// mid-wizard. Scoped per-user so a sign-out + new-user in the same tab can't
+// leak the previous user's form. Cleared on completion / skip.
+function wizardPersistKey(userId: string | number | undefined | null): string {
+  return `targetWizard_onboarding_${userId ?? 'anon'}`;
+}
+
+type PersistedWizardState = {
+  step: number;
+  name: string;
+  sex: string | null;
+  age: number | null;
+  profile: { weight_kg: number | null; height_cm: number | null };
+  goal: string;
+  activityLevel: string;
+  workoutsPerWeek: number;
+  rateKgPerWeek: number;
+};
+
+function readPersistedWizardState(key: string): PersistedWizardState | null {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as PersistedWizardState) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function TargetWizard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -114,21 +143,38 @@ export default function TargetWizard() {
   const { user } = useAuth();
   const { betaMode } = useSubscription();
 
-  // Wizard state
+  // Stop pull-to-refresh from blowing away unsaved wizard form state. Only
+  // installs the override while this component is mounted.
+  useDisablePullToRefresh();
+
+  // Lazy-read session-persisted wizard state once on mount (onboarding only).
+  // Stored in a ref because useState initializers already capture the value;
+  // we don't want to re-parse JSON on every render. Refresh mid-wizard used
+  // to drop back to step 0 with empty fields.
+  const persistKey = wizardPersistKey(user?.user_id);
+  const persistedRef = useRef<PersistedWizardState | null>(
+    mode === 'onboarding' ? readPersistedWizardState(persistKey) : null
+  );
+  const persisted = persistedRef.current;
+
+  // Wizard state - cap restored step at 2 so a refresh on step 3 lands the
+  // user on the prior input step (they can re-run the AI suggestion).
   const startStep = mode === 'refine' ? 3 : mode === 'settings' ? 1 : 0;
-  const [step, setStep] = useState(startStep);
+  const [step, setStep] = useState(persisted ? Math.min(persisted.step, 2) : startStep);
 
   // Profile fields
-  const [name, setName] = useState('');
-  const [sex, setSex] = useState<string | null>(null);
-  const [age, setAge] = useState<number | null>(null);
-  const [profile, setProfile] = useState<{ weight_kg: number | null; height_cm: number | null }>({ weight_kg: null, height_cm: null });
+  const [name, setName] = useState(persisted?.name ?? '');
+  const [sex, setSex] = useState<string | null>(persisted?.sex ?? null);
+  const [age, setAge] = useState<number | null>(persisted?.age ?? null);
+  const [profile, setProfile] = useState<{ weight_kg: number | null; height_cm: number | null }>(
+    persisted?.profile ?? { weight_kg: null, height_cm: null }
+  );
 
   // Goal fields
-  const [goal, setGoal] = useState('maintain');
-  const [activityLevel, setActivityLevel] = useState('lightly_active');
-  const [workoutsPerWeek, setWorkoutsPerWeek] = useState<number>(3);
-  const [rateKgPerWeek, setRateKgPerWeek] = useState<number>(0.5);
+  const [goal, setGoal] = useState(persisted?.goal ?? 'maintain');
+  const [activityLevel, setActivityLevel] = useState(persisted?.activityLevel ?? 'lightly_active');
+  const [workoutsPerWeek, setWorkoutsPerWeek] = useState<number>(persisted?.workoutsPerWeek ?? 3);
+  const [rateKgPerWeek, setRateKgPerWeek] = useState<number>(persisted?.rateKgPerWeek ?? 0.5);
   const [units, setUnits] = useState('metric');
 
   // AI targets
@@ -147,6 +193,18 @@ export default function TargetWizard() {
   const scrollToMacros = () => {
     macrosCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  // Mirror wizard state to sessionStorage so a refresh mid-onboarding doesn't
+  // dump the user back to step 0 with empty fields. SessionStorage clears on
+  // tab close, which is the right scope (don't persist across sign-outs).
+  useEffect(() => {
+    if (mode !== 'onboarding') return;
+    try {
+      sessionStorage.setItem(persistKey, JSON.stringify({
+        step, name, sex, age, profile, goal, activityLevel, workoutsPerWeek, rateKgPerWeek,
+      } satisfies PersistedWizardState));
+    } catch { /* quota full / private mode - non-fatal */ }
+  }, [mode, persistKey, step, name, sex, age, profile, goal, activityLevel, workoutsPerWeek, rateKgPerWeek]);
 
   // Load the user's saved unit preference in every mode - onboarding users
   // may have visited before and set imperial, and we want BodySliders to
@@ -288,11 +346,11 @@ export default function TargetWizard() {
         earned = res.new_badges ?? [];
       }
 
-      // Re-trigger the install prompt now that the user has real targets -
-      // this catches step 1 of the install schedule (post-targets reminder).
-      markTargetsSetForInstallPrompt();
-
       const finishNav = () => {
+        // Re-trigger the install prompt only after the badge celebration is
+        // dismissed/handled - otherwise the install banner can overlap the
+        // celebration modal in the same frame.
+        markTargetsSetForInstallPrompt();
         if (mode === 'settings' || mode === 'refine') {
           toast('Targets updated!');
           localStorage.removeItem(`targets_skipped_${user?.user_id || ''}`);
@@ -324,6 +382,9 @@ export default function TargetWizard() {
 
   const finishOnboarding = async (skipped = false) => {
     localStorage.setItem(onboardKey, 'true');
+    // Wizard is done - drop the resume snapshot so a later visit to
+    // /onboarding (if it ever happens) starts clean.
+    try { sessionStorage.removeItem(persistKey); } catch { /* non-fatal */ }
     if (skipped) {
       localStorage.setItem(`targets_skipped_${user?.user_id || ''}`, 'true');
     } else {
@@ -334,9 +395,16 @@ export default function TargetWizard() {
     try {
       const ok = await subscribeToPush();
       if (ok) {
-        // Auto-enable reminders with user's detected timezone
+        // Auto-enable reminders with user's detected timezone. If the prefs
+        // PUT fails, surface a non-blocking hint - silently swallowing left
+        // users "onboarded" with permission granted but reminders disabled
+        // server-side and no obvious recovery cue.
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        await api.put('/settings/prefs', { reminders_on: 1, timezone: tz }).catch(() => {});
+        const prefsOk = await api.put('/settings/prefs', { reminders_on: 1, timezone: tz })
+          .then(() => true).catch(() => false);
+        if (!prefsOk) {
+          toast("Couldn't enable reminders — toggle them in Settings → Reminders", 'error');
+        }
       }
     } catch { /* user denied or not supported - that's fine */ }
     navigate('/', { replace: true });
@@ -351,7 +419,7 @@ export default function TargetWizard() {
     } catch {
       // Even if save fails, let them through - dashboard has its own defaults
     }
-    toast('You can set personalized targets anytime in Settings → Goals');
+    toast('You can set personalized targets anytime in Settings → Goals & Targets');
     finishOnboarding(true);
   };
 

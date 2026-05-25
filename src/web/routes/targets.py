@@ -315,17 +315,20 @@ async def accept_targets(request: Request, session_id: str, req: TargetAcceptReq
 
     await update_meal_session(db_path, session_id, user_id=user["user_id"], status="accepted")
 
-    # Evaluate target_set badges
+    # Evaluate target_set badges - only the *first* real target set triggers
+    # evaluation. See settings.update_targets for the same guard.
     new_badges: list = []
     try:
         from src.badge_engine import evaluate_badges
-        from src.db import increment_target_set_count, get_user_prefs
+        from src.db import increment_target_set_count, get_target_set_count, get_user_prefs
         from src.services import user_today_str
+        prior_count = await get_target_set_count(db_path, user["user_id"])
         await increment_target_set_count(db_path, user["user_id"])
-        today = await user_today_str(db_path, user["user_id"])
-        prefs = await get_user_prefs(db_path, user["user_id"])
-        if prefs.get("gamification", "full") != "off":
-            new_badges = await evaluate_badges(db_path, user["user_id"], "target_set", {"today_str": today})
+        if prior_count == 0:
+            today = await user_today_str(db_path, user["user_id"])
+            prefs = await get_user_prefs(db_path, user["user_id"])
+            if prefs.get("gamification", "full") != "off":
+                new_badges = await evaluate_badges(db_path, user["user_id"], "target_set", {"today_str": today})
     except Exception:
         logger.exception("Badge evaluation failed for target_set")
 
