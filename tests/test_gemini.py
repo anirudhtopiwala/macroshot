@@ -945,6 +945,7 @@ def _make_client_cls_for_target_call(text: str):
 _INITIAL_TARGETS_PAYLOAD = {
     "reply_text": "Based on your stats, I'd recommend 2100 calories, 160g protein, 230g carbs, 65g fat.",
     "targets_changed": True,
+    "user_requested_change": True,
     "calories": 2100,
     "protein": 160,
     "carbs": 230,
@@ -967,7 +968,7 @@ class TestGeminiSuggestTargets:
 
         with patch("src.gemini.genai.Client", client_cls), \
              patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
-            reply, parsed = await gemini_suggest_targets(
+            reply, parsed, urc = await gemini_suggest_targets(
                 user_context="33yo male, 82kg, maintain weight",
                 conversation=conversation,
             )
@@ -988,6 +989,7 @@ class TestGeminiSuggestTargets:
         marathon_payload = {
             "reply_text": "Marathon training - I'd bump you to 3000 calories, 130g protein, 410g carbs, 80g fat.",
             "targets_changed": True,
+            "user_requested_change": True,
             "calories": 3000,
             "protein": 130,
             "carbs": 410,
@@ -1004,7 +1006,7 @@ class TestGeminiSuggestTargets:
 
         with patch("src.gemini.genai.Client", client_cls), \
              patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
-            reply, parsed = await gemini_suggest_targets(
+            reply, parsed, urc = await gemini_suggest_targets(
                 user_context="I am preparing for a marathon",
                 conversation=conversation,
             )
@@ -1019,6 +1021,7 @@ class TestGeminiSuggestTargets:
         info_payload = {
             "reply_text": "Fiber is a non-digestible carbohydrate that supports gut health and satiety.",
             "targets_changed": False,
+            "user_requested_change": False,
             "calories": None,
             "protein": None,
             "carbs": None,
@@ -1034,13 +1037,69 @@ class TestGeminiSuggestTargets:
 
         with patch("src.gemini.genai.Client", client_cls), \
              patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
-            reply, parsed = await gemini_suggest_targets(
+            reply, parsed, urc = await gemini_suggest_targets(
                 user_context="what does fiber do?",
                 conversation=conversation,
             )
 
         assert parsed is None, "Info-only turn must not overwrite targets"
+        assert urc is False, "Info-only turn must not be flagged as a change request"
         assert "fiber" in reply.lower()
+
+    async def test_change_request_without_numbers_flags_user_requested_change(self):
+        """User asked for a change but model needs clarification: urc=true, parsed=None.
+
+        This is the case the UI uses to decide whether to show the "numbers
+        didn't change - try again" hint. A bare confirmation ("does this look
+        right?") must NOT trip this flag.
+        """
+        clarify_payload = {
+            "reply_text": "Got it - what's your target marathon distance and weekly mileage?",
+            "targets_changed": False,
+            "user_requested_change": True,
+            "calories": None,
+            "protein": None,
+            "carbs": None,
+            "fat": None,
+            "explanation": None,
+            "profile": None,
+        }
+        client_cls, _ = _make_client_cls_for_target_call(json.dumps(clarify_payload))
+
+        with patch("src.gemini.genai.Client", client_cls), \
+             patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
+            reply, parsed, urc = await gemini_suggest_targets(
+                user_context="I'm training for an ultramarathon",
+                conversation=[],
+            )
+
+        assert parsed is None
+        assert urc is True, "Change-request that didn't produce numbers must still flag user_requested_change"
+
+    async def test_confirmation_does_not_flag_user_requested_change(self):
+        """A 'does this look right?' confirmation must keep urc=false so the UI stays silent."""
+        confirm_payload = {
+            "reply_text": "Yes, those targets line up with your marathon training goals.",
+            "targets_changed": False,
+            "user_requested_change": False,
+            "calories": None,
+            "protein": None,
+            "carbs": None,
+            "fat": None,
+            "explanation": None,
+            "profile": None,
+        }
+        client_cls, _ = _make_client_cls_for_target_call(json.dumps(confirm_payload))
+
+        with patch("src.gemini.genai.Client", client_cls), \
+             patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
+            reply, parsed, urc = await gemini_suggest_targets(
+                user_context="does this look right?",
+                conversation=[],
+            )
+
+        assert parsed is None
+        assert urc is False
 
     async def test_targets_changed_true_with_insane_numbers_rejected(self):
         """Hallucination protection: sanity bounds reject calories outside the 1200-6000 window."""
@@ -1052,7 +1111,7 @@ class TestGeminiSuggestTargets:
 
         with patch("src.gemini.genai.Client", client_cls), \
              patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
-            reply, parsed = await gemini_suggest_targets(
+            reply, parsed, urc = await gemini_suggest_targets(
                 user_context="set my targets",
                 conversation=[],
             )
@@ -1070,7 +1129,7 @@ class TestGeminiSuggestTargets:
 
         with patch("src.gemini.genai.Client", client_cls), \
              patch.dict(os.environ, {"GEMINI_API_KEY": "test"}):
-            reply, parsed = await gemini_suggest_targets(
+            reply, parsed, urc = await gemini_suggest_targets(
                 user_context="hi",
                 conversation=conversation,
             )

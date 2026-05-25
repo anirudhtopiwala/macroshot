@@ -141,7 +141,7 @@ async def suggest_targets(request: Request, req: TargetSuggestRequest, user: Cur
     conversation: list[dict] = []
 
     try:
-        raw_text, parsed = await gemini_suggest_targets(
+        raw_text, parsed, user_requested_change = await gemini_suggest_targets(
             user_context=context,
             conversation=conversation,
             db_path=db_path,
@@ -221,12 +221,12 @@ async def suggest_targets(request: Request, req: TargetSuggestRequest, user: Cur
         meal_type="target_setting",
     )
 
-    # reply_text is always the conversational response (two-call approach)
     return TargetSuggestResponse(
         session_id=session_id,
         targets=targets_out,
         explanation=explanation,
         reply_text=raw_text,
+        user_requested_change=user_requested_change,
     )
 
 
@@ -247,7 +247,7 @@ async def refine_targets(request: Request, session_id: str, req: TargetRefineReq
     saved_profile = await get_user_profile(db_path, user["user_id"])
 
     try:
-        raw_text, parsed = await gemini_suggest_targets(
+        raw_text, parsed, user_requested_change = await gemini_suggest_targets(
             user_context=req.text,
             conversation=conversation,
             db_path=db_path,
@@ -285,12 +285,12 @@ async def refine_targets(request: Request, session_id: str, req: TargetRefineReq
         nutrition=json.dumps(parsed) if parsed else session.get("nutrition", ""),
     )
 
-    # reply_text is always the conversational response (two-call approach)
     return TargetSuggestResponse(
         session_id=session_id,
         targets=targets_out,
         explanation=explanation,
         reply_text=raw_text,
+        user_requested_change=user_requested_change,
     )
 
 

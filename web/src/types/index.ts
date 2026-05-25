@@ -171,6 +171,10 @@ export interface TargetSuggestion {
   targets: Targets | null;
   explanation: string;
   reply_text: string;
+  /** True iff the model judged the user's last message to be asking for a
+   *  target change. Used by the UI to decide whether to show a "no update"
+   *  hint when `targets` is null - confirmations and questions stay silent. */
+  user_requested_change?: boolean;
   error: string | null;
 }
 

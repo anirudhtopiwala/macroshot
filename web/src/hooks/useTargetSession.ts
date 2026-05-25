@@ -48,6 +48,10 @@ export function useTargetSession() {
       setMessages((prev) => [...prev, { role: 'user', text }]);
       const res = await targetsApi.refine(sessionId, text);
       const hadTargets = !!res.targets;
+      // Only show the "numbers didn't change" hint when the model thinks the
+      // user was actually asking for a change. Confirmations, info-questions,
+      // and small talk shouldn't read like the user did something wrong.
+      const showNoUpdateHint = !hadTargets && !!res.user_requested_change;
       if (res.targets) setTargets(res.targets);
       if (res.explanation) setExplanation(res.explanation);
       if (res.reply_text) {
@@ -57,7 +61,7 @@ export function useTargetSession() {
             role: 'assistant',
             text: res.reply_text,
             macrosUpdated: hadTargets,
-            noUpdateHint: !hadTargets,
+            noUpdateHint: showNoUpdateHint,
           },
         ]);
       }

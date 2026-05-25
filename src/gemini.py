@@ -317,6 +317,7 @@ You are a friendly, knowledgeable nutrition coach helping set personalised daily
 You return STRUCTURED JSON with these fields:
 - reply_text: the conversational reply shown to the user (2-4 sentences, friendly, natural language - never JSON or code).
 - targets_changed: boolean. True iff this turn produces new daily macro targets that should replace the current ones.
+- user_requested_change: boolean. True iff the user's most recent message was asking for or implying a target change. This is independent of whether YOU produced new numbers - see below.
 - calories, protein, carbs, fat: numbers. Set ONLY when targets_changed=true.
 - explanation: one short sentence summarising why these targets fit the user. Set ONLY when targets_changed=true.
 - profile: any profile fields the user just stated or revised (age, sex, weight_kg, height_cm). May be omitted or null.
@@ -331,6 +332,14 @@ SET targets_changed=false WHEN:
 - The user is asking an informational question ("what does fiber do?", "is creatine safe?").
 - The user is chatting / venting / not asking for a change.
 - A required field is genuinely missing AND you cannot make a reasonable assumption.
+- The user is confirming or asking about targets you already proposed ("does this look right?", "are you sure?", "thanks") - reply naturally, do not re-emit targets.
+
+SET user_requested_change=true WHEN:
+- The user's message asked for or implied a target change, even if you didn't produce new numbers this turn (e.g. you asked a clarifying question instead).
+
+SET user_requested_change=false WHEN:
+- The user asked an informational question, made small talk, or is confirming / questioning prior targets ("does this look right?", "thanks").
+- Note: it is normal for user_requested_change=true and targets_changed=true together. It is unusual for user_requested_change=true and targets_changed=false - only do that when you literally cannot compute targets without more information.
 
 NEVER say "I'll recalculate", "let me adjust those", "we'll need to adjust" without actually emitting the new numbers in this SAME response. If you intend to recalculate, do it now in this turn with targets_changed=true and the four numbers filled in.
 
@@ -429,18 +438,19 @@ async def gemini_suggest_targets(
     db_path: str | None = None,
     user_id: int = 0,
     user_profile: dict | None = None,
-) -> tuple[str, dict | None]:
+) -> tuple[str, dict | None, bool]:
     """Single structured-output call: conversational reply + optional new targets.
 
-    The model returns a JSON object with `reply_text` and `targets_changed`. When
-    `targets_changed` is true, the four macro numbers are also populated. This
-    replaces the older two-call (chat → extraction) flow whose regex gate could
-    silently drop a turn where the model said "I'll recalculate" without
-    emitting numbers.
+    The model returns a JSON object with `reply_text`, `targets_changed`, and
+    `user_requested_change`. When `targets_changed` is true, the four macro
+    numbers are also populated. This replaces the older two-call (chat →
+    extraction) flow whose regex gate could silently drop a turn where the
+    model said "I'll recalculate" without emitting numbers.
 
-    Returns (conversational_reply, parsed_targets_or_None). The conversation
-    list is mutated in place: the user turn is appended on entry, the model
-    turn (reply_text only - never the raw JSON) is appended on success.
+    Returns (conversational_reply, parsed_targets_or_None, user_requested_change).
+    The conversation list is mutated in place: the user turn is appended on
+    entry, the model turn (reply_text only - never the raw JSON) is appended
+    on success.
     """
     profile_summary = _build_profile_summary(user_profile)
 
@@ -454,7 +464,7 @@ async def gemini_suggest_targets(
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        return "Sorry, AI is not configured.", None
+        return "Sorry, AI is not configured.", None, False
 
     if db_path:
         from src.web.budget_gate import assert_gemini_budget
@@ -471,6 +481,7 @@ async def gemini_suggest_targets(
             properties={
                 "reply_text": types.Schema(type="STRING"),
                 "targets_changed": types.Schema(type="BOOLEAN"),
+                "user_requested_change": types.Schema(type="BOOLEAN"),
                 "calories": types.Schema(type="NUMBER", nullable=True),
                 "protein": types.Schema(type="NUMBER", nullable=True),
                 "carbs": types.Schema(type="NUMBER", nullable=True),
@@ -487,7 +498,7 @@ async def gemini_suggest_targets(
                     },
                 ),
             },
-            required=["reply_text", "targets_changed"],
+            required=["reply_text", "targets_changed", "user_requested_change"],
         ),
     )
 
@@ -527,7 +538,7 @@ async def gemini_suggest_targets(
         # conversational reply with no target update.
         logger.warning("Target chat returned non-JSON despite response_schema; user_id=%s", user_id)
         conversation.append({"role": "model", "text": raw_text})
-        return raw_text, None
+        return raw_text, None, False
 
     reply_text = str(payload.get("reply_text") or "").strip()
     if not reply_text:
@@ -535,8 +546,10 @@ async def gemini_suggest_targets(
         reply_text = "Sorry, I couldn't generate a reply just now - could you try rephrasing?"
     conversation.append({"role": "model", "text": reply_text})
 
+    user_requested_change = bool(payload.get("user_requested_change"))
+
     if not payload.get("targets_changed"):
-        return reply_text, None
+        return reply_text, None, user_requested_change
 
     parsed = _response_to_targets(json.dumps({
         "calories": payload.get("calories"),
@@ -547,7 +560,7 @@ async def gemini_suggest_targets(
         "profile": payload.get("profile") or {},
     }))
 
-    return reply_text, parsed
+    return reply_text, parsed, user_requested_change
 
 
 def build_reference_hint(
