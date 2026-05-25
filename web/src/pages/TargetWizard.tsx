@@ -366,6 +366,14 @@ export default function TargetWizard() {
       {newBadges.length > 0 && (
         <BadgeCelebration
           badges={newBadges}
+          onView={mode === 'onboarding' ? () => {
+            // The user has saved real targets, so they're effectively
+            // onboarded. Marking the flag before the route changes prevents
+            // App.tsx's !onboarded guard from bouncing the navigate to
+            // /settings/achievements back to /onboarding (which would
+            // remount this wizard at step 0).
+            localStorage.setItem(onboardKey, 'true');
+          } : undefined}
           onDone={() => {
             setNewBadges([]);
             const nav = pendingNavRef.current;
