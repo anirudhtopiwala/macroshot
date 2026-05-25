@@ -59,6 +59,32 @@ async def update_targets(request: Request, req: TargetsRequest, user: CurrentUse
         carbs=req.carbs, fat=req.fat,
         set_by="manual",
     )
+
+    # Mirror the saved targets into user_memories so the chat coach sees
+    # the user's current baseline. Overwrites any prior "Targets baseline:"
+    # memory (single-slot semantics). Skipped for skip=True onboarding
+    # defaults — those aren't a real user choice. See targets.accept_targets
+    # for the matching write on the AI-suggest path (which also writes a
+    # "Goal context:" memory from the refine chat).
+    if not req.skip:
+        try:
+            from src.db import (
+                get_user_profile, upsert_marker_memory,
+                build_targets_baseline_text, ONBOARDING_TARGETS_MARKER,
+            )
+            from src.embeddings import schedule_embed_for_memory
+            profile = await get_user_profile(db_path, user["user_id"])
+            baseline_text = build_targets_baseline_text(
+                req.calories, req.protein, req.carbs, req.fat,
+                goal=profile.get("goal"), activity_level=profile.get("activity_level"),
+            )
+            baseline_id = await upsert_marker_memory(
+                db_path, user["user_id"], "note", baseline_text, ONBOARDING_TARGETS_MARKER,
+            )
+            schedule_embed_for_memory(db_path, baseline_id, baseline_text)
+        except Exception:
+            logger.exception("targets-baseline memory upsert failed (manual path)")
+
     # Evaluate target_set badges (skip when saving defaults during onboarding skip).
     # Only the *first* real target set triggers evaluation - Goal Setter is a
     # milestone, so re-saving targets in Settings → Goals shouldn't burn a

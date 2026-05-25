@@ -797,3 +797,96 @@ async def test_migration_creates_user_memories_table(tmp_path):
             "AND name='idx_user_memories_user_kind'"
         )).fetchone()
         assert idx is not None
+
+
+# ── upsert_marker_memory + build_targets_baseline_text ──────────────────
+
+
+@pytest.mark.asyncio
+async def test_build_targets_baseline_text_full():
+    """Targets + goal + activity → readable single-line memory body."""
+    from src.db import build_targets_baseline_text, ONBOARDING_TARGETS_MARKER
+    text = build_targets_baseline_text(
+        2000, 150, 200, 70, goal="lose_weight", activity_level="lightly_active",
+    )
+    assert text.startswith(ONBOARDING_TARGETS_MARKER + " ")
+    assert "2000 cal" in text
+    assert "150g protein" in text
+    assert "Goal: lose weight" in text     # underscores swapped for spaces
+    assert "Activity: lightly active" in text
+    assert len(text) <= 200                 # fits user_memories text cap
+
+
+@pytest.mark.asyncio
+async def test_build_targets_baseline_text_minimal():
+    """Missing goal/activity → only the macros half is rendered."""
+    from src.db import build_targets_baseline_text
+    text = build_targets_baseline_text(1800, 130, 180, 60)
+    assert "Goal:" not in text
+    assert "Activity:" not in text
+    assert "1800 cal" in text
+
+
+@pytest.mark.asyncio
+async def test_upsert_marker_memory_creates_then_replaces(db):
+    """Second call with the same marker replaces, not appends."""
+    from src.db import upsert_marker_memory, ONBOARDING_TARGETS_MARKER
+
+    text1 = f"{ONBOARDING_TARGETS_MARKER} 2000 cal, 150g protein, 200g carbs, 70g fat."
+    text2 = f"{ONBOARDING_TARGETS_MARKER} 1800 cal, 140g protein, 180g carbs, 60g fat."
+
+    id1 = await upsert_marker_memory(db, 1, "note", text1, ONBOARDING_TARGETS_MARKER)
+    id2 = await upsert_marker_memory(db, 1, "note", text2, ONBOARDING_TARGETS_MARKER)
+    assert id2 != id1   # row was deleted and re-inserted
+
+    memories = await get_user_memories(db, 1)
+    matching = [m for m in memories if m["text"].startswith(ONBOARDING_TARGETS_MARKER)]
+    assert len(matching) == 1
+    assert matching[0]["text"] == text2
+    assert matching[0]["source"] == "coach_suggested"
+
+
+@pytest.mark.asyncio
+async def test_upsert_marker_memory_does_not_clobber_other_users(db):
+    """Marker is scoped per user_id; user 2's memory must survive user 1's upsert."""
+    from src.db import upsert_marker_memory, ONBOARDING_TARGETS_MARKER
+
+    text_alice = f"{ONBOARDING_TARGETS_MARKER} 2000 cal, 150g protein, 200g carbs, 70g fat."
+    text_bob   = f"{ONBOARDING_TARGETS_MARKER} 2400 cal, 180g protein, 240g carbs, 80g fat."
+
+    await upsert_marker_memory(db, 1, "note", text_alice, ONBOARDING_TARGETS_MARKER)
+    await upsert_marker_memory(db, 2, "note", text_bob, ONBOARDING_TARGETS_MARKER)
+    # Re-upsert alice; bob's row must be untouched.
+    await upsert_marker_memory(db, 1, "note", text_alice + " v2 ", ONBOARDING_TARGETS_MARKER)
+
+    bob_mems = await get_user_memories(db, 2)
+    assert any(m["text"] == text_bob for m in bob_mems)
+
+
+@pytest.mark.asyncio
+async def test_upsert_marker_memory_does_not_clobber_user_authored(db):
+    """User-created memories starting with the same prefix must NOT be deleted —
+    upsert is scoped to source='coach_suggested'."""
+    from src.db import upsert_marker_memory, ONBOARDING_TARGETS_MARKER
+
+    user_text = f"{ONBOARDING_TARGETS_MARKER} I wrote this manually"
+    await add_user_memory(db, 1, "note", user_text, source="user")
+
+    coach_text = f"{ONBOARDING_TARGETS_MARKER} 2000 cal, 150g protein, 200g carbs, 70g fat."
+    await upsert_marker_memory(db, 1, "note", coach_text, ONBOARDING_TARGETS_MARKER)
+
+    memories = await get_user_memories(db, 1)
+    user_authored = [m for m in memories if m["source"] == "user"]
+    assert any(m["text"] == user_text for m in user_authored)
+
+
+@pytest.mark.asyncio
+async def test_upsert_marker_memory_rejects_missing_marker_prefix(db):
+    """text must literally start with marker — otherwise next upsert can't find it."""
+    from src.db import upsert_marker_memory, ONBOARDING_TARGETS_MARKER
+    with pytest.raises(ValueError, match="marker"):
+        await upsert_marker_memory(
+            db, 1, "note",
+            "Some text not starting with the marker",
+            ONBOARDING_TARGETS_MARKER,
+        )
