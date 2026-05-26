@@ -315,6 +315,56 @@ async def accept_targets(request: Request, session_id: str, req: TargetAcceptReq
 
     await update_meal_session(db_path, session_id, user_id=user["user_id"], status="accepted")
 
+    # Mirror the accepted targets into the user_memories store so the chat
+    # coach has the user's current baseline as semantic context. Overwrites
+    # any prior "Targets baseline:" memory for this user (single-slot
+    # semantics — only the latest baseline should be visible to the coach).
+    # If the chat refine session has substantive user turns, also generate
+    # a one-sentence "Goal context:" memory from the user-stated intent.
+    try:
+        from src.db import (
+            get_user_profile, upsert_marker_memory,
+            build_targets_baseline_text,
+            ONBOARDING_TARGETS_MARKER, GOAL_CONTEXT_MARKER,
+        )
+        from src.embeddings import schedule_embed_for_memory
+        profile = await get_user_profile(db_path, user["user_id"])
+        baseline_text = build_targets_baseline_text(
+            req.calories, req.protein, req.carbs, req.fat,
+            goal=profile.get("goal"), activity_level=profile.get("activity_level"),
+        )
+        baseline_id = await upsert_marker_memory(
+            db_path, user["user_id"], "note", baseline_text, ONBOARDING_TARGETS_MARKER,
+        )
+        schedule_embed_for_memory(db_path, baseline_id, baseline_text)
+
+        # Goal-context memory from the refine chat (only when one exists).
+        # Pull only the user's turns so the summarizer doesn't echo the AI.
+        user_turns: list[str] = []
+        try:
+            conversation = json.loads(session.get("conversation") or "[]")
+            for turn in conversation:
+                if isinstance(turn, dict) and turn.get("role") == "user":
+                    txt = turn.get("text") or turn.get("content")
+                    if isinstance(txt, str) and txt.strip():
+                        user_turns.append(txt)
+        except Exception:
+            user_turns = []
+        if user_turns:
+            from src.gemini import gemini_summarize_target_chat
+            summary = await gemini_summarize_target_chat(
+                user_turns, db_path=db_path, user_id=user["user_id"],
+            )
+            if summary:
+                ctx_text = f"{GOAL_CONTEXT_MARKER} {summary}"[:200]
+                ctx_id = await upsert_marker_memory(
+                    db_path, user["user_id"], "note", ctx_text, GOAL_CONTEXT_MARKER,
+                )
+                schedule_embed_for_memory(db_path, ctx_id, ctx_text)
+    except Exception:
+        # Memory write is best-effort - never block target acceptance on it.
+        logger.exception("onboarding-targets memory upsert failed")
+
     # Evaluate target_set badges - only the *first* real target set triggers
     # evaluation. See settings.update_targets for the same guard.
     new_badges: list = []

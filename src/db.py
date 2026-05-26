@@ -3111,6 +3111,102 @@ async def delete_user_memory(db_path: str, user_id: int, memory_id: int) -> bool
         return cursor.rowcount > 0
 
 
+# ── Marker-keyed memory upsert (for auto-managed coach memories) ─────
+#
+# Some memories are "slots" - we want at most one current value at a time
+# and overwriting it on update beats appending stale rows. The text-marker
+# scheme avoids a schema migration: we encode the slot identity in a stable
+# prefix of the text (e.g. "Targets baseline: ..."), find any prior row for
+# the same user with that prefix, delete it, and insert the new value.
+#
+# Callers must:
+#   1. Use a unique, stable marker substring (recommend a colon-suffixed
+#      label that no other memory text would naturally start with).
+#   2. Set source="coach_suggested" so user-authored memories with
+#      coincidentally-similar text aren't clobbered (the LIKE is scoped
+#      by source).
+#   3. Schedule the embedding refresh on the returned new id (use
+#      `schedule_embed_for_memory` from src.embeddings).
+
+async def upsert_marker_memory(
+    db_path: str,
+    user_id: int,
+    kind: str,
+    text: str,
+    marker: str,
+    source: str = "coach_suggested",
+) -> int:
+    """Replace any prior memory matching the marker prefix, then insert text.
+
+    Returns the new row id. Use the returned id with
+    `schedule_embed_for_memory(db_path, id, text)` so the embedding catches
+    up. Marker matching is `source = ? AND text LIKE marker || '%'`, so the
+    marker MUST be the literal prefix of `text` (we assert it here in case
+    the caller forgets and builds `text` without it).
+
+    Atomic w.r.t. the source/marker combination: the delete and insert run
+    in one transaction, so a concurrent read on a re-entrant accept never
+    observes "neither row present" or "both rows present."
+    """
+    if kind not in USER_MEMORY_KINDS:
+        raise ValueError(f"invalid memory kind: {kind!r}")
+    if source not in USER_MEMORY_SOURCES:
+        raise ValueError(f"invalid memory source: {source!r}")
+    text = text.strip()
+    if not text:
+        raise ValueError("memory text cannot be empty")
+    if not marker or not text.startswith(marker):
+        raise ValueError("text must start with marker for upsert_marker_memory to find it later")
+
+    from datetime import datetime, timezone as _tz
+    now_str = datetime.now(_tz.utc).strftime("%Y-%m-%d %H:%M:%S")
+    like_pattern = marker + "%"
+    async with get_db(db_path) as db:
+        await db.execute(
+            "DELETE FROM user_memories WHERE user_id = ? AND source = ? AND text LIKE ?",
+            (user_id, source, like_pattern),
+        )
+        cursor = await db.execute(
+            "INSERT INTO user_memories (user_id, kind, text, source, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (user_id, kind, text, source, now_str, now_str),
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+# Marker prefixes for slots that the backend manages automatically.
+# Keep these distinctive enough that user-authored text won't collide.
+ONBOARDING_TARGETS_MARKER = "Targets baseline:"
+GOAL_CONTEXT_MARKER = "Goal context:"
+
+
+def build_targets_baseline_text(
+    calories: int | float,
+    protein: int | float,
+    carbs: int | float,
+    fat: int | float,
+    goal: str | None = None,
+    activity_level: str | None = None,
+) -> str:
+    """Format the canonical 'Targets baseline:' memory body. ~95 chars typical.
+
+    Goal/activity are appended only when present so a user who skipped
+    those fields still gets a clean memory string. Stays under the 200-char
+    user_memories text cap with plenty of headroom.
+    """
+    parts = [
+        f"{ONBOARDING_TARGETS_MARKER} {int(round(calories))} cal, "
+        f"{int(round(protein))}g protein, {int(round(carbs))}g carbs, {int(round(fat))}g fat."
+    ]
+    if goal:
+        # Friendly form: "lose_weight" → "lose weight"
+        parts.append(f"Goal: {goal.replace('_', ' ')}.")
+    if activity_level:
+        parts.append(f"Activity: {activity_level.replace('_', ' ')}.")
+    return " ".join(parts)
+
+
 # ── Push subscriptions ──────────────────────────────────────────────
 
 async def save_push_subscription(db_path: str, user_id: int, endpoint: str, p256dh: str, auth: str) -> None:
