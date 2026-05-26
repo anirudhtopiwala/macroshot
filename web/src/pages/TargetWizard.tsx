@@ -227,8 +227,13 @@ export default function TargetWizard() {
     api.put('/settings/prefs', { units_system: units }).catch(() => {});
   }, [units]);
 
-  // Pre-fill from existing data in settings/refine mode
-  const autoTriggered = useRef(false);
+  // Pre-fill from existing data in settings/refine mode. In refine mode we
+  // intentionally do NOT auto-call session.suggest — the user lands looking
+  // at their CURRENT targets, and the first AI call fires only when they
+  // send a refine message (handleRefine seeds session.suggest with that
+  // message via the new `seed_message` field). This saves a Gemini round-
+  // trip + keeps the visible numbers stable until the user actually asks
+  // for a change.
   useEffect(() => {
     if (mode === 'settings' || mode === 'refine') {
       Promise.all([
@@ -244,25 +249,6 @@ export default function TargetWizard() {
         if (p.goal) setGoal(p.goal);
         if (p.weight_change_rate_kg != null) setRateKgPerWeek(p.weight_change_rate_kg);
         setEditTargets({ calories: t.calories, protein: t.protein, carbs: t.carbs, fat: t.fat });
-
-        // In refine mode, auto-trigger AI suggestion with saved profile data
-        if (mode === 'refine' && !autoTriggered.current) {
-          autoTriggered.current = true;
-          setAiLoading(true);
-          const savedGoal = p.goal || 'maintain';
-          session.suggest({
-            age: p.age,
-            sex: p.sex,
-            weight_kg: p.weight_kg,
-            height_cm: p.height_cm,
-            goal: savedGoal,
-            activity_level: p.activity_level || 'lightly_active',
-            workouts_per_week: p.workouts_per_week ?? 3,
-            weight_change_rate_kg: savedGoal !== 'maintain' ? (p.weight_change_rate_kg ?? 0.5) : undefined,
-          }).then((res) => {
-            if (res?.error) toast(res.error, 'error');
-          }).finally(() => setAiLoading(false));
-        }
       }).catch(() => {});
     }
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -424,6 +410,28 @@ export default function TargetWizard() {
   };
 
   const handleRefine = async (text: string) => {
+    // First message in refine mode: there's no AI session yet (we skip the
+    // initial suggest so the user sees their existing targets unchanged
+    // until they actually ask for something). Lazily create the session by
+    // calling suggest with the user's text as the seed; the backend folds
+    // it into the first Gemini prompt so the returned targets already
+    // reflect their stated intent. Subsequent messages go through refine
+    // as normal.
+    if (!session.sessionId) {
+      const res = await session.suggest({
+        age,
+        sex,
+        weight_kg: profile.weight_kg,
+        height_cm: profile.height_cm,
+        goal,
+        activity_level: activityLevel,
+        workouts_per_week: workoutsPerWeek,
+        weight_change_rate_kg: goal !== 'maintain' ? rateKgPerWeek : undefined,
+        seed_message: text,
+      });
+      if (res?.error) toast(res.error, 'error');
+      return;
+    }
     await session.refine(text);
   };
 
@@ -808,7 +816,7 @@ export default function TargetWizard() {
                   <CorrectionChat
                     messages={session.messages}
                     onSend={handleRefine}
-                    disabled={session.refining}
+                    disabled={session.refining || session.suggesting}
                     placeholder="Refine your targets..."
                     expanded
                     onScrollToMacros={scrollToMacros}
