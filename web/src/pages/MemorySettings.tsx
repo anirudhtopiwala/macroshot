@@ -357,6 +357,7 @@ export default function MemorySettings() {
         defaultValue={editing?.text || ''}
         placeholder="Memory text"
         confirmLabel="Save"
+        multiline
         onConfirm={(v) => editing && handleEdit(editing, v)}
         onCancel={() => setEditing(null)}
       />
