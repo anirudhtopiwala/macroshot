@@ -134,6 +134,14 @@ async def suggest_targets(request: Request, req: TargetSuggestRequest, user: Cur
             setattr(req, field, saved[field])
 
     context = _build_context(req)
+    # Fold the user's first-message intent into the prompt so the initial
+    # suggestion already reflects what they asked for — saves a round-trip
+    # vs the legacy suggest→refine sequence when the user is editing
+    # existing targets.
+    if req.seed_message:
+        seed = req.seed_message.strip()
+        if seed:
+            context = f"{context}\n\nUser's first message: {seed}"
     profile = _build_profile(req)
 
     # gemini_suggest_targets mutates conversation in-place (appends user + model turns).
