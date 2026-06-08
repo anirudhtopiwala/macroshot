@@ -256,5 +256,9 @@ export function useMealSession() {
     analyzing, correcting, accepting,
     correctionCount, correctionLimitReached,
     analyze, correct, accept, cancel, reset,
+    // Exposed for the LogMeal barcode flow: when a guest accepts a
+    // barcode session there's no analyze() call to seed mealType, so
+    // the page sets it on the session directly before accept fires.
+    setPendingMealType,
   };
 }

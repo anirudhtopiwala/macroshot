@@ -5,7 +5,7 @@ import { guestApi } from '../api/guest';
 import { ApiError } from '../api/client';
 import { clearCache } from '../utils/apiCache';
 import { clearOfflineQueue } from '../utils/offlineQueue';
-import { clearGuestMeals, listGuestMeals } from '../utils/guestStorage';
+import { clearGuestMeals, listGuestMeals, listGuestWeights } from '../utils/guestStorage';
 import type { UserMe } from '../types';
 
 /** Shape of the structured 503 body returned when the beta signup cap is hit. */
@@ -192,13 +192,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const migrateGuestMealsIfAny = useCallback(async (): Promise<void> => {
     if (!readGuestFlag()) return;
-    let meals: Awaited<ReturnType<typeof listGuestMeals>>;
-    try {
-      meals = await listGuestMeals();
-    } catch {
-      meals = [];
-    }
-    if (meals.length === 0) {
+    const [meals, weights] = await Promise.all([
+      listGuestMeals().catch(() => []),
+      listGuestWeights().catch(() => []),
+    ]);
+    if (meals.length === 0 && weights.length === 0) {
       // Nothing to import, just clear the flag.
       try { localStorage.removeItem(GUEST_FLAG_KEY); } catch { /* quota */ }
       clearGuestMeals();
@@ -206,20 +204,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     try {
-      // Server caps the payload at 30 entries via Pydantic max_length;
-      // trim client-side so a generous local store can still migrate.
-      const payload = meals.slice(0, 30).map((m) => ({
+      // Server caps each payload via Pydantic max_length; trim
+      // client-side so a generous local store can still migrate.
+      const mealsPayload = meals.slice(0, 30).map((m) => ({
         nutrition: m.nutrition,
         logged_at: m.loggedAt,
         meal_type: m.mealType,
         user_input: m.userInput,
       }));
-      await guestApi.importGuestMeals(payload);
+      const weightsPayload = weights.slice(0, 90).map((w) => ({
+        weight_kg: w.weight_kg,
+        logged_at: w.logged_at,
+      }));
+      // Run in parallel - they're independent and bounded by the
+      // server's per-user once flags so retries are safe.
+      await Promise.all([
+        mealsPayload.length > 0 ? guestApi.importGuestMeals(mealsPayload) : Promise.resolve(),
+        weightsPayload.length > 0 ? guestApi.importGuestWeights(weightsPayload) : Promise.resolve(),
+      ]);
     } catch (err) {
       if (Sentry.isInitialized()) {
         Sentry.captureException(err, {
-          tags: { context: 'guest-meal-migration' },
-          extra: { count: meals.length },
+          tags: { context: 'guest-migration' },
+          extra: { meals: meals.length, weights: weights.length },
         });
       }
     } finally {
