@@ -160,7 +160,13 @@ Return a single JSON object with exactly these keys (no markdown, no explanation
 "fat": number (grams, total - must equal sum of item fat),
 "questions": array of strings (OPTIONAL - include only when clarification would meaningfully improve accuracy).
 
-The totals must equal the sum of item values. The user will review and may send corrections. In every reply - whether asking a question, acknowledging feedback, or updating estimates - always include an updated JSON object reflecting the current best estimate. Do not narrate the JSON; never write sentences like "Here's the updated JSON", "Here's the updated breakdown", or "Here are the revised numbers" - just emit the object."""
+The totals must equal the sum of item values. The user will review and may send corrections. In every reply - whether asking a question, acknowledging feedback, or updating estimates - always include an updated JSON object reflecting the current best estimate. Do not narrate the JSON; never write sentences like "Here's the updated JSON", "Here's the updated breakdown", or "Here are the revised numbers" - just emit the object.
+
+IF THE USER ALSO DESCRIBED THE MEAL IN TEXT (a caption alongside the photo): the caption tells you WHAT is on the plate, NOT how much. Use it only to identify and disambiguate items you can already see (e.g. confirm a protein is salmon, a grain is wheat berry). It is an identity hint, never a quantity signal.
+- NEVER size an item from its name. A named ingredient is NOT a standard serving; every weight must come from the visual portion in the image.
+- Items the user lists SHARE the food visible on the plate - they do not each add a serving. A caption naming "chicken, beef, potatoes, broccoli, pizza" describes ONE plate divided among those items, not five servings stacked together. The more items named, the SMALLER each one's share - listing more food does not mean more total food.
+- Before assigning per-item weights, estimate the TOTAL mass of food physically on the plate from the image (a single home/restaurant plate is typically ~250-500 g even when it holds many items), then divide that total across the items by their visible size. The per-item weights must sum to within what you can actually see; if they add up to more food than is visible, scale them all down. Do not let the number of named items inflate the total.
+- If the user names an item you cannot find in the image, give it a near-zero weight and ask a brief clarifying question rather than assuming a default serving."""
 
 TEXT_ONLY_INITIAL_PROMPT = """You are a precise nutrition estimator. The user has described a meal in text. Estimate the macros based on their description.
 
