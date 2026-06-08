@@ -20,6 +20,11 @@ export default function NotificationPrompt() {
 
   useEffect(() => {
     (async () => {
+      // Guests can't subscribe to push (no account, no server row).
+      // Showing the prompt would confuse them and the subscribe call
+      // would silently 401.
+      if (localStorage.getItem('macro_guest_mode') === '1') return;
+
       // Don't show if user has dismissed twice
       const dismissCount = parseInt(localStorage.getItem('notif_prompt_dismiss_count') || '0', 10);
       if (dismissCount >= 2) return;

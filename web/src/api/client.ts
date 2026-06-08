@@ -59,6 +59,16 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     });
 
     if (res.status === 401) {
+      // Guest mode: the visitor has no cookie by design. Any 401 here
+      // is expected (Dashboard/today, /events/batch, /subscription/me,
+      // etc.). Throw a normal ApiError so callers can decide how to
+      // degrade - but DO NOT wipe cached state and DO NOT redirect to
+      // /login, which would yank them off the app shell.
+      let isGuest = false;
+      try { isGuest = localStorage.getItem('macro_guest_mode') === '1'; } catch { /* ignore */ }
+      if (isGuest) {
+        throw new ApiError(401, 'Unauthorized');
+      }
       localStorage.removeItem('macro_cached_user');
       // Also wipe the cached subscription snapshot so a user signing in
       // next on this browser doesn't briefly see the prior user's plan

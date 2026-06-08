@@ -25,9 +25,13 @@ const MILESTONE_BADGE_IDS = new Set([
 interface Props {
   badges: NewBadge[];
   onDone: () => void;
+  // Fires synchronously just before navigating to the achievements page when
+  // the user taps "View". Lets the parent settle any state (e.g. mark the
+  // user onboarded) so the navigate isn't bounced by a route guard.
+  onView?: () => void;
 }
 
-export default function BadgeCelebration({ badges, onDone }: Props) {
+export default function BadgeCelebration({ badges, onDone, onView }: Props) {
   const navigate = useNavigate();
   const [phase, setPhase] = useState<'show' | 'fading'>('show');
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -53,14 +57,23 @@ export default function BadgeCelebration({ badges, onDone }: Props) {
     fadeTimerRef.current = setTimeout(onDone, 400);
   }, [onDone]);
 
-  const handleViewAchievements = useCallback(() => {
+  const handleViewAchievements = useCallback((badgeId?: string) => {
     clearTimeout(timerRef.current);
     clearTimeout(fadeTimerRef.current);
-    // Run onDone first so any parent-side navigation in onDone doesn't
+    // Let the parent settle any pre-navigation state (e.g. onboarding flag)
+    // before the route changes - otherwise a route guard may bounce us back.
+    onView?.();
+    // Run onDone next so any parent-side navigation in onDone doesn't
     // clobber our navigate to the achievements page.
     onDone();
-    navigate('/settings/achievements?section=badges');
-  }, [navigate, onDone]);
+    // Deep-link to a specific badge when we know which one was tapped so the
+    // achievements page can scroll to it and open the detail popup. Falls back
+    // to the badges section when no id is given (e.g. multi-badge "View All").
+    const target = badgeId
+      ? `/settings/achievements?badge=${encodeURIComponent(badgeId)}`
+      : '/settings/achievements?section=badges';
+    navigate(target);
+  }, [navigate, onDone, onView]);
 
   useEffect(() => {
     // Auto-dismiss after 4s for multi-badge, 3s for single
@@ -81,6 +94,16 @@ export default function BadgeCelebration({ badges, onDone }: Props) {
     return () => { document.body.style.overflow = ''; };
   }, []);
 
+  // Escape dismisses the modal so keyboard-only users aren't trapped. Gated
+  // on a visible modal so we don't add a stray window listener on empty
+  // renders or during the fade-out (where it would re-fire onDone).
+  useEffect(() => {
+    if (badges.length === 0 || phase === 'fading') return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleDismiss(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [handleDismiss, badges.length, phase]);
+
   if (badges.length === 0) return null;
 
   // Single badge view
@@ -95,7 +118,7 @@ export default function BadgeCelebration({ badges, onDone }: Props) {
         role="dialog"
         aria-modal="true"
         aria-label={isMilestone ? 'Milestone unlocked' : (badge.is_new ? 'Badge unlocked' : 'Badge upgraded')}
-        className={`celebration-overlay fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-[400ms] ${
+        className={`celebration-overlay fixed inset-0 z-[210] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-[400ms] ${
           phase === 'fading' ? 'opacity-0' : 'opacity-100'
         }`}
         onClick={handleDismiss}
@@ -124,7 +147,7 @@ export default function BadgeCelebration({ badges, onDone }: Props) {
                 ? `0 0 80px ${color}80, 0 0 140px ${color}40, 0 0 200px ${color}15`
                 : `0 0 50px ${color}60, 0 0 100px ${color}20`,
             }}
-            onClick={handleViewAchievements}
+            onClick={() => handleViewAchievements(badge.badge_id)}
           >
             <span
               className={`text-5xl ${isStreakHighTier ? 'animate-pulse' : ''}`}
@@ -160,12 +183,12 @@ export default function BadgeCelebration({ badges, onDone }: Props) {
           <p className="text-lg font-bold text-white">
             {isMilestone ? 'Milestone Unlocked!' : (badge.is_new ? 'Badge Unlocked!' : 'Badge Upgraded!')}
           </p>
-          <p className="text-base font-semibold cursor-pointer" style={{ color }} onClick={handleViewAchievements}>{badge.name}</p>
+          <p className="text-base font-semibold cursor-pointer" style={{ color }} onClick={() => handleViewAchievements(badge.badge_id)}>{badge.name}</p>
 
           {/* Action buttons */}
           <div className="flex items-center gap-3 mt-2">
             <button
-              onClick={handleViewAchievements}
+              onClick={() => handleViewAchievements(badge.badge_id)}
               className="px-5 py-2 rounded-xl text-sm font-bold transition-all active:scale-95"
               style={{
                 background: `${color}15`,
@@ -195,7 +218,7 @@ export default function BadgeCelebration({ badges, onDone }: Props) {
   // Multi-badge grid view
   return (
     <div
-      className={`celebration-overlay fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-[400ms] ${
+      className={`celebration-overlay fixed inset-0 z-[210] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-[400ms] ${
         phase === 'fading' ? 'opacity-0' : 'opacity-100'
       }`}
       onClick={handleDismiss}
@@ -230,7 +253,7 @@ export default function BadgeCelebration({ badges, onDone }: Props) {
               <div
                 key={badge.badge_id}
                 className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl cursor-pointer active:scale-95 transition-transform"
-                onClick={handleViewAchievements}
+                onClick={() => handleViewAchievements(badge.badge_id)}
                 style={{
                   background: `${color}10`,
                   border: `1px solid ${color}30`,
@@ -265,7 +288,7 @@ export default function BadgeCelebration({ badges, onDone }: Props) {
         {/* Action buttons */}
         <div className="flex items-center gap-3 mt-1">
           <button
-            onClick={handleViewAchievements}
+            onClick={() => handleViewAchievements()}
             className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95"
             style={{
               background: 'rgba(255,255,255,0.08)',

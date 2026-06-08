@@ -525,7 +525,7 @@ async def fitbit_callback(
     # Retrieve and consume the single-use state row
     state_row = await get_and_delete_fitbit_oauth_state(db_path, state)
     if state_row is None:
-        # Cookie has 10-min TTL so a stuck one expires harmlessly — but
+        # Cookie has 10-min TTL so a stuck one expires harmlessly - but
         # clear it eagerly anyway so callbacks rejected for state-not-found
         # don't leave a stale binding cookie sitting in the browser.
         from fastapi.responses import JSONResponse

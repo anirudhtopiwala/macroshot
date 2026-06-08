@@ -21,15 +21,34 @@ export function useTargetSession() {
   const suggest = useCallback(async (data: SuggestRequest) => {
     setSuggesting(true);
     setError(null);
-    setMessages([]);
+    // When the caller seeds a first-turn user message (refine flow), echo
+    // it into the chat IMMEDIATELY so the user sees their question above
+    // the spinner - mirrors how `refine` appends optimistically.
+    // Otherwise (onboarding step 3) start the chat empty; the AI's initial
+    // reply lands in the explanation card only.
+    setMessages(data.seed_message ? [{ role: 'user', text: data.seed_message }] : []);
     try {
       const res = await targetsApi.suggest(data);
       setSessionId(res.session_id);
       if (res.targets) setTargets(res.targets);
       if (res.explanation) setExplanation(res.explanation);
-      // Note: the initial AI reply is shown in the explanation card, not
-      // duplicated into the chat messages. Chat starts empty; refinement
-      // turns appear there.
+      // For seeded suggests, the API's reply_text is the answer to the
+      // user's first message - show it as an assistant chat turn so the
+      // conversation reads naturally. For unseeded onboarding suggests we
+      // keep the legacy behavior (reply visible in the explanation card).
+      if (data.seed_message && res.reply_text) {
+        const hadTargets = !!res.targets;
+        const showNoUpdateHint = !hadTargets && !!res.user_requested_change;
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            text: res.reply_text,
+            macrosUpdated: hadTargets,
+            noUpdateHint: showNoUpdateHint,
+          },
+        ]);
+      }
       if (res.error) setError(res.error);
       return res;
     } catch (e: unknown) {

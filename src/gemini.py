@@ -12,7 +12,7 @@ from io import BytesIO
 from typing import Any
 
 # B15: process-wide cap on concurrent Gemini API calls. Single uvicorn
-# worker on a 1 GB VM cannot safely fan out unbounded — both for memory
+# worker on a 1 GB VM cannot safely fan out unbounded - both for memory
 # (each call holds image bytes) and to avoid amplifying upstream
 # rate-limit / cost spikes when traffic surges.
 _GEMINI_SEM = asyncio.Semaphore(8)
@@ -160,7 +160,13 @@ Return a single JSON object with exactly these keys (no markdown, no explanation
 "fat": number (grams, total - must equal sum of item fat),
 "questions": array of strings (OPTIONAL - include only when clarification would meaningfully improve accuracy).
 
-The totals must equal the sum of item values. The user will review and may send corrections. In every reply - whether asking a question, acknowledging feedback, or updating estimates - always include an updated JSON object reflecting the current best estimate. Do not narrate the JSON; never write sentences like "Here's the updated JSON", "Here's the updated breakdown", or "Here are the revised numbers" - just emit the object."""
+The totals must equal the sum of item values. The user will review and may send corrections. In every reply - whether asking a question, acknowledging feedback, or updating estimates - always include an updated JSON object reflecting the current best estimate. Do not narrate the JSON; never write sentences like "Here's the updated JSON", "Here's the updated breakdown", or "Here are the revised numbers" - just emit the object.
+
+IF THE USER ALSO DESCRIBED THE MEAL IN TEXT (a caption alongside the photo): the caption tells you WHAT is on the plate, NOT how much. Use it only to identify and disambiguate items you can already see (e.g. confirm a protein is salmon, a grain is wheat berry). It is an identity hint, never a quantity signal.
+- NEVER size an item from its name. A named ingredient is NOT a standard serving; every weight must come from the visual portion in the image.
+- Items the user lists SHARE the food visible on the plate - they do not each add a serving. A caption naming "chicken, beef, potatoes, broccoli, pizza" describes ONE plate divided among those items, not five servings stacked together. The more items named, the SMALLER each one's share - listing more food does not mean more total food.
+- Before assigning per-item weights, estimate the TOTAL mass of food physically on the plate from the image (a single home/restaurant plate is typically ~250-500 g even when it holds many items), then divide that total across the items by their visible size. The per-item weights must sum to within what you can actually see; if they add up to more food than is visible, scale them all down. Do not let the number of named items inflate the total.
+- If the user names an item you cannot find in the image, give it a near-zero weight and ask a brief clarifying question rather than assuming a default serving."""
 
 TEXT_ONLY_INITIAL_PROMPT = """You are a precise nutrition estimator. The user has described a meal in text. Estimate the macros based on their description.
 
@@ -951,7 +957,7 @@ async def _get_or_create_meal_prompt_cache(
             cache_name, expires_at = entry
             if now < expires_at - _MEAL_PROMPT_CACHE_REFRESH_LEAD_SEC:
                 return cache_name
-            # Expired or about to expire — drop and re-create below.
+            # Expired or about to expire - drop and re-create below.
             _MEAL_PROMPT_CACHE.pop(key, None)
         try:
             cached = await aclient.caches.create(
@@ -1457,3 +1463,96 @@ Write 3–5 sentences of plain text (no bullet points, no markdown). Guidelines:
     except Exception:
         logger.exception("gemini_eod_check failed for user_id=%s", user_id)
         return ""
+
+
+async def gemini_summarize_target_chat(
+    user_turns: list[str],
+    timeout: float = 12.0,
+    db_path: str | None = None,
+    user_id: int = 0,
+) -> str | None:
+    """Distill the user's stated nutrition intent into one short sentence.
+
+    Used after target acceptance to seed a "Goal context:" memory the coach
+    can reference later (e.g. "training for a marathon", "post-partum",
+    "vegetarian high-protein push"). Pass only the user-authored turns from
+    the refine chat - assistant turns add noise.
+
+    Returns the summary (≤180 chars, no leading marker) or None when the
+    chat had no meaningful signal beyond raw numeric tweaks, when the model
+    explicitly returned the NONE sentinel, when budget is tripped, or when
+    the call fails. Callers should treat None as "skip the memory write."
+
+    Soft timeout: 12s default. This runs on the accept-targets request, so
+    we don't want to add multi-second tail latency.
+    """
+    cleaned = [t.strip() for t in user_turns if isinstance(t, str) and t.strip()]
+    if not cleaned:
+        return None
+
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return None
+
+    if db_path:
+        try:
+            from src.web.budget_gate import assert_gemini_budget
+            await assert_gemini_budget(db_path)
+        except Exception:
+            return None
+
+    bulleted = "\n".join(f"- {t}" for t in cleaned)
+    prompt = (
+        "Below are messages a user sent while refining their daily macro targets. "
+        "In ONE sentence (max 180 characters, no quotes, no preamble, no trailing period), "
+        "capture their stated goal, lifestyle, or food preference so a nutrition coach can "
+        "use it as context later. Skip generic acknowledgments and pure numeric tweaks. "
+        "If the messages contain no meaningful signal beyond 'increase X / decrease Y' numerics, "
+        "respond with exactly: NONE\n\n"
+        f"Messages:\n{bulleted}"
+    )
+    config = types.GenerateContentConfig(
+        temperature=0.2,
+        max_output_tokens=128,
+    )
+
+    async def _do_call() -> object:
+        async with _GEMINI_SEM:
+            async with genai.Client(api_key=api_key).aio as aclient:
+                return await asyncio.wait_for(
+                    aclient.models.generate_content(
+                        model="gemini-2.5-flash-lite",
+                        contents=prompt,
+                        config=config,
+                    ),
+                    timeout=timeout,
+                )
+
+    try:
+        response = await _do_call()
+    except Exception as exc:
+        logger.warning("gemini_summarize_target_chat failed: %s", exc)
+        return None
+
+    if db_path and response:
+        try:
+            from src.db import log_gemini_call
+            um = response.usage_metadata
+            await log_gemini_call(
+                db_path,
+                call_type="target_chat_summary",
+                user_id=user_id,
+                input_tokens=int(getattr(um, "prompt_token_count", 0) or 0),
+                output_tokens=int(getattr(um, "candidates_token_count", 0) or 0),
+                has_image=False,
+                web_searches=0,
+            )
+        except Exception:
+            pass
+
+    text = (_extract_response_text(response) or "").strip()
+    if not text or text.upper() == "NONE":
+        return None
+    # Single line, stripped of stray quotes/periods the model sometimes adds.
+    text = text.splitlines()[0].strip().strip('"').strip("'").rstrip(".")
+    return text[:180] or None

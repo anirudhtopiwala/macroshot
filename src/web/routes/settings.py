@@ -59,18 +59,50 @@ async def update_targets(request: Request, req: TargetsRequest, user: CurrentUse
         carbs=req.carbs, fat=req.fat,
         set_by="manual",
     )
-    # Evaluate target_set badges (skip when saving defaults during onboarding skip)
+
+    # Mirror the saved targets into user_memories so the chat coach sees
+    # the user's current baseline. Overwrites any prior "Targets baseline:"
+    # memory (single-slot semantics). Skipped for skip=True onboarding
+    # defaults - those aren't a real user choice. See targets.accept_targets
+    # for the matching write on the AI-suggest path (which also writes a
+    # "Goal context:" memory from the refine chat).
+    if not req.skip:
+        try:
+            from src.db import (
+                get_user_profile, upsert_marker_memory,
+                build_targets_baseline_text, ONBOARDING_TARGETS_MARKER,
+            )
+            from src.embeddings import schedule_embed_for_memory
+            profile = await get_user_profile(db_path, user["user_id"])
+            baseline_text = build_targets_baseline_text(
+                req.calories, req.protein, req.carbs, req.fat,
+                goal=profile.get("goal"), activity_level=profile.get("activity_level"),
+            )
+            baseline_id = await upsert_marker_memory(
+                db_path, user["user_id"], "note", baseline_text, ONBOARDING_TARGETS_MARKER,
+            )
+            schedule_embed_for_memory(db_path, baseline_id, baseline_text)
+        except Exception:
+            logger.exception("targets-baseline memory upsert failed (manual path)")
+
+    # Evaluate target_set badges (skip when saving defaults during onboarding skip).
+    # Only the *first* real target set triggers evaluation - Goal Setter is a
+    # milestone, so re-saving targets in Settings → Goals shouldn't burn a
+    # second badge_engine pass (badge_earned's UNIQUE constraint already blocks
+    # a duplicate row, but the work is wasted).
     new_badges = []
     if not req.skip:
         try:
             from src.badge_engine import evaluate_badges
-            from src.db import increment_target_set_count, get_user_prefs
+            from src.db import increment_target_set_count, get_target_set_count, get_user_prefs
             from src.services import user_today_str
+            prior_count = await get_target_set_count(db_path, user["user_id"])
             await increment_target_set_count(db_path, user["user_id"])
-            today = await user_today_str(db_path, user["user_id"])
-            prefs = await get_user_prefs(db_path, user["user_id"])
-            if prefs.get("gamification", "full") != "off":
-                new_badges = await evaluate_badges(db_path, user["user_id"], "target_set", {"today_str": today})
+            if prior_count == 0:
+                today = await user_today_str(db_path, user["user_id"])
+                prefs = await get_user_prefs(db_path, user["user_id"])
+                if prefs.get("gamification", "full") != "off":
+                    new_badges = await evaluate_badges(db_path, user["user_id"], "target_set", {"today_str": today})
         except Exception:
             logger.exception("Badge evaluation failed for target_set")
     return {"message": "Targets updated", "new_badges": new_badges, **req.model_dump()}
@@ -187,7 +219,7 @@ async def upload_avatar(request: Request, file: UploadFile, user: CurrentUser, d
 
         def _process() -> None:
             img = PILImage.open(io.BytesIO(data))
-            # B35: reject animated avatars — re-encoding silently drops
+            # B35: reject animated avatars - re-encoding silently drops
             # frames (matches meals.py policy).
             if getattr(img, "is_animated", False):
                 raise HTTPException(status_code=415, detail="Animated images not supported")

@@ -127,7 +127,12 @@ describe('useTargetSession', () => {
 
     expect(result.current.messages).toHaveLength(2);
     expect(result.current.messages[0]).toEqual({ role: 'user', text: 'more protein please' });
-    expect(result.current.messages[1]).toEqual({ role: 'assistant', text: 'I increased protein to 200g.' });
+    expect(result.current.messages[1]).toEqual({
+      role: 'assistant',
+      text: 'I increased protein to 200g.',
+      macrosUpdated: true,    // refine returned new targets
+      noUpdateHint: false,    // no user_requested_change in mock, so hint stays suppressed
+    });
     expect(result.current.targets?.protein).toBe(200);
   });
 

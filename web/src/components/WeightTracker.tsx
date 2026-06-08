@@ -2,7 +2,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft } from './icons';
 import useOverlayHistory from '../hooks/useOverlayHistory';
+import { useAuth } from '../context/AuthContext';
 import { weightApi, type WeightEntry } from '../api/weight';
+import {
+  deleteGuestWeight,
+  listGuestWeights,
+  saveGuestWeight,
+} from '../utils/guestStorage';
+import { formatLocalDateTime } from '../utils/date';
 import WeightChart from './WeightChart';
 import SwipeActions from './SwipeActions';
 import BadgeCelebration from './BadgeCelebration';
@@ -36,6 +43,7 @@ interface Props {
 
 export default function WeightTracker({ onClose }: Props) {
   const { toast } = useToast();
+  const { isGuest } = useAuth();
   const [entries, setEntries] = useState<WeightEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [value, setValue] = useState('');
@@ -49,11 +57,25 @@ export default function WeightTracker({ onClose }: Props) {
 
   const fetchHistory = useCallback(async () => {
     try {
-      const data = await weightApi.history();
-      setEntries(data.entries);
+      let entriesData: WeightEntry[];
+      if (isGuest) {
+        // Guest: read from IndexedDB. Shape matches the server's
+        // WeightEntry verbatim so the rest of the component renders
+        // unchanged.
+        const guestEntries = await listGuestWeights();
+        entriesData = guestEntries.map((e) => ({
+          id: e.id ?? 0,
+          logged_at: e.logged_at,
+          weight_kg: e.weight_kg,
+        }));
+      } else {
+        const data = await weightApi.history();
+        entriesData = data.entries;
+      }
+      setEntries(entriesData);
       // Pre-fill input with last weight for quick editing
-      if (data.entries.length > 0) {
-        const lastKg = data.entries[0].weight_kg;
+      if (entriesData.length > 0) {
+        const lastKg = entriesData[0].weight_kg;
         const curUnit = (localStorage.getItem('weight_unit') || 'kg') as 'kg' | 'lbs';
         const display = curUnit === 'lbs'
           ? (lastKg * KG_TO_LBS).toFixed(1) : lastKg.toFixed(1);
@@ -61,7 +83,7 @@ export default function WeightTracker({ onClose }: Props) {
       }
     } catch { /* ignore */ }
     setLoading(false);
-  }, []);
+  }, [isGuest]);
 
   useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
@@ -113,18 +135,33 @@ export default function WeightTracker({ onClose }: Props) {
     if (!num || num <= 0) return;
     setSubmitting(true);
     try {
-      const result = await weightApi.log(toKg(num));
-      hapticSuccess();
-      trackEvent('weight_logged', { unit });
-      setValue('');
-      setEntries((prev) => [{ id: result.id, logged_at: result.logged_at, weight_kg: result.weight_kg }, ...prev]);
-      if (result.new_badges?.length) {
-        setNewBadges(result.new_badges);
-        clearCache('achievements');
-        clearCache('achievement_summary');
-        clearCache('challenges');
+      const kg = toKg(num);
+      if (isGuest) {
+        const logged_at = formatLocalDateTime();
+        const id = await saveGuestWeight({ weight_kg: kg, logged_at });
+        hapticSuccess();
+        trackEvent('weight_logged', { unit, guest: 1 });
+        setValue('');
+        // saveGuestWeight returns null only on IDB failure; fall back
+        // to a synthetic timestamp-derived id so the row still
+        // renders before fetchHistory refreshes the real ids.
+        const localId = id ?? -Date.now();
+        setEntries((prev) => [{ id: localId, logged_at, weight_kg: kg }, ...prev]);
+        broadcastWeightChange();
+      } else {
+        const result = await weightApi.log(kg);
+        hapticSuccess();
+        trackEvent('weight_logged', { unit });
+        setValue('');
+        setEntries((prev) => [{ id: result.id, logged_at: result.logged_at, weight_kg: result.weight_kg }, ...prev]);
+        if (result.new_badges?.length) {
+          setNewBadges(result.new_badges);
+          clearCache('achievements');
+          clearCache('achievement_summary');
+          clearCache('challenges');
+        }
+        broadcastWeightChange();
       }
-      broadcastWeightChange();
     } catch {
       toast('Failed to log weight', 'error');
     }
@@ -133,7 +170,11 @@ export default function WeightTracker({ onClose }: Props) {
 
   const handleDelete = async (id: number) => {
     try {
-      await weightApi.delete(id);
+      if (isGuest) {
+        await deleteGuestWeight(id);
+      } else {
+        await weightApi.delete(id);
+      }
       setEntries((prev) => prev.filter((e) => e.id !== id));
       broadcastWeightChange();
     } catch {

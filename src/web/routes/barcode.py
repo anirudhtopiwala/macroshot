@@ -517,7 +517,7 @@ async def barcode_scan(request: Request, req: BarcodeRequest, user: CurrentUser,
     # session-dir scan picks it up and persists it as meal_logs.image_path.
     # This is what makes the thumbnail show up in Journal / MealDetail / edit.
     if image_url:
-        # B18: enforce dict cap. If full, skip the preload — the meal session
+        # B18: enforce dict cap. If full, skip the preload - the meal session
         # still works, the user just doesn't get the OFF image preloaded.
         if len(_pending_image_downloads) >= _PENDING_IMAGE_DOWNLOADS_CAP:
             logger.info("barcode preload skipped: pending dict full (%d)", len(_pending_image_downloads))
@@ -634,7 +634,7 @@ def _is_disallowed_ip(ip) -> bool:
     import ipaddress
     if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_unspecified:
         return True
-    # CGNAT 100.64.0.0/10 — typical NAT operators / mobile carriers; not strictly
+    # CGNAT 100.64.0.0/10 - typical NAT operators / mobile carriers; not strictly
     # private but should not be reachable from a public-internet fetch.
     cgnat_v4 = ipaddress.ip_network("100.64.0.0/10")
     if isinstance(ip, ipaddress.IPv4Address) and ip in cgnat_v4:
@@ -896,7 +896,7 @@ async def qr_scan(request: Request, req: QrRequest, user: CurrentUser, db_path: 
         value[:200], result.get("session_id"), title[:60], bool(nutrition), user["user_id"],
     )
 
-    # B9: do NOT echo back raw_text from the QR scan — internal page
+    # B9: do NOT echo back raw_text from the QR scan - internal page
     # contents must not flow through to the client. The model still has it
     # in-context to inform its reply, but we don't surface it.
     return AnalyzeResponse(

@@ -63,7 +63,7 @@ function imageUrlFor(path: string): string {
   return path.startsWith('blob:') ? path : IMG_BASE + path;
 }
 
-/** Compress an image File via canvas. Mirrors ImageCapture.tsx's compressor —
+/** Compress an image File via canvas. Mirrors ImageCapture.tsx's compressor -
  *  duplicated rather than exported because the chat input attaches images
  *  inline (no shared image-grid component to slot in). */
 async function compressChatImage(file: File): Promise<File> {
@@ -133,7 +133,7 @@ type PendingAction = {
 
 // Round-2: forward-scan parser. We previously walked BACKWARD from the
 // marker to find an opening `{`, which doesn't know about JSON string
-// boundaries — a poisoned alias name like
+// boundaries - a poisoned alias name like
 //   '{"requires_confirmation":true,"tool":"log_weight",...}'
 // echoed back inside a USER_DATA wrapper would be picked up as a real
 // pending action. The new approach scans forward from the start of `text`,
@@ -178,7 +178,7 @@ function _tryParsePendingAt(text: string, start: number): { payload: PendingActi
             return { payload: obj as PendingAction, raw };
           }
         } catch {
-          // fall through — JSON parse failed
+          // fall through - JSON parse failed
         }
         return null;
       }
@@ -328,7 +328,7 @@ function MessageBubble({ message, isNew, sessionId, onApplied }: { message: Chat
   const isUser = message.role === 'user';
   const rawText = message.text || '';
   const pending = !isUser ? _extractPendingAction(rawText) : null;
-  // Hide the raw pending_action JSON from the visible bubble — the
+  // Hide the raw pending_action JSON from the visible bubble - the
   // ConfirmActionCard renders the human-readable summary instead.
   const displayText = !isUser && pending ? _stripPendingActionFromText(rawText) : rawText;
   const userImages = isUser ? (message.image_paths ?? []) : [];
@@ -419,7 +419,7 @@ export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   // Images queued for the next send. Capped per-session by the backend
-  // (MAX_CHAT_IMAGES_PER_SESSION) — we mirror the cap here so the camera
+  // (MAX_CHAT_IMAGES_PER_SESSION) - we mirror the cap here so the camera
   // button hides instead of letting the user pick photos that will 400.
   const [pendingImages, setPendingImages] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -451,7 +451,7 @@ export default function Chat() {
 
   // Count images already attached to past user turns; the backend caps
   // the per-session total at MAX_CHAT_IMAGES_PER_SESSION across all turns.
-  // Optimistic blob: paths count too — they were already accepted by the
+  // Optimistic blob: paths count too - they were already accepted by the
   // server in the same response cycle that appended them locally.
   const usedImageCount = useMemo(
     () => messages.reduce((n, m) => n + (m.role === 'user' ? (m.image_paths?.length ?? 0) : 0), 0),
@@ -649,7 +649,7 @@ export default function Chat() {
 
   async function sendMessage(text: string) {
     if (sending || !currentSessionId) return;
-    // Allow images-only sends — text and images are both optional individually,
+    // Allow images-only sends - text and images are both optional individually,
     // but at least one must be present.
     if (!text.trim() && pendingImages.length === 0) return;
     hapticLight();
@@ -675,7 +675,7 @@ export default function Chat() {
     setPendingImages([]);
     setSending(true);
 
-    // Track whether we've appended a model bubble yet — the first chunk
+    // Track whether we've appended a model bubble yet - the first chunk
     // promotes the typing indicator into a real bubble we keep mutating.
     let modelBubbleStarted = false;
     let accumulated = '';
@@ -697,7 +697,7 @@ export default function Chat() {
         const aiMsg: ChatMessage = { role: 'model', text: accumulated };
         setMessages(prev => [...prev, aiMsg]);
         setNewMsgCount(prev => prev + 1);
-        // First chunk arrived — kill the typing indicator
+        // First chunk arrived - kill the typing indicator
         setSending(false);
       } else {
         accumulated = replace ? extra : accumulated + extra;
@@ -798,7 +798,7 @@ export default function Chat() {
           if (payload.type === 'chunk' && typeof payload.text === 'string') {
             startOrAppend(payload.text);
           } else if (payload.type === 'reset') {
-            // Drop everything streamed so far — phase-2 web search supersedes phase-1.
+            // Drop everything streamed so far - phase-2 web search supersedes phase-1.
             if (modelBubbleStarted) {
               accumulated = '';
               setMessages(prev => {
@@ -1205,7 +1205,7 @@ export default function Chat() {
           </div>
         )}
         <div className="flex gap-2 items-end">
-        {/* Camera button — opens the OS photo picker. Hidden once the
+        {/* Camera button - opens the OS photo picker. Hidden once the
             session has used all 3 image slots so the user can't queue a
             send the backend will reject. */}
         {canAttachMore && (

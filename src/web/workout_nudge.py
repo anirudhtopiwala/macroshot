@@ -33,7 +33,7 @@ _COOLDOWN_SECONDS = 4 * 3600  # 4 hours
 # for the same activity; without this, every retry within 4h would be
 # blocked by _COOLDOWN_SECONDS but the *first* nudge for the next day
 # could still re-fire if a duplicate landed near midnight. The day-key
-# (set, never expired in-process — bounded by single-worker, restart
+# (set, never expired in-process - bounded by single-worker, restart
 # clears it) closes that gap.
 _day_nudged: set[tuple[int, str]] = set()
 

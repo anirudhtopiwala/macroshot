@@ -149,7 +149,7 @@ from slowapi.errors import RateLimitExceeded
 from src.db import init_db
 from src.db_pool import init_pool, close_pool
 from src.web.deps import DB_PATH
-from src.web.routes import achievements, admin, aliases, auth, barcode, chat, dashboard, events, fitbit, meals, memory, oura, settings, strava, subscription, targets, weight, workouts
+from src.web.routes import achievements, admin, aliases, auth, barcode, chat, dashboard, events, fitbit, guest, meals, memory, oura, settings, strava, subscription, targets, weight, workouts
 
 logger = logging.getLogger("macro_app")
 
@@ -171,7 +171,7 @@ IMAGE_DIR = os.path.join(PROJECT_ROOT, "data", "images")
 def _sd_notify(message: str) -> None:
     """Send a state notification to systemd via $NOTIFY_SOCKET (no-op if unset).
 
-    We talk to the socket directly so the app stays dependency-free —
+    We talk to the socket directly so the app stays dependency-free -
     `systemd-python` would pull in a C extension just to send a UDP datagram.
     """
     sock_path = os.environ.get("NOTIFY_SOCKET")
@@ -230,7 +230,7 @@ async def lifespan(app: FastAPI):
     # PaaS / gunicorn convention (WEB_CONCURRENCY). One of these will
     # catch most worker-count overrides; the CLI flag --workers is not
     # observable from inside the process, so the systemd unit is the
-    # authoritative source — this assertion is belt-and-suspenders.
+    # authoritative source - this assertion is belt-and-suspenders.
     for _w_var in ("UVICORN_WORKERS", "WEB_CONCURRENCY"):
         _w_env = os.environ.get(_w_var, "").strip()
         if _w_env and _w_env != "1":
@@ -463,7 +463,7 @@ class BodySizeLimitMiddleware:
                         "body": b'{"detail":"Request body too large"}',
                     })
                     return
-                # Content-Length declared and within cap — pass through;
+                # Content-Length declared and within cap - pass through;
                 # downstream still streams the body once.
                 await self.app(scope, receive, send)
                 return
@@ -496,7 +496,7 @@ class BodySizeLimitMiddleware:
             if message.get("type") == "http.response.start":
                 response_started = True
             if state["aborted"] and not response_started:
-                # Swallow the late response from the wrapped app — we already
+                # Swallow the late response from the wrapped app - we already
                 # sent the 413 below.
                 return
             await send(message)
@@ -522,7 +522,7 @@ class BodySizeLimitMiddleware:
 app.add_middleware(BodySizeLimitMiddleware, max_bytes=_GLOBAL_MAX_BODY_BYTES)
 
 # ──────────────────────────────────────────────────────────────────────
-# B3: Gzip — skip API + auth paths to avoid BREACH-class compression
+# B3: Gzip - skip API + auth paths to avoid BREACH-class compression
 # oracles on authenticated responses. Static assets still benefit.
 # ──────────────────────────────────────────────────────────────────────
 from starlette.middleware.gzip import GZipMiddleware
@@ -586,7 +586,7 @@ app.add_middleware(
 )
 
 # ──────────────────────────────────────────────────────────────────────
-# B2: TrustedHostMiddleware — Host-header validation. Defends against
+# B2: TrustedHostMiddleware - Host-header validation. Defends against
 # Host-header injection (cache poisoning, password-reset link rewriting,
 # routing bugs). Always allow loopback so health probes and watchdog work.
 # ──────────────────────────────────────────────────────────────────────
@@ -618,7 +618,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        # B23: stricter Permissions-Policy — disable sensors and payment APIs
+        # B23: stricter Permissions-Policy - disable sensors and payment APIs
         # we don't use; allow camera for in-app meal photo capture.
         response.headers["Permissions-Policy"] = (
             "accelerometer=(), camera=(self), geolocation=(), gyroscope=(), "
@@ -744,6 +744,7 @@ app.include_router(workouts.router, prefix=api_prefix)
 app.include_router(achievements.router, prefix=api_prefix)
 app.include_router(memory.router, prefix=api_prefix)
 app.include_router(events.router, prefix=api_prefix)
+app.include_router(guest.router, prefix=api_prefix)
 # Admin router excluded from OpenAPI schema - defense-in-depth so an
 # enumeration of public docs (when enabled) does not reveal admin paths.
 app.include_router(admin.router, prefix=api_prefix, include_in_schema=False)
@@ -857,7 +858,7 @@ if os.path.isdir(FRONTEND_DIST) and os.path.isdir(_ASSETS_DIR):
 
     # B21: paths we never serve from the SPA catch-all even if a stale file
     # is present in dist/. reset.html is a recovery tool that wipes local
-    # state — it must not be reachable as a static asset to avoid hostile
+    # state - it must not be reachable as a static asset to avoid hostile
     # links logging users out / clearing their device data.
     _SPA_BLOCKED_PATHS = {"reset.html"}
 
@@ -867,7 +868,7 @@ if os.path.isdir(FRONTEND_DIST) and os.path.isdir(_ASSETS_DIR):
         """Serve the React SPA index.html for all non-API paths."""
         # Normalize path to defeat blocklist bypasses like `./reset.html`,
         # `subdir/../reset.html`, or `/reset.html`. Membership-by-literal is
-        # not enough — we have to compare on the basename of the resolved
+        # not enough - we have to compare on the basename of the resolved
         # file (which is what gets served).
         norm = os.path.normpath(path).lstrip("./").lstrip("/") if path else path
         if norm in _SPA_BLOCKED_PATHS or os.path.basename(norm) in _SPA_BLOCKED_PATHS:

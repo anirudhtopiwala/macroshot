@@ -24,7 +24,7 @@ const KIND_META: Record<MemoryKind, {
 }> = {
   allergy: {
     label: 'Allergies',
-    description: 'Hard constraint — coach will never recommend foods that violate this.',
+    description: 'Hard constraint - coach will never recommend foods that violate this.',
     icon: <Shield className="w-4 h-4" />,
     bg: 'rgba(239,68,68,0.1)',
     border: 'rgba(239,68,68,0.25)',
@@ -32,7 +32,7 @@ const KIND_META: Record<MemoryKind, {
   },
   restriction: {
     label: 'Dietary restrictions',
-    description: 'Hard constraint — vegetarian, vegan, halal, lactose-free, etc.',
+    description: 'Hard constraint - vegetarian, vegan, halal, lactose-free, etc.',
     icon: <Heart className="w-4 h-4" />,
     bg: 'rgba(168,85,247,0.1)',
     border: 'rgba(168,85,247,0.25)',
@@ -40,7 +40,7 @@ const KIND_META: Record<MemoryKind, {
   },
   preference: {
     label: 'Preferences',
-    description: 'Soft signals — likes and dislikes the coach uses to personalize.',
+    description: 'Soft signals - likes and dislikes the coach uses to personalize.',
     icon: <Sparkles className="w-4 h-4" />,
     bg: 'rgba(16,185,129,0.1)',
     border: 'rgba(16,185,129,0.25)',
@@ -48,7 +48,7 @@ const KIND_META: Record<MemoryKind, {
   },
   note: {
     label: 'Notes',
-    description: 'Anything else worth remembering — goals, schedule, household.',
+    description: 'Anything else worth remembering - goals, schedule, household.',
     icon: <FileText className="w-4 h-4" />,
     bg: 'rgba(59,130,246,0.1)',
     border: 'rgba(59,130,246,0.25)',
@@ -170,7 +170,7 @@ export default function MemorySettings() {
             if (e instanceof ApiError && e.status === 409) {
               toast(e.message, 'error');
             } else {
-              toast("Couldn't undo — please re-add manually", 'error');
+              toast("Couldn't undo - please re-add manually", 'error');
             }
           }
         },
@@ -213,7 +213,7 @@ export default function MemorySettings() {
 
       <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
         Things the AI coach remembers about you across chats. The coach can also propose new
-        memories during a conversation — you'll always be asked to confirm before anything is saved.
+        memories during a conversation - you'll always be asked to confirm before anything is saved.
       </p>
 
       {error && (
@@ -357,6 +357,7 @@ export default function MemorySettings() {
         defaultValue={editing?.text || ''}
         placeholder="Memory text"
         confirmLabel="Save"
+        multiline
         onConfirm={(v) => editing && handleEdit(editing, v)}
         onCancel={() => setEditing(null)}
       />

@@ -10,6 +10,10 @@ export interface SuggestRequest {
   activity_level: string;
   workouts_per_week?: number | null;
   weight_change_rate_kg?: number;
+  // First-turn user message folded into the prompt so the initial AI
+  // suggestion reflects user intent. Used by the refine flow to skip a
+  // throwaway suggest call before the user has even spoken.
+  seed_message?: string;
 }
 
 export const targetsApi = {

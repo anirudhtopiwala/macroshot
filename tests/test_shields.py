@@ -661,7 +661,7 @@ class TestCountStreakWithShields:
 
     @pytest.mark.asyncio
     async def test_three_gaps_but_only_two_shields(self, db):
-        """Three gaps and only two shields — the streak can't actually be
+        """Three gaps and only two shields - the streak can't actually be
         recovered, so don't burn shields for a partial result.
 
         Earlier behavior burned 2 shields to bridge 19/18 and reported
@@ -968,13 +968,13 @@ class TestCountStreakEmptyTodayStr:
 
 
 # ---------------------------------------------------------------------------
-# auto_consume_shields_for_streak — eager shield bridging on dashboard read
+# auto_consume_shields_for_streak - eager shield bridging on dashboard read
 # ---------------------------------------------------------------------------
 
 class TestAutoConsumeShieldsForStreak:
     """The dashboard's _calculate_streak only reads already-bridged shields,
     so before this function existed a user who missed a day saw streak=0 with
-    shields sitting unused — they only consumed on meal_accept.
+    shields sitting unused - they only consumed on meal_accept.
     """
 
     @pytest.mark.asyncio
@@ -993,7 +993,7 @@ class TestAutoConsumeShieldsForStreak:
 
     @pytest.mark.asyncio
     async def test_no_op_when_logged_today(self, db):
-        """User logged today — no gap, no shield consumed."""
+        """User logged today - no gap, no shield consumed."""
         await _add_user(db)
         await log_meal(db, USER_ID, "2026-03-25 09:00", "Breakfast", "", 400, 15, 50, 15, "Gemini")
         await _insert_shield(db, earned_at="2026-03-20 10:00:00")
@@ -1006,7 +1006,7 @@ class TestAutoConsumeShieldsForStreak:
 
     @pytest.mark.asyncio
     async def test_no_op_when_logged_yesterday(self, db):
-        """User logged yesterday — anchor is yesterday, no gap to bridge."""
+        """User logged yesterday - anchor is yesterday, no gap to bridge."""
         await _add_user(db)
         await log_meal(db, USER_ID, "2026-03-24 18:00", "Dinner", "", 600, 25, 60, 22, "Gemini")
         await _insert_shield(db, earned_at="2026-03-20 10:00:00")
@@ -1019,7 +1019,7 @@ class TestAutoConsumeShieldsForStreak:
 
     @pytest.mark.asyncio
     async def test_bridges_two_gap_days_with_two_shields(self, db):
-        """User missed Tue + Wed, opens Thu without logging — needs 2 shields."""
+        """User missed Tue + Wed, opens Thu without logging - needs 2 shields."""
         await _add_user(db)
         await log_meal(db, USER_ID, "2026-03-22 12:00", "Lunch", "", 500, 20, 50, 20, "Gemini")
         await _insert_shield(db, earned_at="2026-03-20 10:00:00")
@@ -1034,7 +1034,7 @@ class TestAutoConsumeShieldsForStreak:
 
     @pytest.mark.asyncio
     async def test_skips_when_not_enough_shields(self, db):
-        """2-day gap but only 1 shield — preserve it, don't waste on partial bridge."""
+        """2-day gap but only 1 shield - preserve it, don't waste on partial bridge."""
         await _add_user(db)
         await log_meal(db, USER_ID, "2026-03-22 12:00", "Lunch", "", 500, 20, 50, 20, "Gemini")
         await _insert_shield(db, earned_at="2026-03-20 10:00:00")
@@ -1055,14 +1055,14 @@ class TestAutoConsumeShieldsForStreak:
 
         bridged = await auto_consume_shields_for_streak(db, USER_ID, "2026-03-25")
 
-        # Bridges 2026-03-24 only — not 2026-03-25 (today)
+        # Bridges 2026-03-24 only - not 2026-03-25 (today)
         assert bridged == ["2026-03-24"]
         unused = [r for r in await _get_shield_rows(db) if r["used_at"] is None]
         assert len(unused) == 1
 
     @pytest.mark.asyncio
     async def test_caps_lookback_at_seven_days(self, db):
-        """Gap of 10 days — too long to bridge, save shields. Prevents the prod
+        """Gap of 10 days - too long to bridge, save shields. Prevents the prod
         bug where one user lost 7 shields to a months-old gap."""
         await _add_user(db)
         await log_meal(db, USER_ID, "2026-03-15 12:00", "Lunch", "", 500, 20, 50, 20, "Gemini")
@@ -1071,7 +1071,7 @@ class TestAutoConsumeShieldsForStreak:
 
         bridged = await auto_consume_shields_for_streak(db, USER_ID, "2026-03-25")
 
-        # Last log within 7-day window is None — nothing to bridge
+        # Last log within 7-day window is None - nothing to bridge
         assert bridged == []
         rows = await _get_shield_rows(db)
         assert all(r["used_at"] is None for r in rows)
@@ -1094,7 +1094,7 @@ class TestAutoConsumeShieldsForStreak:
 
     @pytest.mark.asyncio
     async def test_no_shields_no_op(self, db):
-        """User with no shields — no bridging, no error."""
+        """User with no shields - no bridging, no error."""
         await _add_user(db)
         await log_meal(db, USER_ID, "2026-03-23 12:00", "Lunch", "", 500, 20, 50, 20, "Gemini")
 
@@ -1104,7 +1104,7 @@ class TestAutoConsumeShieldsForStreak:
 
     @pytest.mark.asyncio
     async def test_no_logs_no_op(self, db):
-        """Brand-new user, no logs — nothing to protect."""
+        """Brand-new user, no logs - nothing to protect."""
         await _add_user(db)
         await _insert_shield(db, earned_at="2026-03-20 10:00:00")
 
@@ -1152,7 +1152,7 @@ class TestCountStreakLookbackCap:
 
     @pytest.mark.asyncio
     async def test_does_not_burn_shields_on_ancient_gap(self, db):
-        """User logged Jan, vanished, returned Mar — new shields shouldn't
+        """User logged Jan, vanished, returned Mar - new shields shouldn't
         bridge the 2-month absence (this is the prod bug from the audit)."""
         from src.badge_engine import _count_streak
         from src.db_pool import get_db
@@ -1162,7 +1162,7 @@ class TestCountStreakLookbackCap:
         await log_meal(db, USER_ID, "2026-01-01 12:00", "Lunch", "", 500, 20, 50, 20, "Gemini")
         for d in ("2026-03-22 12:00", "2026-03-23 12:00", "2026-03-24 12:00", "2026-03-25 12:00"):
             await log_meal(db, USER_ID, d, "Lunch", "", 500, 20, 50, 20, "Gemini")
-        # 3 unused shields — pre-fix, they would all be burned bridging Jan→Mar
+        # 3 unused shields - pre-fix, they would all be burned bridging Jan→Mar
         for d in ("2026-03-23", "2026-03-24", "2026-03-25"):
             await _insert_shield(db, earned_at=f"{d} 10:00:00")
 

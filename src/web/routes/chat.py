@@ -39,7 +39,7 @@ logger = logging.getLogger("macro_app")
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 # Per-session cap on image uploads, summed across all turns. The cap exists
-# to bound Gemini multimodal cost and disk footprint per chat session — chat
+# to bound Gemini multimodal cost and disk footprint per chat session - chat
 # is meant to be conversational, not a photo dump.
 MAX_CHAT_IMAGES_PER_SESSION = 3
 # Reuse the same per-image / total payload limits the meal analyze route uses,
@@ -50,7 +50,7 @@ _CHAT_IMAGE_CHUNK = 64 * 1024
 _CHAT_IMAGE_SIGNATURES = {
     b'\xff\xd8\xff': 'jpeg',
     b'\x89PNG': 'png',
-    b'RIFF': 'riff',  # RIFF container — must verify WEBP below
+    b'RIFF': 'riff',  # RIFF container - must verify WEBP below
     b'GIF8': 'gif',
 }
 
@@ -71,7 +71,7 @@ async def _read_and_validate_chat_images(
     images: list[UploadFile], existing_count: int,
 ) -> list[bytes]:
     """Read uploaded images, enforce per-session cap, validate magic bytes,
-    and return the raw bytes (NOT yet EXIF-stripped — caller does that off-thread).
+    and return the raw bytes (NOT yet EXIF-stripped - caller does that off-thread).
 
     Returns [] if `images` is empty / contains only blank uploads.
     """
@@ -133,7 +133,7 @@ async def _persist_chat_images(
     paths that the existing /api/v1/images/{path} route serves.
 
     Stored under the user_id prefix so the path-traversal check in
-    serve_image (app.py) accepts them — that route requires the first
+    serve_image (app.py) accepts them - that route requires the first
     path segment to equal the authenticated user's id.
     """
     from src.web.routes.meals import IMAGE_DIR  # avoid duplicating constants
@@ -445,7 +445,7 @@ async def create_chat(request: Request, user: CurrentUser, db_path: DbPath, sub:
     user_id = user["user_id"]
     session_id = str(uuid.uuid4())
 
-    # B12: seed_context is no longer persisted as a user turn — it would be
+    # B12: seed_context is no longer persisted as a user turn - it would be
     # an attractive injection target (the model treats `role=user` as
     # potentially-adversarial input). It's now passed as part of the system
     # instruction at send time via _augmented_system_prompt() below.
@@ -561,7 +561,7 @@ async def send_message(
             detail={"reason": "budget_exceeded", "message": BUDGET_EXCEEDED_MESSAGE},
         )
     except ChatTransientError as e:
-        # The optimistic user message we just appended is dropped — we never
+        # The optimistic user message we just appended is dropped - we never
         # call update_chat_session below, so the session in the DB is unchanged.
         # The frontend pops its optimistic bubble in the same path and offers Retry.
         raise HTTPException(
@@ -572,7 +572,7 @@ async def send_message(
     # Append model reply
     conversation.append({"role": "model", "text": reply})
 
-    # Auto-generate title on first real user message — done in the background so
+    # Auto-generate title on first real user message - done in the background so
     # the user gets their reply immediately. Title gets persisted whenever the
     # title-generation call finishes; the frontend picks it up on the next
     # sessions-list / history fetch.
@@ -668,12 +668,12 @@ async def send_message_stream(
     text: str = Form(default="", max_length=4000),
     images: list[UploadFile] = File(default=[]),
 ):
-    """Streaming variant of send_message — returns Server-Sent Events.
+    """Streaming variant of send_message - returns Server-Sent Events.
 
     Event format (each event is `data: <json>\\n\\n`):
-      • {"type":"chunk","text":"..."}     — incremental token text
-      • {"type":"reset"}                   — discard everything streamed so far (web-search supersedes)
-      • {"type":"done","title":"..."}      — stream finished, optional updated title
+      • {"type":"chunk","text":"..."}     - incremental token text
+      • {"type":"reset"}                   - discard everything streamed so far (web-search supersedes)
+      • {"type":"done","title":"..."}      - stream finished, optional updated title
       • {"type":"error","reason":"...","message":"...","retryable":true}
 
     Pre-stream errors (turn limit, budget exhausted before any tokens flow,
@@ -846,7 +846,7 @@ async def send_message_stream(
         except Exception:
             logger.exception("Failed to log chat_message_sent telemetry")
 
-        # Final done event — title may still be empty (background task hasn't
+        # Final done event - title may still be empty (background task hasn't
         # finished); the client picks it up on the next history/sessions fetch.
         yield f"data: {json.dumps({'type': 'done', 'title': title})}\n\n"
 
@@ -923,19 +923,19 @@ async def delete_session(request: Request, session_id: str, user: CurrentUser, d
 
 
 # ──────────────────────────────────────────────────────────────────────
-# B5: confirm-action endpoint — applies a pending write that the AI chat
+# B5: confirm-action endpoint - applies a pending write that the AI chat
 # proposed via the MCP write tools. The MCP tools no longer mutate state;
 # they return a `pending_action` payload describing what would happen, the
 # frontend renders a confirmation card, and the user explicitly POSTs
 # here to apply it.
 #
 # Defense in depth:
-#   * Auth (CurrentUser dep) — ties the action to the logged-in user.
-#   * Session ownership — we re-load the chat session by id and confirm
+#   * Auth (CurrentUser dep) - ties the action to the logged-in user.
+#   * Session ownership - we re-load the chat session by id and confirm
 #     it's owned by current_user. The MCP layer already has user_id
 #     from the chat layer, but we re-validate here so a forged session_id
 #     can't drive a write against another user.
-#   * Allow-list of tools — only the four MCP write tools are accepted.
+#   * Allow-list of tools - only the four MCP write tools are accepted.
 #   * Each tool re-validates its arguments against original ranges.
 # ──────────────────────────────────────────────────────────────────────
 
@@ -959,13 +959,13 @@ _ALLOWED_CONFIRM_TOOLS = {
 # signature for a short window. A double-tap on the Confirm button, an
 # accidental browser back-forward replay, or a model that emits the same
 # pending_action twice can no longer cause a duplicate write. In-memory is
-# fine — workers are single-process, single-uvicorn-worker on a 1 GB VM,
+# fine - workers are single-process, single-uvicorn-worker on a 1 GB VM,
 # and the worst-case (a worker restart between confirm clicks) is the same
 # as today: a single duplicate. TTL'd to bound memory.
 import hashlib as _hashlib
 import time as _time
 
-_CONFIRM_DEDUP_TTL_SEC = 300  # 5 min — enough to absorb double-clicks / retries
+_CONFIRM_DEDUP_TTL_SEC = 300  # 5 min - enough to absorb double-clicks / retries
 _recent_confirms: dict[str, float] = {}
 
 
@@ -979,7 +979,7 @@ def _confirm_signature(user_id: int, session_id: str, tool: str, args: dict) -> 
 
 def _confirm_seen(sig: str) -> bool:
     now = _time.monotonic()
-    # Opportunistic eviction — bounded by call rate (10/min/user via slowapi).
+    # Opportunistic eviction - bounded by call rate (10/min/user via slowapi).
     if len(_recent_confirms) > 1024:
         for k, ts in list(_recent_confirms.items()):
             if now - ts > _CONFIRM_DEDUP_TTL_SEC:

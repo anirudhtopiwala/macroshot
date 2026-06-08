@@ -249,7 +249,7 @@ async def test_display_tier_uses_max_of_computed_and_db(db):
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# Compute functions that lacked direct test coverage — added 2026-05 after
+# Compute functions that lacked direct test coverage - added 2026-05 after
 # audit. Each fn here was previously only covered by smoke "all badges have
 # compute fns" meta-tests, which couldn't catch column/format bugs.
 # ──────────────────────────────────────────────────────────────────────────
@@ -338,7 +338,7 @@ async def test_comebacks_counts_each_2plus_day_gap(db):
 @pytest.mark.asyncio
 async def test_comebacks_ignores_single_day_gap(db):
     # 1-day gap (= 2 days apart) does NOT trigger a comeback in the
-    # current implementation — only 2+ day gaps (3+ days apart) do.
+    # current implementation - only 2+ day gaps (3+ days apart) do.
     # Test documents existing behavior; if this is wrong, fix the threshold.
     await _add_meal_typed(db, logged_at="2026-03-10 12:00")
     await _add_meal_typed(db, logged_at="2026-03-12 12:00")  # 2-day gap
@@ -359,7 +359,7 @@ async def test_full_day_requires_all_four_meal_types(db):
 
 @pytest.mark.asyncio
 async def test_full_day_three_real_types_plus_fallback_does_not_count(db):
-    # Only 3 of the 4 valid types — the post-fix filter should reject this
+    # Only 3 of the 4 valid types - the post-fix filter should reject this
     # even when an extra row with an empty/fallback meal_type is present.
     for mt in ("breakfast", "lunch", "dinner"):
         await _add_meal_typed(db, logged_at="2026-03-15 12:00", meal_type=mt)
@@ -420,7 +420,7 @@ async def test_weight_weeks_counts_distinct_iso_weeks(db):
 @pytest.mark.asyncio
 async def test_weight_weeks_no_year_boundary_split(db):
     # Pre-fix (%Y-%W), 2026-01-01 grouped under "2026-00" while logs later
-    # in week 1 grouped under "2026-01" — splitting one ISO week across
+    # in week 1 grouped under "2026-01" - splitting one ISO week across
     # two strings. With %G-%V, both fall in 2026-W01.
     await _add_weight(db, logged_at="2026-01-01")  # Thu, ISO week 2026-W01
     await _add_weight(db, logged_at="2026-01-04")  # Sun, ISO week 2026-W01
@@ -566,7 +566,7 @@ async def test_photo_meals_counts_rows_with_image(db):
 # ── meals_meal_machine + meals_snap_happy tier thresholds ──
 
 def test_meal_machine_tier_thresholds():
-    """Each meal-count threshold awards the matching tier — guards against
+    """Each meal-count threshold awards the matching tier - guards against
     threshold reordering."""
     thresholds = BADGES["meals_meal_machine"]["thresholds"]
     assert thresholds == [10, 50, 100, 168]
@@ -597,12 +597,12 @@ async def test_carbs_days_outside_window_excluded(db):
     """115% of carb target is outside [0.9, 1.1] and must NOT count."""
     await _set_target(db, carbs=200)
     async with aiosqlite.connect(db) as conn:
-        # 230g = 115% of 200 — over the upper bound
+        # 230g = 115% of 200 - over the upper bound
         await conn.execute(
             "INSERT INTO meal_logs (user_id, item_name, calories, protein, carbs, fat, logged_at) "
             "VALUES (1, 'm', 1500, 100, 230, 60, '2026-03-15 12:00')",
         )
-        # 170g = 85% of 200 — under the lower bound
+        # 170g = 85% of 200 - under the lower bound
         await conn.execute(
             "INSERT INTO meal_logs (user_id, item_name, calories, protein, carbs, fat, logged_at) "
             "VALUES (1, 'm', 1500, 100, 170, 60, '2026-03-16 12:00')",
@@ -677,7 +677,7 @@ async def test_aliases_created_isolates_users(db):
 
 @pytest.mark.asyncio
 async def test_target_sets_zero_by_default(db):
-    """Newly registered user has no target_set_count — should COALESCE to 0."""
+    """Newly registered user has no target_set_count - should COALESCE to 0."""
     async with aiosqlite.connect(db) as conn:
         assert await _count_target_sets(conn, 1) == 0
 
@@ -705,7 +705,7 @@ async def test_weight_entries_counts_all_logs(db):
 @pytest.mark.asyncio
 async def test_meta_completionist_fires_when_other_badges_earned(db):
     """Earning meal-related badges should also award meta_completionist
-    when the count crosses 5. Previously untested — guarding against
+    when the count crosses 5. Previously untested - guarding against
     regression of the recursive any_badge_earn trigger.
     """
     # Manually pre-seed 4 earned badges so one more crosses bronze (5)

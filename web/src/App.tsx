@@ -19,6 +19,8 @@ import Button from './components/Button';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import GuestBanner from './components/GuestBanner';
+import SignupPrompt from './pages/SignupPrompt';
 import lazyWithRetry from './utils/lazyWithRetry';
 
 // Lazy-load secondary pages with retry - handles stale chunk hashes after deploys.
@@ -139,7 +141,7 @@ function TosGate() {
 
 function AuthenticatedLayout() {
   useSwipeBack();
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const { pathname } = useLocation();
 
   // Fire ui_page_view once per unique pathname. Centralised here (in a
@@ -164,44 +166,60 @@ function AuthenticatedLayout() {
   }
   // Redirect logic - computed as elements to avoid early returns that break
   // child hook counts (caused "Rendered more hooks" on Mobile Safari).
-  const redirect = (!onboarded && pathname !== '/onboarding')
-    ? <Navigate to="/onboarding" replace />
-    : (onboarded && pathname === '/onboarding')
-      ? <Navigate to="/" replace />
-      : null;
+  // Guests skip the onboarding gate: they have no profile and the wizard
+  // would just push them to /login. They get the Dashboard immediately
+  // and can sign up from the banner / signup prompt routes.
+  const redirect = isGuest
+    ? null
+    : (!onboarded && pathname !== '/onboarding')
+      ? <Navigate to="/onboarding" replace />
+      : (onboarded && pathname === '/onboarding')
+        ? <Navigate to="/" replace />
+        : null;
 
   return (
     <PullToRefreshProvider>
       <OfflineQueueProvider>
         {redirect || (
           <>
-            <TosGate />
+            {!isGuest && <TosGate />}
             <OfflineBanner />
             <Header />
             <div className="max-w-lg mx-auto px-4 pb-32" style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top, 0px))', minHeight: '100vh' }}>
+              {isGuest && <GuestBanner />}
               <ErrorBoundary>
                 <AnimatedPage>
                   <Suspense fallback={<PageFallback />}>
+                    {/* Same shell for guests + signed-in users - guests
+                        see the real Dashboard, LogMeal, Trends, Journal
+                        etc. with API calls degrading gracefully (the
+                        401 interceptor skips its redirect when the
+                        guest flag is set). A handful of routes that
+                        are conceptually auth-only - Chat with AI
+                        coach, Settings, OAuth integrations - route
+                        to a SignupPrompt instead so guests aren't
+                        teased by empty UI that won't work without
+                        signing in. */}
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/log" element={<LogMeal />} />
                       <Route path="/journal" element={<Journal />} />
                       <Route path="/meals/:id" element={<MealDetail />} />
                       <Route path="/saved" element={<SavedMeals />} />
-                      <Route path="/trends" element={<Trends />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/settings/personal" element={<SettingsPersonal />} />
-                      <Route path="/settings/goals" element={<SettingsGoals />} />
-                      <Route path="/settings/reminders" element={<SettingsReminders />} />
-                      <Route path="/settings/connected-apps" element={<ConnectedApps />} />
-                      <Route path="/workouts" element={<WorkoutHistory />} />
-                      <Route path="/settings/achievements" element={<Achievements />} />
-                      <Route path="/settings/feedback" element={<Feedback />} />
-                      <Route path="/settings/tips" element={<Tips />} />
-                      <Route path="/settings/targets" element={<TargetWizard />} />
-                      <Route path="/settings/memory" element={<MemorySettings />} />
-                      <Route path="/chat" element={<Chat />} />
-                      <Route path="/chat/:sessionId" element={<Chat />} />
+                      <Route path="/trends" element={isGuest ? <SignupPrompt /> : <Trends />} />
+                      <Route path="/settings" element={isGuest ? <SignupPrompt /> : <Settings />} />
+                      <Route path="/settings/personal" element={isGuest ? <SignupPrompt /> : <SettingsPersonal />} />
+                      <Route path="/settings/goals" element={isGuest ? <SignupPrompt /> : <SettingsGoals />} />
+                      <Route path="/settings/reminders" element={isGuest ? <SignupPrompt /> : <SettingsReminders />} />
+                      <Route path="/settings/connected-apps" element={isGuest ? <SignupPrompt /> : <ConnectedApps />} />
+                      <Route path="/workouts" element={isGuest ? <SignupPrompt /> : <WorkoutHistory />} />
+                      <Route path="/settings/achievements" element={isGuest ? <SignupPrompt /> : <Achievements />} />
+                      <Route path="/settings/feedback" element={isGuest ? <SignupPrompt /> : <Feedback />} />
+                      <Route path="/settings/tips" element={isGuest ? <SignupPrompt /> : <Tips />} />
+                      <Route path="/settings/targets" element={isGuest ? <SignupPrompt /> : <TargetWizard />} />
+                      <Route path="/settings/memory" element={isGuest ? <SignupPrompt /> : <MemorySettings />} />
+                      <Route path="/chat" element={isGuest ? <SignupPrompt /> : <Chat />} />
+                      <Route path="/chat/:sessionId" element={isGuest ? <SignupPrompt /> : <Chat />} />
                       <Route path="/onboarding" element={<Onboarding />} />
                       <Route path="/admin/metrics" element={<AdminMetrics />} />
                       <Route path="/terms" element={<Terms />} />
@@ -212,7 +230,7 @@ function AuthenticatedLayout() {
                 </AnimatedPage>
               </ErrorBoundary>
             </div>
-            {onboarded && <BottomNav />}
+            {(isGuest || onboarded) && <BottomNav />}
             <UpdateToast />
           </>
         )}
@@ -222,7 +240,7 @@ function AuthenticatedLayout() {
 }
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
+  const { user, isGuest, loading } = useAuth();
 
   // Signal splash screen that app is ready once auth check completes
   useEffect(() => {
@@ -238,6 +256,9 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      {/* /signup is a convenience alias guest pages link to. Same target as
+          /login - Login.tsx hosts both sign-in and sign-up. */}
+      <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/terms" element={
         <Suspense fallback={<PageFallback />}>
           <div className="max-w-lg mx-auto px-4 py-8">
@@ -257,7 +278,7 @@ function AppRoutes() {
           <About />
         </Suspense>
       } />
-      <Route path="/*" element={user ? <AuthenticatedLayout /> : <Navigate to="/login" replace />} />
+      <Route path="/*" element={(user || isGuest) ? <AuthenticatedLayout /> : <Navigate to="/login" replace />} />
     </Routes>
   );
 }

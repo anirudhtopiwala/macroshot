@@ -186,6 +186,35 @@ class AcceptResponse(BaseModel):
     error: str | None = None
 
 
+class ImportGuestMealItem(BaseModel):
+    """One guest-mode meal entry to import on signup.
+
+    `nutrition` carries the already-analyzed result the client cached in
+    IndexedDB after /guest/analyze. `logged_at` is the timestamp the
+    user accepted the meal as a guest (the new account inherits it).
+    """
+
+    nutrition: NutritionOut
+    logged_at: str = Field(
+        max_length=30,
+        pattern=r"^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}(:\d{2})?)?$",
+    )
+    meal_type: str = Field(default="", max_length=32)
+    user_input: str = Field(default="", max_length=2000)
+
+
+class ImportGuestMealsRequest(BaseModel):
+    # 30-cap is per-call. Combined with the once-per-user flag on
+    # users.guest_meals_imported_at this bounds the total a signup can
+    # backfill no matter how the client batches.
+    meals: list[ImportGuestMealItem] = Field(default_factory=list, max_length=30)
+
+
+class ImportGuestMealsResponse(BaseModel):
+    imported: int
+    already_imported: bool = False
+
+
 class MealOut(BaseModel):
     id: int
     logged_at: str
@@ -313,6 +342,11 @@ class TargetSuggestRequest(BaseModel):
     activity_level: str = "lightly_active"
     workouts_per_week: int | None = None
     weight_change_rate_kg: float | None = None
+    # Optional first-turn user message folded into the Gemini prompt so the
+    # AI's initial suggestion already reflects the user's stated intent
+    # (e.g. "I'm training for a marathon, give me more carbs"). Used by the
+    # refine flow to avoid the legacy two-step suggest→refine round-trip.
+    seed_message: str | None = Field(default=None, max_length=2000)
 
 
 class TargetRefineRequest(BaseModel):
