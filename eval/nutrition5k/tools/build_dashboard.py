@@ -106,6 +106,20 @@ COMPS=[("Baseline &rarr; MacroShot &middot; photo only","BASELINE_unlabeled","X1
  ("Text-only (terse) &rarr; MacroShot + user caption &middot; adds photo","E_terse","X3v2"),
  ("Text-only (terse) &rarr; Text-only (detailed)","E_terse","E_detailed")]
 comprows="".join(f"<tr><td class=l>{lab}</td>{dcell('Flash-Lite',fr,to)}{dcell('Opus 4.8',fr,to)}</tr>" for lab,fr,to in COMPS)
+# per-macro deltas (the nutrients an app cares about; mass/grams excluded)
+M4=["calories","protein_g","carb_g","fat_g"]; PMAC="med" if METRIC=="medpe" else "mae"
+def dmac(model,fr,to,macro):
+    a=F.get(model,{}).get(fr); b=F.get(model,{}).get(to)
+    if not a or not b: return '<td class=na>&mdash;</td>'
+    av=a["macros"][macro][PMAC]; bv=b["macros"][macro][PMAC]
+    if not av: return '<td class=na>&mdash;</td>'
+    p=(bv-av)/av*100
+    return f'<td class={"g" if p<0 else "r"}>{"&#9660;" if p<0 else "&#9650;"} {p:+.0f}%<span class=pct><br>{av:.0f}{PSUF}&rarr;{bv:.0f}{PSUF}</span></td>'
+def needle_macro(model):
+    head="".join(f"<th>{LBL[m]}</th>" for m in M4)
+    body="".join(f"<tr><td class=l>{lab}</td>"+"".join(dmac(model,fr,to,m) for m in M4)+"</tr>" for lab,fr,to in COMPS)
+    return f"<h3>{model}</h3><table><thead><tr><th>change</th>{head}</tr></thead><tbody>{body}</tbody></table>"
+needle_macro_html="".join(needle_macro(m) for m in ["Flash-Lite","Opus 4.8"])
 def _p(model,fr,to):
     r=dpct(model,fr,to); return abs(round(r[2])) if r else None
 photo_fl,photo_op=_p('Flash-Lite','E_terse','X3v2'),_p('Opus 4.8','E_terse','X3v2')
@@ -156,6 +170,9 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "<table><thead><tr><th>change</th><th>Flash-Lite</th><th>Opus 4.8</th></tr></thead><tbody>"+comprows+"</tbody></table>",
  "<div class=key>Same move, opposite result: <b>adding the ground-truth ingredient list to the generic prompt makes it worse</b>, but <b>adding the user&rsquo;s caption to MacroShot makes it better</b> &mdash; the structured prompt knows to treat the text as identity and size portions from the image, instead of stacking a standard serving per named item. The <b>photo</b> is the largest single improvement (same caption, +image roughly halves the error). And <b>text-only logging</b>, while the weakest, still recovers usable macros.</div>",
  "<div class=key><b>Same caption, with vs without the photo.</b> The identical <b>terse</b> caption feeds BOTH <b>MacroShot + user caption (terse)</b> (photo prompt + image + caption) and <b>Text-only (terse)</b> (text prompt + caption, no image) &mdash; so comparing them isolates what the <b>photo</b> adds, holding the user&rsquo;s words constant.</div>",
+ "<h3>Impact per nutrient (Calories / Protein / Carbs / Fat)</h3>",
+ (f"<p class=sub>The same changes, broken out by the nutrients an app actually cares about &mdash; <b>mass/grams excluded</b>, since AvgMAE above is dominated by total weight. Each cell is the % change in that nutrient&rsquo;s {'MedPE' if METRIC=='medpe' else 'MAE'}; small numbers are {'MedPE% before&rarr;after' if METRIC=='medpe' else 'MAE before&rarr;after in native units (kcal for calories, g for the rest)'}. <b style='color:var(--g)'>&#9660; green = better</b>, <b style='color:var(--r)'>&#9650; red = worse</b>.</p>"),
+ needle_macro_html,
  "<h2>Results &mdash; per-macro detail</h2><p class=sub>Each cell: <b>MAE</b> with <span class=pct>RelErr% &middot; MedPE%</span> beneath, colored by MedPE: <span class='chip g'></span>&le;30% <span class='chip y'></span>&le;50% <span class='chip r'></span>&gt;50%. AvgMAE over five nutrients over-weights Mass; for a nutrition app, Calories / Protein / Fat matter most.</p>",
  permodel_html,
  "<h2>Methodology &amp; definitions</h2>",
