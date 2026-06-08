@@ -19,6 +19,10 @@ let queueingEnabled = true;
 // Poll for Umami readiness (script loads async)
 if (typeof window !== 'undefined') {
   const check = setInterval(() => {
+    // Guard against `window` being torn down by a test harness (jsdom)
+    // while this interval is still scheduled - referencing `window`
+    // raises ReferenceError and the unhandled exception fails CI.
+    if (typeof window === 'undefined') { clearInterval(check); return; }
     if ((window as any).umami?.track) {
       flushQueue();
       clearInterval(check);
