@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { dashboardApi } from '../api/dashboard';
+import { deleteGuestMeal, listGuestMeals } from '../utils/guestStorage';
 import ProgressRing, { getTargetColor } from '../components/ProgressRings';
 import MealCard from '../components/MealCard';
 import WeekStrip from '../components/WeekStrip';
@@ -215,8 +216,46 @@ const MACROS = [
 
 
 export default function Dashboard() {
-  const { user: authUser } = useAuth();
+  const { user: authUser, isGuest } = useAuth();
   const uid = authUser?.user_id || '';
+
+  // When the visitor is a guest, today's totals + meal list come from
+  // IndexedDB, not the server. Cooks the same shape as the server
+  // would so the rest of the component renders unchanged. Targets stay
+  // at DEFAULT_TARGET, trend / workouts / challenges stay empty, and
+  // those cards render their zero state (which is fine — they exist
+  // to motivate signup, not to show fake data).
+  const loadGuestToday = useCallback(async (date: string) => {
+    const all = await listGuestMeals();
+    const todays = all.filter((m) => m.loggedAt.startsWith(date));
+    const totals = todays.reduce(
+      (acc, m) => ({
+        calories: acc.calories + m.nutrition.calories,
+        protein: acc.protein + m.nutrition.protein,
+        carbs: acc.carbs + m.nutrition.carbs,
+        fat: acc.fat + m.nutrition.fat,
+        meal_count: acc.meal_count + 1,
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0, meal_count: 0 },
+    );
+    // Guest meals don't have a server id; use the IDB id (offset
+    // negative so it can't collide with real meal ids if the user
+    // later signs in and the dashboard isn't fully remounted).
+    const mealsList: Meal[] = todays.map((m) => ({
+      id: -(m.id ?? 0),
+      logged_at: m.loggedAt,
+      item_name: m.nutrition.item_name || 'Meal',
+      meal_description: m.nutrition.meal_description || '',
+      calories: m.nutrition.calories,
+      protein: m.nutrition.protein,
+      carbs: m.nutrition.carbs,
+      fat: m.nutrition.fat,
+      meal_type: m.mealType,
+      items_json: JSON.stringify(m.nutrition.items ?? []),
+      image_path: '',
+    }));
+    return { totals, meals: mealsList };
+  }, []);
 
   // Restore from in-memory cache for instant re-mount after navigation
   // Persist selected date in URL so navigating back restores the viewed day
@@ -349,6 +388,16 @@ export default function Dashboard() {
     setMeals((prev) => prev.filter((m) => m.id !== id));
     subtractMacros(meal);
 
+    // Guest meals are stored in IndexedDB with negative ids derived
+    // from the IDB autoincrement key. Delete from IDB instead of
+    // queueing a (no-op, 401-bound) server delete. No Undo for now —
+    // adding it would require staging the deletion in memory.
+    if (isGuest && id < 0) {
+      deleteGuestMeal(-id).catch(() => { /* best-effort */ });
+      toast('Meal deleted', 'success');
+      return;
+    }
+
     schedulePendingDelete(id, {
       cachesToClear: [
         `dash_day_${selectedDate}`,
@@ -369,7 +418,7 @@ export default function Dashboard() {
         }
       },
     });
-  }, [toast, subtractMacros, addMacros, selectedDate]);
+  }, [toast, subtractMacros, addMacros, selectedDate, isGuest]);
 
   const loadDay = useCallback((date: string) => {
     setLoading(true);
@@ -383,6 +432,14 @@ export default function Dashboard() {
     }
     window.dispatchEvent(new CustomEvent('viewingDate', { detail: date }));
     setFetchError('');
+    if (isGuest) {
+      loadGuestToday(date).then(({ totals: gt, meals: gm }) => {
+        setTotals(gt);
+        setMeals(gm);
+        setRemaining(null);
+      }).finally(() => setLoading(false));
+      return;
+    }
     dashboardApi.today(date, { refresh: true }).then((data) => {
       setTotals(data.totals);
       if (data.target) setTarget(data.target);
@@ -459,6 +516,12 @@ export default function Dashboard() {
   // refreshAll: dropPending dependency; same rationale as loadDay above.
   const refreshAll = useCallback(async () => {
     setFetchError('');
+    if (isGuest) {
+      const { totals: gt, meals: gm } = await loadGuestToday(selectedDate);
+      setTotals(gt);
+      setMeals(gm);
+      return;
+    }
     const [trendResult, todayResult, workoutsResult] = await Promise.allSettled([
       dashboardApi.trend(undefined, undefined, { refresh: true }),
       dashboardApi.today(selectedDate, { refresh: true }),
@@ -487,7 +550,7 @@ export default function Dashboard() {
       setWeekDays(trendResult.value.days);
       setCache('dash_trend', trendResult.value.days);
     }
-  }, [selectedDate, dropPending, scheduleSyncFollowup]);
+  }, [selectedDate, dropPending, scheduleSyncFollowup, isGuest, loadGuestToday]);
 
   // Daily target celebration - after 7 PM, if close to target with 3+ meals
   useEffect(() => {
@@ -516,6 +579,16 @@ export default function Dashboard() {
     if (!cachedDay) setLoading(true);
     setSelectedDate(mountDate);
     window.dispatchEvent(new CustomEvent('viewingDate', { detail: mountDate }));
+    if (isGuest) {
+      // Guest path: read from IndexedDB, skip every server fetch.
+      loadGuestToday(mountDate).then(({ totals: gt, meals: gm }) => {
+        setTotals(gt);
+        setMeals(gm);
+        setRemaining(null);
+        signalCriticalDone();
+      }).finally(() => setLoading(false));
+      return;
+    }
     // Always use refresh: true so Dashboard gets fresh data after mutations
     // (e.g. user just logged a meal). The in-memory cache above provides
     // instant display while we wait for the network response.
