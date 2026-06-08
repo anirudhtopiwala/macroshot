@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1565023157",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: raspberries; vinaigrette; mixed greens; granola; blackberries; scrambled eggs. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1565023157_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 200, \"mass_g\": 200, \"fat_g\": 12, \"carb_g\": 5, \"protein_g\": 18}",
+  "parsed": {
+    "calories": 200.0,
+    "mass_g": 200.0,
+    "fat_g": 12.0,
+    "carb_g": 5.0,
+    "protein_g": 18.0
+  },
+  "ground_truth": {
+    "calories": 379.034851,
+    "mass_g": 260.0,
+    "fat_g": 27.309677,
+    "carb_g": 8.572904,
+    "protein_g": 23.824001
+  },
+  "abs_err": {
+    "calories": 179.034851,
+    "mass_g": 60.0,
+    "fat_g": 15.309677,
+    "carb_g": 3.5729039999999994,
+    "protein_g": 5.824000999999999
+  },
+  "pct_err": {
+    "calories": 47.234403519268994,
+    "mass_g": 23.076923076923077,
+    "fat_g": 56.05953157190399,
+    "carb_g": 41.67670604966531,
+    "protein_g": 24.445940041725148
+  },
+  "latency_s": 0.9737868350057397,
+  "input_tokens": 359,
+  "output_tokens": 44,
+  "thinking_tokens": null,
+  "total_tokens": 403
+}

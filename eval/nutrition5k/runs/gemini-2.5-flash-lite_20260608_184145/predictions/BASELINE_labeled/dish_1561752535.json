@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1561752535",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: cilantro; garlic; chili; salt; tortilla; onions; tomatoes; olive oil; chicken thighs; squash; caesar salad; turnips; cheese. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1561752535_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 750, \"mass_g\": 400, \"fat_g\": 40, \"carb_g\": 50, \"protein_g\": 50}",
+  "parsed": {
+    "calories": 750.0,
+    "mass_g": 400.0,
+    "fat_g": 40.0,
+    "carb_g": 50.0,
+    "protein_g": 50.0
+  },
+  "ground_truth": {
+    "calories": 358.001984,
+    "mass_g": 307.0,
+    "fat_g": 18.121077,
+    "carb_g": 21.717422,
+    "protein_g": 28.101458
+  },
+  "abs_err": {
+    "calories": 391.998016,
+    "mass_g": 93.0,
+    "fat_g": 21.878923,
+    "carb_g": 28.282578,
+    "protein_g": 21.898542
+  },
+  "pct_err": {
+    "calories": 109.496045697892,
+    "mass_g": 30.293159609120522,
+    "fat_g": 120.73743188663677,
+    "carb_g": 130.2299048201946,
+    "protein_g": 77.92671113363583
+  },
+  "latency_s": 1.0652130369999213,
+  "input_tokens": 373,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 418
+}

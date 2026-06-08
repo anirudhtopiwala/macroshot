@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1551567964",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: olives; broccoli; cauliflower. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1551567964_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 100, \"mass_g\": 200, \"fat_g\": 5, \"carb_g\": 10, \"protein_g\": 5}",
+  "parsed": {
+    "calories": 100.0,
+    "mass_g": 200.0,
+    "fat_g": 5.0,
+    "carb_g": 10.0,
+    "protein_g": 5.0
+  },
+  "ground_truth": {
+    "calories": 104.299995,
+    "mass_g": 167.0,
+    "fat_g": 7.113,
+    "carb_g": 10.339,
+    "protein_g": 2.736
+  },
+  "abs_err": {
+    "calories": 4.299994999999996,
+    "mass_g": 33.0,
+    "fat_g": 2.1130000000000004,
+    "carb_g": 0.3390000000000004,
+    "protein_g": 2.264
+  },
+  "pct_err": {
+    "calories": 4.122718318442868,
+    "mass_g": 19.760479041916167,
+    "fat_g": 29.70617179811613,
+    "carb_g": 3.278847083857243,
+    "protein_g": 82.7485380116959
+  },
+  "latency_s": 1.2467235139993136,
+  "input_tokens": 350,
+  "output_tokens": 43,
+  "thinking_tokens": null,
+  "total_tokens": 393
+}

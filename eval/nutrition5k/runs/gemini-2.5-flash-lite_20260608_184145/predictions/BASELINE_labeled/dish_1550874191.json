@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1550874191",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: tomatoes; fish; carrot. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1550874191_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 300, \"mass_g\": 150, \"fat_g\": 15, \"carb_g\": 10, \"protein_g\": 30}",
+  "parsed": {
+    "calories": 300.0,
+    "mass_g": 150.0,
+    "fat_g": 15.0,
+    "carb_g": 10.0,
+    "protein_g": 30.0
+  },
+  "ground_truth": {
+    "calories": 92.190002,
+    "mass_g": 132.0,
+    "fat_g": 10.509,
+    "carb_g": 4.632,
+    "protein_g": 14.812
+  },
+  "abs_err": {
+    "calories": 207.809998,
+    "mass_g": 18.0,
+    "fat_g": 4.491,
+    "carb_g": 5.368,
+    "protein_g": 15.188
+  },
+  "pct_err": {
+    "calories": 225.41489694294614,
+    "mass_g": 13.636363636363635,
+    "fat_g": 42.734798743933766,
+    "carb_g": 115.88946459412782,
+    "protein_g": 102.53848231163923
+  },
+  "latency_s": 1.1398583619957208,
+  "input_tokens": 350,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 395
+}

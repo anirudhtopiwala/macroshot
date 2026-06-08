@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1567110519",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: lettuce; lime; mixed greens; pepper; onions; cucumbers; olive oil; vinegar; salt; cherry tomatoes. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1567110519_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 50, \"mass_g\": 150, \"fat_g\": 3, \"carb_g\": 5, \"protein_g\": 2}",
+  "parsed": {
+    "calories": 50.0,
+    "mass_g": 150.0,
+    "fat_g": 3.0,
+    "carb_g": 5.0,
+    "protein_g": 2.0
+  },
+  "ground_truth": {
+    "calories": 100.944618,
+    "mass_g": 100.0,
+    "fat_g": 9.542274,
+    "carb_g": 3.697084,
+    "protein_g": 1.362099
+  },
+  "abs_err": {
+    "calories": 50.944618000000006,
+    "mass_g": 50.0,
+    "fat_g": 6.542274000000001,
+    "carb_g": 1.3029160000000002,
+    "protein_g": 0.637901
+  },
+  "pct_err": {
+    "calories": 50.46788923407487,
+    "mass_g": 50.0,
+    "fat_g": 68.56095308099516,
+    "carb_g": 35.241720231404,
+    "protein_g": 46.832205294916164
+  },
+  "latency_s": 0.9731624449996161,
+  "input_tokens": 367,
+  "output_tokens": 41,
+  "thinking_tokens": null,
+  "total_tokens": 408
+}

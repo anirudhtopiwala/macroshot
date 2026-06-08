@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1562788845",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: green onions; cherry tomatoes; white rice; corn on the cob; onions; parsley; basil; lemon juice; shallots; pepper; fish; salt; broccoli; pork; brown rice; country rice; vinegar; olive oil; garlic; caesar salad. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1562788845_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 1200, \"mass_g\": 600, \"fat_g\": 50, \"carb_g\": 120, \"protein_g\": 70}",
+  "parsed": {
+    "calories": 1200.0,
+    "mass_g": 600.0,
+    "fat_g": 50.0,
+    "carb_g": 120.0,
+    "protein_g": 70.0
+  },
+  "ground_truth": {
+    "calories": 529.483459,
+    "mass_g": 372.0,
+    "fat_g": 25.366417,
+    "carb_g": 46.558498,
+    "protein_g": 39.395699
+  },
+  "abs_err": {
+    "calories": 670.516541,
+    "mass_g": 228.0,
+    "fat_g": 24.633583,
+    "carb_g": 73.441502,
+    "protein_g": 30.604301
+  },
+  "pct_err": {
+    "calories": 126.63597504374539,
+    "mass_g": 61.29032258064516,
+    "fat_g": 97.1110070452599,
+    "carb_g": 157.74027332239112,
+    "protein_g": 77.68437107817276
+  },
+  "latency_s": 1.0786908839945681,
+  "input_tokens": 396,
+  "output_tokens": 47,
+  "thinking_tokens": null,
+  "total_tokens": 443
+}

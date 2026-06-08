@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1551303476",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: shrimp; white rice; bean(seed). Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1551303476_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 520, \"mass_g\": 260, \"fat_g\": 10, \"carb_g\": 60, \"protein_g\": 45}",
+  "parsed": {
+    "calories": 520.0,
+    "mass_g": 260.0,
+    "fat_g": 10.0,
+    "carb_g": 60.0,
+    "protein_g": 45.0
+  },
+  "ground_truth": {
+    "calories": 224.75,
+    "mass_g": 177.0,
+    "fat_g": 0.738,
+    "carb_g": 32.790001,
+    "protein_g": 20.697001
+  },
+  "abs_err": {
+    "calories": 295.25,
+    "mass_g": 83.0,
+    "fat_g": 9.262,
+    "carb_g": 27.209999000000003,
+    "protein_g": 24.302999
+  },
+  "pct_err": {
+    "calories": 131.36818687430477,
+    "mass_g": 46.89265536723164,
+    "fat_g": 1255.0135501355014,
+    "carb_g": 82.98261107097863,
+    "protein_g": 117.42280439567065
+  },
+  "latency_s": 1.0640378210009658,
+  "input_tokens": 353,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 398
+}

@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1561062237",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: beef; wine; mushroom; onions; spinach (raw); jalapenos; ginger; thyme; shallots; cilantro; chili; pasta; salmon; cream; brown rice; sour cream; lemon juice; olive oil; lime; garlic; salt. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1561062237_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 650, \"mass_g\": 250, \"fat_g\": 30, \"carb_g\": 60, \"protein_g\": 35}",
+  "parsed": {
+    "calories": 650.0,
+    "mass_g": 250.0,
+    "fat_g": 30.0,
+    "carb_g": 60.0,
+    "protein_g": 35.0
+  },
+  "ground_truth": {
+    "calories": 182.259399,
+    "mass_g": 110.0,
+    "fat_g": 8.210912,
+    "carb_g": 8.149249,
+    "protein_g": 17.376198
+  },
+  "abs_err": {
+    "calories": 467.74060099999997,
+    "mass_g": 140.0,
+    "fat_g": 21.789088,
+    "carb_g": 51.850751,
+    "protein_g": 17.623802
+  },
+  "pct_err": {
+    "calories": 256.63455688230374,
+    "mass_g": 127.27272727272727,
+    "fat_g": 265.3674524827449,
+    "carb_g": 636.2641637284614,
+    "protein_g": 101.42496074227516
+  },
+  "latency_s": 1.1982357519955258,
+  "input_tokens": 394,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 439
+}

@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1562011765",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: jalapenos; mayonnaise; olive oil; garlic; carrot; brussels sprouts; salt; pepper; wheat berry; pork; cabbage; lemon juice; parsley. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1562011765_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 650, \"mass_g\": 300, \"fat_g\": 35, \"carb_g\": 50, \"protein_g\": 30}",
+  "parsed": {
+    "calories": 650.0,
+    "mass_g": 300.0,
+    "fat_g": 35.0,
+    "carb_g": 50.0,
+    "protein_g": 30.0
+  },
+  "ground_truth": {
+    "calories": 423.923004,
+    "mass_g": 283.0,
+    "fat_g": 23.582834,
+    "carb_g": 14.153584,
+    "protein_g": 39.041424
+  },
+  "abs_err": {
+    "calories": 226.076996,
+    "mass_g": 17.0,
+    "fat_g": 11.417166000000002,
+    "carb_g": 35.846416,
+    "protein_g": 9.041424
+  },
+  "pct_err": {
+    "calories": 53.32973060362632,
+    "mass_g": 6.007067137809187,
+    "fat_g": 48.41303636365333,
+    "carb_g": 253.26741269207855,
+    "protein_g": 23.15854052864465
+  },
+  "latency_s": 1.0849006419957732,
+  "input_tokens": 376,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 421
+}

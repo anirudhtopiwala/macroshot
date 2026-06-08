@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1563568319",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: white rice; mushroom; ground turkey; olive oil; chive; carrot; eggs; corn on the cob; cream; thyme; kale; salt; onions; cheese pizza; celery; garlic. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1563568319_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 1150, \"mass_g\": 600, \"fat_g\": 55, \"carb_g\": 110, \"protein_g\": 60}",
+  "parsed": {
+    "calories": 1150.0,
+    "mass_g": 600.0,
+    "fat_g": 55.0,
+    "carb_g": 110.0,
+    "protein_g": 60.0
+  },
+  "ground_truth": {
+    "calories": 604.323303,
+    "mass_g": 347.0,
+    "fat_g": 28.784986,
+    "carb_g": 53.148632,
+    "protein_g": 37.726025
+  },
+  "abs_err": {
+    "calories": 545.676697,
+    "mass_g": 253.0,
+    "fat_g": 26.215014,
+    "carb_g": 56.851368,
+    "protein_g": 22.273975
+  },
+  "pct_err": {
+    "calories": 90.29549155081978,
+    "mass_g": 72.91066282420749,
+    "fat_g": 91.07183168336438,
+    "carb_g": 106.9667569242422,
+    "protein_g": 59.04140444162882
+  },
+  "latency_s": 1.3650314760016045,
+  "input_tokens": 384,
+  "output_tokens": 47,
+  "thinking_tokens": null,
+  "total_tokens": 431
+}

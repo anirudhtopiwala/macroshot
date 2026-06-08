@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1560270630",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: pineapple; watermelon; sweet potato. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1560270630_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 300, \"mass_g\": 300, \"fat_g\": 1.5, \"carb_g\": 70.5, \"protein_g\": 3.0}",
+  "parsed": {
+    "calories": 300.0,
+    "mass_g": 300.0,
+    "fat_g": 1.5,
+    "carb_g": 70.5,
+    "protein_g": 3.0
+  },
+  "ground_truth": {
+    "calories": 120.560005,
+    "mass_g": 215.0,
+    "fat_g": 0.18,
+    "carb_g": 29.436001,
+    "protein_g": 1.646
+  },
+  "abs_err": {
+    "calories": 179.439995,
+    "mass_g": 85.0,
+    "fat_g": 1.32,
+    "carb_g": 41.063998999999995,
+    "protein_g": 1.354
+  },
+  "pct_err": {
+    "calories": 148.83874216826715,
+    "mass_g": 39.53488372093023,
+    "fat_g": 733.3333333333334,
+    "carb_g": 139.5026416801657,
+    "protein_g": 82.26002430133659
+  },
+  "latency_s": 1.72147791399766,
+  "input_tokens": 351,
+  "output_tokens": 49,
+  "thinking_tokens": null,
+  "total_tokens": 400
+}

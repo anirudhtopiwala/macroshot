@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1562873224",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: fish; pepper; chive; corn; jicama; green beans; parsley; olive oil; garlic; lime; salt; bok choy; nopales; arugula; sour cream; carrot. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1562873224_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 350, \"mass_g\": 300, \"fat_g\": 15, \"carb_g\": 30, \"protein_g\": 25}",
+  "parsed": {
+    "calories": 350.0,
+    "mass_g": 300.0,
+    "fat_g": 15.0,
+    "carb_g": 30.0,
+    "protein_g": 25.0
+  },
+  "ground_truth": {
+    "calories": 261.856628,
+    "mass_g": 436.0,
+    "fat_g": 24.702576,
+    "carb_g": 16.689787,
+    "protein_g": 27.196226
+  },
+  "abs_err": {
+    "calories": 88.143372,
+    "mass_g": 136.0,
+    "fat_g": 9.702576,
+    "carb_g": 13.310213000000001,
+    "protein_g": 2.1962259999999993
+  },
+  "pct_err": {
+    "calories": 33.66092837642437,
+    "mass_g": 31.19266055045872,
+    "fat_g": 39.27758789204818,
+    "carb_g": 79.75064630842803,
+    "protein_g": 8.075480767074076
+  },
+  "latency_s": 1.0764307479985291,
+  "input_tokens": 384,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 429
+}

@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1562617470",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: arugula; brown rice; lemon juice; parsley; pepperoni pizza; garlic; roasted potatoes; radishes; chicken thighs; vinegar; basil; olive oil; thyme; salt; caesar salad; broccoli. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1562617470_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 850, \"mass_g\": 450, \"fat_g\": 45, \"carb_g\": 60, \"protein_g\": 50}",
+  "parsed": {
+    "calories": 850.0,
+    "mass_g": 450.0,
+    "fat_g": 45.0,
+    "carb_g": 60.0,
+    "protein_g": 50.0
+  },
+  "ground_truth": {
+    "calories": 440.867065,
+    "mass_g": 321.0,
+    "fat_g": 19.671377,
+    "carb_g": 37.176857,
+    "protein_g": 29.481651
+  },
+  "abs_err": {
+    "calories": 409.132935,
+    "mass_g": 129.0,
+    "fat_g": 25.328623,
+    "carb_g": 22.823143,
+    "protein_g": 20.518349
+  },
+  "pct_err": {
+    "calories": 92.80188235426476,
+    "mass_g": 40.18691588785047,
+    "fat_g": 128.75876965806717,
+    "carb_g": 61.3907275701117,
+    "protein_g": 69.59701476691383
+  },
+  "latency_s": 1.0172115250024945,
+  "input_tokens": 384,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 429
+}

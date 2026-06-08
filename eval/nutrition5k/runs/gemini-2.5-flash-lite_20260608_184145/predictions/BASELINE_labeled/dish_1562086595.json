@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1562086595",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: fruit salad; scrambled eggs; yogurt. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1562086595_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 450, \"mass_g\": 300, \"fat_g\": 20, \"carb_g\": 45, \"protein_g\": 25}",
+  "parsed": {
+    "calories": 450.0,
+    "mass_g": 300.0,
+    "fat_g": 20.0,
+    "carb_g": 45.0,
+    "protein_g": 25.0
+  },
+  "ground_truth": {
+    "calories": 308.602997,
+    "mass_g": 324.0,
+    "fat_g": 15.132999,
+    "carb_g": 26.694,
+    "protein_g": 18.139999
+  },
+  "abs_err": {
+    "calories": 141.39700299999998,
+    "mass_g": 24.0,
+    "fat_g": 4.867001,
+    "carb_g": 18.306,
+    "protein_g": 6.8600010000000005
+  },
+  "pct_err": {
+    "calories": 45.81841536684752,
+    "mass_g": 7.4074074074074066,
+    "fat_g": 32.16151008798719,
+    "carb_g": 68.57720836142954,
+    "protein_g": 37.81698664922749
+  },
+  "latency_s": 1.664625696001167,
+  "input_tokens": 352,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 397
+}

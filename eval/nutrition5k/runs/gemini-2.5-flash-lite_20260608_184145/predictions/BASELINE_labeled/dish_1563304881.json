@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1563304881",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: garlic; chicken; spinach (raw); thyme; wheat berry; olive oil; lemon juice; parsley; salt; shallots. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1563304881_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 650, \"mass_g\": 300, \"fat_g\": 35, \"carb_g\": 25, \"protein_g\": 55}",
+  "parsed": {
+    "calories": 650.0,
+    "mass_g": 300.0,
+    "fat_g": 35.0,
+    "carb_g": 25.0,
+    "protein_g": 55.0
+  },
+  "ground_truth": {
+    "calories": 739.407654,
+    "mass_g": 446.0,
+    "fat_g": 21.649536,
+    "carb_g": 8.843342,
+    "protein_g": 120.443954
+  },
+  "abs_err": {
+    "calories": 89.40765399999998,
+    "mass_g": 146.0,
+    "fat_g": 13.350463999999999,
+    "carb_g": 16.156658,
+    "protein_g": 65.443954
+  },
+  "pct_err": {
+    "calories": 12.091794494732127,
+    "mass_g": 32.73542600896861,
+    "fat_g": 61.6662823628183,
+    "carb_g": 182.69855446051957,
+    "protein_g": 54.33560741454902
+  },
+  "latency_s": 1.0049456609995104,
+  "input_tokens": 370,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 415
+}

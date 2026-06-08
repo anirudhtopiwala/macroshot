@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1568143326",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: sun dried tomatoes; jalapenos; tatsoi; spinach (raw); mustard; onions; vinegar; salt; broccoli; shallots; steak; brown rice; cucumbers; lemon juice; parsley; olive oil; garlic; cilantro. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1568143326_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 650, \"mass_g\": 350, \"fat_g\": 30, \"carb_g\": 50, \"protein_g\": 45}",
+  "parsed": {
+    "calories": 650.0,
+    "mass_g": 350.0,
+    "fat_g": 30.0,
+    "carb_g": 50.0,
+    "protein_g": 45.0
+  },
+  "ground_truth": {
+    "calories": 306.131805,
+    "mass_g": 230.0,
+    "fat_g": 21.738684,
+    "carb_g": 12.966171,
+    "protein_g": 17.740976
+  },
+  "abs_err": {
+    "calories": 343.868195,
+    "mass_g": 120.0,
+    "fat_g": 8.261316,
+    "carb_g": 37.033829,
+    "protein_g": 27.259024
+  },
+  "pct_err": {
+    "calories": 112.32684398800055,
+    "mass_g": 52.17391304347826,
+    "fat_g": 38.002834026199565,
+    "carb_g": 285.6188538621001,
+    "protein_g": 153.6500810327459
+  },
+  "latency_s": 1.0895609770013834,
+  "input_tokens": 391,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 436
+}

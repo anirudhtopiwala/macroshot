@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1568146977",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: mixed greens; chicken; broccoli. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1568146977_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 350, \"mass_g\": 250, \"fat_g\": 10, \"carb_g\": 15, \"protein_g\": 50}",
+  "parsed": {
+    "calories": 350.0,
+    "mass_g": 250.0,
+    "fat_g": 10.0,
+    "carb_g": 15.0,
+    "protein_g": 50.0
+  },
+  "ground_truth": {
+    "calories": 375.570007,
+    "mass_g": 345.0,
+    "fat_g": 7.78,
+    "carb_g": 8.892,
+    "protein_g": 65.332001
+  },
+  "abs_err": {
+    "calories": 25.570006999999976,
+    "mass_g": 95.0,
+    "fat_g": 2.2199999999999998,
+    "carb_g": 6.1080000000000005,
+    "protein_g": 15.332001000000005
+  },
+  "pct_err": {
+    "calories": 6.808319760209174,
+    "mass_g": 27.536231884057973,
+    "fat_g": 28.53470437017994,
+    "carb_g": 68.6909581646424,
+    "protein_g": 23.467827045432152
+  },
+  "latency_s": 1.236098483997921,
+  "input_tokens": 351,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 396
+}

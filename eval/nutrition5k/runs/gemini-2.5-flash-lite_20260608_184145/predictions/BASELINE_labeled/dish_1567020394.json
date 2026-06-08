@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1567020394",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: fish; pepper; kale; parsley; olive oil; chive; broccoli; cherry tomatoes; wheat berry; chard; lemon juice; salt; shallots; garlic; brussels sprouts. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1567020394_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 450, \"mass_g\": 300, \"fat_g\": 20, \"carb_g\": 30, \"protein_g\": 40}",
+  "parsed": {
+    "calories": 450.0,
+    "mass_g": 300.0,
+    "fat_g": 20.0,
+    "carb_g": 30.0,
+    "protein_g": 40.0
+  },
+  "ground_truth": {
+    "calories": 176.15863,
+    "mass_g": 265.0,
+    "fat_g": 12.666015,
+    "carb_g": 16.685022,
+    "protein_g": 13.626102
+  },
+  "abs_err": {
+    "calories": 273.84137,
+    "mass_g": 35.0,
+    "fat_g": 7.333985,
+    "carb_g": 13.314978,
+    "protein_g": 26.373898
+  },
+  "pct_err": {
+    "calories": 155.45157793291196,
+    "mass_g": 13.20754716981132,
+    "fat_g": 57.90286052874563,
+    "carb_g": 79.80198048285462,
+    "protein_g": 193.55423876909185
+  },
+  "latency_s": 1.2313158590040985,
+  "input_tokens": 383,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 428
+}

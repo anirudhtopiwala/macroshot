@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1550876416",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: chicken; avocado; orange. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1550876416_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 300, \"mass_g\": 150, \"fat_g\": 18, \"carb_g\": 15, \"protein_g\": 20}",
+  "parsed": {
+    "calories": 300.0,
+    "mass_g": 150.0,
+    "fat_g": 18.0,
+    "carb_g": 15.0,
+    "protein_g": 20.0
+  },
+  "ground_truth": {
+    "calories": 159.470001,
+    "mass_g": 111.0,
+    "fat_g": 7.681001,
+    "carb_g": 7.23,
+    "protein_g": 16.559
+  },
+  "abs_err": {
+    "calories": 140.529999,
+    "mass_g": 39.0,
+    "fat_g": 10.318999,
+    "carb_g": 7.77,
+    "protein_g": 3.440999999999999
+  },
+  "pct_err": {
+    "calories": 88.12315678106756,
+    "mass_g": 35.13513513513514,
+    "fat_g": 134.3444558853722,
+    "carb_g": 107.4688796680498,
+    "protein_g": 20.780240352678295
+  },
+  "latency_s": 0.9473693050022121,
+  "input_tokens": 350,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 395
+}

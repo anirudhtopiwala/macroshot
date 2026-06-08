@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1565383097",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: spinach (raw); cucumbers; olives; chicken; parmesan cheese. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1565383097_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 450, \"mass_g\": 300, \"fat_g\": 25, \"carb_g\": 15, \"protein_g\": 40}",
+  "parsed": {
+    "calories": 450.0,
+    "mass_g": 300.0,
+    "fat_g": 25.0,
+    "carb_g": 15.0,
+    "protein_g": 40.0
+  },
+  "ground_truth": {
+    "calories": 479.248993,
+    "mass_g": 430.0,
+    "fat_g": 25.929001,
+    "carb_g": 13.332999,
+    "protein_g": 50.022999
+  },
+  "abs_err": {
+    "calories": 29.248992999999984,
+    "mass_g": 130.0,
+    "fat_g": 0.9290009999999995,
+    "carb_g": 1.6670010000000008,
+    "protein_g": 10.022998999999999
+  },
+  "pct_err": {
+    "calories": 6.103089088806909,
+    "mass_g": 30.23255813953488,
+    "fat_g": 3.5828646078574318,
+    "carb_g": 12.50282100823679,
+    "protein_g": 20.036781481254252
+  },
+  "latency_s": 1.078638836996106,
+  "input_tokens": 357,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 402
+}

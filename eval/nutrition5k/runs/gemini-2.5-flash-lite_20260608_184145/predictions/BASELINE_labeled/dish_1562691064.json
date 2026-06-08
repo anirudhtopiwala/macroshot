@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1562691064",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: berries; fried rice; olive oil; pineapple; scrambled eggs; roasted potatoes; broccoli. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1562691064_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 750, \"mass_g\": 400, \"fat_g\": 30, \"carb_g\": 90, \"protein_g\": 30}",
+  "parsed": {
+    "calories": 750.0,
+    "mass_g": 400.0,
+    "fat_g": 30.0,
+    "carb_g": 90.0,
+    "protein_g": 30.0
+  },
+  "ground_truth": {
+    "calories": 555.303711,
+    "mass_g": 501.0,
+    "fat_g": 23.931829,
+    "carb_g": 64.772835,
+    "protein_g": 21.98934
+  },
+  "abs_err": {
+    "calories": 194.69628899999998,
+    "mass_g": 101.0,
+    "fat_g": 6.0681709999999995,
+    "carb_g": 25.227165,
+    "protein_g": 8.010660000000001
+  },
+  "pct_err": {
+    "calories": 35.06122598197439,
+    "mass_g": 20.159680638722556,
+    "fat_g": 25.356068689944255,
+    "carb_g": 38.947137330024226,
+    "protein_g": 36.429742775362975
+  },
+  "latency_s": 1.1544870220022858,
+  "input_tokens": 362,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 407
+}

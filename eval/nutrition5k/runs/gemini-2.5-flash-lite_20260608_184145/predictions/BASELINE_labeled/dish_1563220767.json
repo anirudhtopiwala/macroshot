@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1563220767",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: pork; olive oil; arugula; white rice; salt; rosemary; garlic; onions; parsley; zucchini. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1563220767_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 450, \"mass_g\": 150, \"fat_g\": 25, \"carb_g\": 15, \"protein_g\": 40}",
+  "parsed": {
+    "calories": 450.0,
+    "mass_g": 150.0,
+    "fat_g": 25.0,
+    "carb_g": 15.0,
+    "protein_g": 40.0
+  },
+  "ground_truth": {
+    "calories": 265.894379,
+    "mass_g": 130.0,
+    "fat_g": 14.748608,
+    "carb_g": 4.812823,
+    "protein_g": 26.540918
+  },
+  "abs_err": {
+    "calories": 184.10562099999999,
+    "mass_g": 20.0,
+    "fat_g": 10.251392,
+    "carb_g": 10.187177,
+    "protein_g": 13.459081999999999
+  },
+  "pct_err": {
+    "calories": 69.24013275211055,
+    "mass_g": 15.384615384615385,
+    "fat_g": 69.50752233702325,
+    "carb_g": 211.66739354428782,
+    "protein_g": 50.71068755044569
+  },
+  "latency_s": 1.1468793969979743,
+  "input_tokens": 366,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 411
+}

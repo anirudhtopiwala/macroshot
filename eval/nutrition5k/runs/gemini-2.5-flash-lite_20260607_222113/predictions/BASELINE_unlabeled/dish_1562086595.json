@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1562086595",
+  "condition": "BASELINE_unlabeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1562086595_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 450, \"mass_g\": 300, \"fat_g\": 25, \"carb_g\": 35, \"protein_g\": 20}",
+  "parsed": {
+    "calories": 450.0,
+    "mass_g": 300.0,
+    "fat_g": 25.0,
+    "carb_g": 35.0,
+    "protein_g": 20.0
+  },
+  "ground_truth": {
+    "calories": 308.602997,
+    "mass_g": 324.0,
+    "fat_g": 15.132999,
+    "carb_g": 26.694,
+    "protein_g": 18.139999
+  },
+  "abs_err": {
+    "calories": 141.39700299999998,
+    "mass_g": 24.0,
+    "fat_g": 9.867001,
+    "carb_g": 8.306000000000001,
+    "protein_g": 1.8600010000000005
+  },
+  "pct_err": {
+    "calories": 45.81841536684752,
+    "mass_g": 7.4074074074074066,
+    "fat_g": 65.20188760998398,
+    "carb_g": 31.115606503334085,
+    "protein_g": 10.253589319381993
+  },
+  "latency_s": 1.0458826639996914,
+  "input_tokens": 339,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 384
+}

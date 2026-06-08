@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1563479568",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: goat cheese; apple; salt; lemon juice; brussels sprouts; olive oil; mustard greens; arugula; pepper; figs. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1563479568_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 150, \"mass_g\": 150, \"fat_g\": 10, \"carb_g\": 10, \"protein_g\": 5}",
+  "parsed": {
+    "calories": 150.0,
+    "mass_g": 150.0,
+    "fat_g": 10.0,
+    "carb_g": 10.0,
+    "protein_g": 5.0
+  },
+  "ground_truth": {
+    "calories": 83.673561,
+    "mass_g": 82.0,
+    "fat_g": 5.109736,
+    "carb_g": 8.616775,
+    "protein_g": 2.329007
+  },
+  "abs_err": {
+    "calories": 66.326439,
+    "mass_g": 68.0,
+    "fat_g": 4.890264,
+    "carb_g": 1.3832249999999995,
+    "protein_g": 2.670993
+  },
+  "pct_err": {
+    "calories": 79.26809640622321,
+    "mass_g": 82.92682926829268,
+    "fat_g": 95.70482702041751,
+    "carb_g": 16.052699530856955,
+    "protein_g": 114.68376866192331
+  },
+  "latency_s": 1.2318085879960563,
+  "input_tokens": 370,
+  "output_tokens": 44,
+  "thinking_tokens": null,
+  "total_tokens": 414
+}

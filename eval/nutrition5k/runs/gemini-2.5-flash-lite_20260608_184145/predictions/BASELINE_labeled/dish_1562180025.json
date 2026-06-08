@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1562180025",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: bacon; garlic; chicken; flour; lemon juice; parsley; thyme; vegetable oil; buttermilk; salt. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1562180025_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 1150, \"mass_g\": 350, \"fat_g\": 85, \"carb_g\": 30, \"protein_g\": 60}",
+  "parsed": {
+    "calories": 1150.0,
+    "mass_g": 350.0,
+    "fat_g": 85.0,
+    "carb_g": 30.0,
+    "protein_g": 60.0
+  },
+  "ground_truth": {
+    "calories": 798.913696,
+    "mass_g": 256.0,
+    "fat_g": 55.475594,
+    "carb_g": 12.93051,
+    "protein_g": 59.066467
+  },
+  "abs_err": {
+    "calories": 351.08630400000004,
+    "mass_g": 94.0,
+    "fat_g": 29.524406,
+    "carb_g": 17.069490000000002,
+    "protein_g": 0.9335329999999971
+  },
+  "pct_err": {
+    "calories": 43.94546066212389,
+    "mass_g": 36.71875,
+    "fat_g": 53.22053153680517,
+    "carb_g": 132.00941030168184,
+    "protein_g": 1.5804788188871988
+  },
+  "latency_s": 1.676703590004763,
+  "input_tokens": 366,
+  "output_tokens": 46,
+  "thinking_tokens": null,
+  "total_tokens": 412
+}

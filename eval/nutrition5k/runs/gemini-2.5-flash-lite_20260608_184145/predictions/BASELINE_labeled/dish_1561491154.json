@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1561491154",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: cherry tomatoes; chive; garlic; olive oil; parsley; spinach (raw); chard; vinegar; fish; shallots; mustard; lemon juice; blueberries; wheat berry; radishes; salt. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1561491154_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 250, \"mass_g\": 150, \"fat_g\": 10, \"carb_g\": 15, \"protein_g\": 25}",
+  "parsed": {
+    "calories": 250.0,
+    "mass_g": 150.0,
+    "fat_g": 10.0,
+    "carb_g": 15.0,
+    "protein_g": 25.0
+  },
+  "ground_truth": {
+    "calories": 166.137466,
+    "mass_g": 158.0,
+    "fat_g": 18.455791,
+    "carb_g": 5.614334,
+    "protein_g": 18.301338
+  },
+  "abs_err": {
+    "calories": 83.86253400000001,
+    "mass_g": 8.0,
+    "fat_g": 8.455791000000001,
+    "carb_g": 9.385666,
+    "protein_g": 6.698661999999999
+  },
+  "pct_err": {
+    "calories": 50.4777977051847,
+    "mass_g": 5.063291139240507,
+    "fat_g": 45.81646487002373,
+    "carb_g": 167.17327469295557,
+    "protein_g": 36.60203423378115
+  },
+  "latency_s": 1.143052778999845,
+  "input_tokens": 386,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 431
+}

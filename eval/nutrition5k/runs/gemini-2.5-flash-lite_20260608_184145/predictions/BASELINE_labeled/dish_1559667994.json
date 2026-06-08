@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1559667994",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: scrambled eggs; hash browns; bagels; cream cheese. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1559667994_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 750, \"mass_g\": 350, \"fat_g\": 35, \"carb_g\": 70, \"protein_g\": 35}",
+  "parsed": {
+    "calories": 750.0,
+    "mass_g": 350.0,
+    "fat_g": 35.0,
+    "carb_g": 70.0,
+    "protein_g": 35.0
+  },
+  "ground_truth": {
+    "calories": 445.299988,
+    "mass_g": 213.0,
+    "fat_g": 25.459999,
+    "carb_g": 35.803001,
+    "protein_g": 18.3964
+  },
+  "abs_err": {
+    "calories": 304.700012,
+    "mass_g": 137.0,
+    "fat_g": 9.540001,
+    "carb_g": 34.196999,
+    "protein_g": 16.6036
+  },
+  "pct_err": {
+    "calories": 68.42578491154147,
+    "mass_g": 64.31924882629107,
+    "fat_g": 37.47054742618018,
+    "carb_g": 95.51433691270739,
+    "protein_g": 90.2546150333761
+  },
+  "latency_s": 1.0455246639976394,
+  "input_tokens": 355,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 400
+}

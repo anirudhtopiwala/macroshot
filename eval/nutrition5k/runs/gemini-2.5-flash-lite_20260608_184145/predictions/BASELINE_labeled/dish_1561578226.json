@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1561578226",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: bell peppers; cucumbers; salt; lettuce; onions; vinaigrette; olive oil; eggplant; feta cheese; cherry tomatoes; cauliflower; olives. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1561578226_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 350, \"mass_g\": 300, \"fat_g\": 15, \"carb_g\": 40, \"protein_g\": 15}",
+  "parsed": {
+    "calories": 350.0,
+    "mass_g": 300.0,
+    "fat_g": 15.0,
+    "carb_g": 40.0,
+    "protein_g": 15.0
+  },
+  "ground_truth": {
+    "calories": 119.220253,
+    "mass_g": 289.0,
+    "fat_g": 6.628325,
+    "carb_g": 13.898274,
+    "protein_g": 4.281533
+  },
+  "abs_err": {
+    "calories": 230.779747,
+    "mass_g": 11.0,
+    "fat_g": 8.371675,
+    "carb_g": 26.101726,
+    "protein_g": 10.718467
+  },
+  "pct_err": {
+    "calories": 193.57428053772037,
+    "mass_g": 3.8062283737024223,
+    "fat_g": 126.3015165973304,
+    "carb_g": 187.80552175039864,
+    "protein_g": 250.3418051431579
+  },
+  "latency_s": 1.135278150002705,
+  "input_tokens": 373,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 418
+}

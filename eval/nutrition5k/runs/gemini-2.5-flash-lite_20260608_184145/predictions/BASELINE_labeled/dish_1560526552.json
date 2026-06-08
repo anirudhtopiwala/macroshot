@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1560526552",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: salt; sausage; pineapple; blueberries; spinach (raw); parsley; mustard greens; potatoes; berries; tomatoes; scrambled eggs; vinegar; mustard; cucumbers; almonds; olive oil; garlic; carrot. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1560526552_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 650, \"mass_g\": 350, \"fat_g\": 35, \"carb_g\": 50, \"protein_g\": 30}",
+  "parsed": {
+    "calories": 650.0,
+    "mass_g": 350.0,
+    "fat_g": 35.0,
+    "carb_g": 50.0,
+    "protein_g": 30.0
+  },
+  "ground_truth": {
+    "calories": 359.240814,
+    "mass_g": 319.0,
+    "fat_g": 21.782129,
+    "carb_g": 28.019247,
+    "protein_g": 14.592025
+  },
+  "abs_err": {
+    "calories": 290.759186,
+    "mass_g": 31.0,
+    "fat_g": 13.217870999999999,
+    "carb_g": 21.980753,
+    "protein_g": 15.407975
+  },
+  "pct_err": {
+    "calories": 80.93712481121368,
+    "mass_g": 9.717868338557993,
+    "fat_g": 60.682181250510446,
+    "carb_g": 78.44876416557518,
+    "protein_g": 105.59175302948015
+  },
+  "latency_s": 1.1374090870012878,
+  "input_tokens": 385,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 430
+}

@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1565809120",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: bell peppers; onions; cherry tomatoes; tuna; lemon juice; carrot. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1565809120_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 250, \"mass_g\": 300, \"fat_g\": 10, \"carb_g\": 15, \"protein_g\": 25}",
+  "parsed": {
+    "calories": 250.0,
+    "mass_g": 300.0,
+    "fat_g": 10.0,
+    "carb_g": 15.0,
+    "protein_g": 25.0
+  },
+  "ground_truth": {
+    "calories": 365.630005,
+    "mass_g": 502.0,
+    "fat_g": 1.734,
+    "carb_g": 22.898001,
+    "protein_g": 63.227997
+  },
+  "abs_err": {
+    "calories": 115.63000499999998,
+    "mass_g": 202.0,
+    "fat_g": 8.266,
+    "carb_g": 7.898001000000001,
+    "protein_g": 38.227997
+  },
+  "pct_err": {
+    "calories": 31.62486760352176,
+    "mass_g": 40.23904382470119,
+    "fat_g": 476.7012687427912,
+    "carb_g": 34.49209824036605,
+    "protein_g": 60.46055357407574
+  },
+  "latency_s": 1.0391430469971965,
+  "input_tokens": 359,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 404
+}

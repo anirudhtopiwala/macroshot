@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1565107143",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: olive oil; watermelon; egg whites; scrambled eggs; sweet potato. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1565107143_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 450, \"mass_g\": 400, \"fat_g\": 25, \"carb_g\": 35, \"protein_g\": 20}",
+  "parsed": {
+    "calories": 450.0,
+    "mass_g": 400.0,
+    "fat_g": 25.0,
+    "carb_g": 35.0,
+    "protein_g": 20.0
+  },
+  "ground_truth": {
+    "calories": 454.274597,
+    "mass_g": 655.0,
+    "fat_g": 13.240049,
+    "carb_g": 31.671951,
+    "protein_g": 46.109219
+  },
+  "abs_err": {
+    "calories": 4.274597000000028,
+    "mass_g": 255.0,
+    "fat_g": 11.759951,
+    "carb_g": 3.328049,
+    "protein_g": 26.109219000000003
+  },
+  "pct_err": {
+    "calories": 0.9409720526371472,
+    "mass_g": 38.93129770992366,
+    "fat_g": 88.82105345682632,
+    "carb_g": 10.507874933249296,
+    "protein_g": 56.6247261746073
+  },
+  "latency_s": 1.0553264629998012,
+  "input_tokens": 358,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 403
+}

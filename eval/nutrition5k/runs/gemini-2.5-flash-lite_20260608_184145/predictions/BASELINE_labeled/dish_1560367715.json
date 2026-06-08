@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1560367715",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: broccoli; brown rice; vinegar; pork; olive oil; lemon juice; salt; croutons; white rice; cherry tomatoes; pepper; onions; parsley; shallots; garlic; basil. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1560367715_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 850, \"mass_g\": 450, \"fat_g\": 30, \"carb_g\": 100, \"protein_g\": 45}",
+  "parsed": {
+    "calories": 850.0,
+    "mass_g": 450.0,
+    "fat_g": 30.0,
+    "carb_g": 100.0,
+    "protein_g": 45.0
+  },
+  "ground_truth": {
+    "calories": 597.531189,
+    "mass_g": 305.0,
+    "fat_g": 26.680105,
+    "carb_g": 40.813663,
+    "protein_g": 44.518318
+  },
+  "abs_err": {
+    "calories": 252.46881099999996,
+    "mass_g": 145.0,
+    "fat_g": 3.319894999999999,
+    "carb_g": 59.186337,
+    "protein_g": 0.4816819999999993
+  },
+  "pct_err": {
+    "calories": 42.251988791165836,
+    "mass_g": 47.540983606557376,
+    "fat_g": 12.443335586572838,
+    "carb_g": 145.01598888587876,
+    "protein_g": 1.0819860714414216
+  },
+  "latency_s": 0.9754288089970942,
+  "input_tokens": 383,
+  "output_tokens": 46,
+  "thinking_tokens": null,
+  "total_tokens": 429
+}

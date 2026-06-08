@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1562613403",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: vinegar; steak; squash; jalapenos; lemon juice; mustard greens; cilantro; pineapple; white rice; apple; kale; arugula; broccoli; olive oil; onions; goat cheese; garlic; salt; figs. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1562613403_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 650, \"mass_g\": 350, \"fat_g\": 35, \"carb_g\": 40, \"protein_g\": 45}",
+  "parsed": {
+    "calories": 650.0,
+    "mass_g": 350.0,
+    "fat_g": 35.0,
+    "carb_g": 40.0,
+    "protein_g": 45.0
+  },
+  "ground_truth": {
+    "calories": 398.703369,
+    "mass_g": 315.0,
+    "fat_g": 25.434467,
+    "carb_g": 19.955114,
+    "protein_g": 24.512461
+  },
+  "abs_err": {
+    "calories": 251.296631,
+    "mass_g": 35.0,
+    "fat_g": 9.565532999999999,
+    "carb_g": 20.044886,
+    "protein_g": 20.487539
+  },
+  "pct_err": {
+    "calories": 63.028469418325884,
+    "mass_g": 11.11111111111111,
+    "fat_g": 37.60854512893861,
+    "carb_g": 100.44986964243854,
+    "protein_g": 83.58009830183923
+  },
+  "latency_s": 1.142839936997916,
+  "input_tokens": 388,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 433
+}

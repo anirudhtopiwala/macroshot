@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1560356337",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: cucumbers; mustard greens; olive oil; garlic; tomatoes; salt; yam; mustard; spinach (raw); vinegar. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1560356337_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 350, \"mass_g\": 300, \"fat_g\": 15, \"carb_g\": 45, \"protein_g\": 10}",
+  "parsed": {
+    "calories": 350.0,
+    "mass_g": 300.0,
+    "fat_g": 15.0,
+    "carb_g": 45.0,
+    "protein_g": 10.0
+  },
+  "ground_truth": {
+    "calories": 144.716934,
+    "mass_g": 119.0,
+    "fat_g": 3.097618,
+    "carb_g": 27.996531,
+    "protein_g": 2.047824
+  },
+  "abs_err": {
+    "calories": 205.283066,
+    "mass_g": 181.0,
+    "fat_g": 11.902382,
+    "carb_g": 17.003469,
+    "protein_g": 7.952176
+  },
+  "pct_err": {
+    "calories": 141.85144773727723,
+    "mass_g": 152.10084033613444,
+    "fat_g": 384.2430538562211,
+    "carb_g": 60.734199533506484,
+    "protein_g": 388.32321527631285
+  },
+  "latency_s": 1.0535141600048519,
+  "input_tokens": 368,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 413
+}

@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1568666000",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: cucumbers; lemon juice; parsley; pepper; salt; cheese pizza; caesar salad; garlic; tatsoi; kale. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1568666000_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 1200, \"mass_g\": 600, \"fat_g\": 50, \"carb_g\": 120, \"protein_g\": 70}",
+  "parsed": {
+    "calories": 1200.0,
+    "mass_g": 600.0,
+    "fat_g": 50.0,
+    "carb_g": 120.0,
+    "protein_g": 70.0
+  },
+  "ground_truth": {
+    "calories": 209.934982,
+    "mass_g": 197.0,
+    "fat_g": 7.829318,
+    "carb_g": 25.612118,
+    "protein_g": 10.612808
+  },
+  "abs_err": {
+    "calories": 990.065018,
+    "mass_g": 403.0,
+    "fat_g": 42.170682,
+    "carb_g": 94.387882,
+    "protein_g": 59.387192
+  },
+  "pct_err": {
+    "calories": 471.6055459494598,
+    "mass_g": 204.5685279187817,
+    "fat_g": 538.6252289152134,
+    "carb_g": 368.52821777566385,
+    "protein_g": 559.5803862653503
+  },
+  "latency_s": 1.1520710769982543,
+  "input_tokens": 369,
+  "output_tokens": 47,
+  "thinking_tokens": null,
+  "total_tokens": 416
+}

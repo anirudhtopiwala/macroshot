@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1550770866",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: cantaloupe; cucumbers; scrambled eggs. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1550770866_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 200, \"mass_g\": 300, \"fat_g\": 12, \"carb_g\": 15, \"protein_g\": 10}",
+  "parsed": {
+    "calories": 200.0,
+    "mass_g": 300.0,
+    "fat_g": 12.0,
+    "carb_g": 15.0,
+    "protein_g": 10.0
+  },
+  "ground_truth": {
+    "calories": 168.580002,
+    "mass_g": 256.0,
+    "fat_g": 9.564,
+    "carb_g": 11.199999,
+    "protein_g": 9.996
+  },
+  "abs_err": {
+    "calories": 31.419997999999993,
+    "mass_g": 44.0,
+    "fat_g": 2.436,
+    "carb_g": 3.800001,
+    "protein_g": 0.0039999999999995595
+  },
+  "pct_err": {
+    "calories": 18.638033946636202,
+    "mass_g": 17.1875,
+    "fat_g": 25.47051442910916,
+    "carb_g": 33.92858338648066,
+    "protein_g": 0.04001600640255661
+  },
+  "latency_s": 1.0510387800022727,
+  "input_tokens": 353,
+  "output_tokens": 45,
+  "thinking_tokens": null,
+  "total_tokens": 398
+}

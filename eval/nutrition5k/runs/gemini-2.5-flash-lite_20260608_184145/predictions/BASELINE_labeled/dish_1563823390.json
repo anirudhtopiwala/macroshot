@@ -1,0 +1,44 @@
+{
+  "dish_id": "dish_1563823390",
+  "condition": "BASELINE_labeled",
+  "prompt": {
+    "system": null,
+    "system_sha256": null,
+    "user": "Ingredients on this plate: cauliflower; vinegar; steak; green beans; wheat berry; olive oil; soy sauce; broccoli; garlic; white rice; chicken; tofu; ginger; spinach (raw); lime; salt; green onions. Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\": <kcal>, \"mass_g\": <g>, \"fat_g\": <g>, \"carb_g\": <g>, \"protein_g\": <g>}.",
+    "image": "data/images/dish_1563823390_view_c.jpg"
+  },
+  "response_text": "{\"calories\": 1100, \"mass_g\": 600, \"fat_g\": 50, \"carb_g\": 80, \"protein_g\": 90}",
+  "parsed": {
+    "calories": 1100.0,
+    "mass_g": 600.0,
+    "fat_g": 50.0,
+    "carb_g": 80.0,
+    "protein_g": 90.0
+  },
+  "ground_truth": {
+    "calories": 670.170288,
+    "mass_g": 372.0,
+    "fat_g": 35.285416,
+    "carb_g": 12.291248,
+    "protein_g": 75.572304
+  },
+  "abs_err": {
+    "calories": 429.829712,
+    "mass_g": 228.0,
+    "fat_g": 14.714584000000002,
+    "carb_g": 67.708752,
+    "protein_g": 14.427695999999997
+  },
+  "pct_err": {
+    "calories": 64.13738712331573,
+    "mass_g": 61.29032258064516,
+    "fat_g": 41.70160272447972,
+    "carb_g": 550.8696269085125,
+    "protein_g": 19.091248031818637
+  },
+  "latency_s": 1.0255376740024076,
+  "input_tokens": 386,
+  "output_tokens": 46,
+  "thinking_tokens": null,
+  "total_tokens": 432
+}
