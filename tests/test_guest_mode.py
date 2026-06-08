@@ -48,7 +48,7 @@ def override_db(db_path):
 
 @pytest_asyncio.fixture
 async def guest_client(override_db):
-    """Unauthenticated client — guest endpoint requires no cookie."""
+    """Unauthenticated client - guest endpoint requires no cookie."""
     transport = ASGITransport(app=app)
     async with AsyncClient(
         transport=transport, base_url="http://test",
@@ -146,7 +146,7 @@ class TestGuestAnalyze:
     @patch("src.web.routes.guest.gemini_analyze_meal", new_callable=AsyncMock)
     async def test_no_db_row_created(self, mock_gemini, guest_client):
         """Guest analyze must not write anything to meal_sessions, users, or
-        usage_tracking — the whole point of the path is zero-state."""
+        usage_tracking - the whole point of the path is zero-state."""
         import aiosqlite
         mock_gemini.return_value = ("raw", _nutrition_fixture())
         async with aiosqlite.connect(guest_client._db_path) as db:
@@ -307,7 +307,7 @@ async def test_mark_guest_imported_single_winner(db_path):
     """Concurrent calls: exactly one returns True."""
     user_id = await create_web_user(db_path, "race@example.com")
 
-    # Sequential calls — second sees the flag and returns False.
+    # Sequential calls - second sees the flag and returns False.
     first = await mark_guest_imported(db_path, user_id)
     second = await mark_guest_imported(db_path, user_id)
     assert first is True

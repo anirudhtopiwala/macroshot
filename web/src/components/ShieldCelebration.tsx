@@ -5,7 +5,7 @@ import { Flame, Shield } from './icons';
 interface Props {
   /** Streak count *after* the shield protected it. Drives the flame display. */
   streakDays: number;
-  /** Shield count before the consume — the popup animates from this down. */
+  /** Shield count before the consume - the popup animates from this down. */
   shieldsBefore: number;
   /** Shield count after the consume. Should be shieldsBefore - 1. */
   shieldsAfter: number;

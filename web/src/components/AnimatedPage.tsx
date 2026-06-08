@@ -19,7 +19,7 @@ export default function AnimatedPage({ children }: { children: React.ReactNode }
   // Default is no animation on same-path mounts (e.g. reload, initial paint).
   // Previously this was `animate-fade-in` (opacity 0 → 1 over 200ms) but on
   // iOS PWA reloads the animation could stall mid-frame while the JS thread
-  // was busy resolving the lazy chunk — leaving the page visually blank
+  // was busy resolving the lazy chunk - leaving the page visually blank
   // until the user scrolled and forced a repaint. The fade is cosmetic only
   // on first paint; keep slide animations for real route transitions.
   let animation = '';
@@ -35,7 +35,7 @@ export default function AnimatedPage({ children }: { children: React.ReactNode }
 
   // Defensive `opacity: 1` so that even if a slide animation stalls
   // (the same iOS paint-stall failure mode), the element is at least
-  // visible — animations only OVERRIDE opacity while they're playing,
+  // visible - animations only OVERRIDE opacity while they're playing,
   // they don't enforce the final value without `animation-fill-mode`.
   return (
     <div key={pathname} className={animation} style={{ opacity: 1 }}>

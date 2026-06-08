@@ -59,7 +59,7 @@ export function useMealSession() {
       const fd = new FormData();
       images.forEach((img) => fd.append('images', img));
       fd.append('text', text);
-      // Guest analyze ignores meal_type server-side — but we hold onto
+      // Guest analyze ignores meal_type server-side - but we hold onto
       // it locally so accept can attach it to the IndexedDB row.
       if (!isGuest) fd.append('meal_type', mealType);
 

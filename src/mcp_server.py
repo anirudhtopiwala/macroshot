@@ -14,7 +14,7 @@ Two transports are supported:
    transport-agnostic.
 
 Tool bodies MUST read `_USER_ID.get()` / `_DB_PATH.get()` (or the
-`get_user_id()` / `get_db_path()` helpers) — never module globals — so the
+`get_user_id()` / `get_db_path()` helpers) - never module globals - so the
 two transports stay in sync.
 """
 
@@ -75,7 +75,7 @@ def get_pending_actions_this_turn() -> list[dict]:
 
 
 # ── CLI-arg path (only when launched as `python -m src.mcp_server …`) ──
-# We avoid parsing args when imported as a library (e.g. by ai_chat.py) —
+# We avoid parsing args when imported as a library (e.g. by ai_chat.py) -
 # argparse with required=True would crash on an empty argv. The subprocess
 # entry point at the bottom of this file (`if __name__ == "__main__"`) seeds
 # the ContextVars from CLI args before mcp.run() so stdio-mode tools work
@@ -141,7 +141,7 @@ _PRESCRUB_CHARS = _re.compile(
 
 
 _INJECTION_STRIPS = [
-    # Newline-prefixed or leading "SYSTEM:" — round-2 widened to also catch a
+    # Newline-prefixed or leading "SYSTEM:" - round-2 widened to also catch a
     # line that begins with SYSTEM: (no leading newline) once CRLF is normalized.
     _re.compile(r"(?:^|\n)\s*SYSTEM\s*:", _re.IGNORECASE),
     _re.compile(r"<\s*/?\s*system\s*>", _re.IGNORECASE),
@@ -659,7 +659,7 @@ async def get_remaining_macros() -> str:
 async def log_weight(weight_kg: float) -> str:
     """Propose logging a weight entry for today. Requires user confirmation.
 
-    Returns a pending_action payload — the chat layer surfaces a confirmation
+    Returns a pending_action payload - the chat layer surfaces a confirmation
     card; the actual write happens via /chat/confirm-action only after the
     user accepts.
     """
@@ -677,7 +677,7 @@ async def log_weight(weight_kg: float) -> str:
 async def set_targets(calories: float = 0, protein: float = 0, carbs: float = 0, fat: float = 0) -> str:
     """Propose updating the user's daily calorie and macro targets.
 
-    Returns a pending_action payload — the user must explicitly confirm the
+    Returns a pending_action payload - the user must explicitly confirm the
     new targets via the chat confirmation card before any write occurs.
     Pass 0 for any field to keep its current value.
     """
@@ -737,7 +737,7 @@ async def get_aliases() -> str:
 async def log_alias(alias_name: str) -> str:
     """Propose logging a saved meal (alias) right now.
 
-    Returns a pending_action payload — the meal is only logged after the user
+    Returns a pending_action payload - the meal is only logged after the user
     explicitly confirms via the chat confirmation card.
     """
     from src.db import get_alias_by_name
@@ -766,7 +766,7 @@ async def update_profile(age: int = None, height_cm: float = None, weight_kg: fl
                           sex: str = None, weight_goal_kg: float = None) -> str:
     """Propose an update to the user's profile.
 
-    Returns a pending_action payload — the user must confirm before any write.
+    Returns a pending_action payload - the user must confirm before any write.
     """
     args: dict = {}
     summary_parts: list[str] = []
@@ -811,13 +811,13 @@ async def get_memories() -> str:
     """List the durable facts the coach remembers about the user across sessions.
 
     Returns a JSON array of {memory_id, kind, text}. Kinds:
-      - allergy: hard constraint — never recommend foods that violate it
+      - allergy: hard constraint - never recommend foods that violate it
       - restriction: hard constraint (vegetarian, halal, lactose-free, etc.)
       - preference: soft signal (likes/dislikes a cuisine or ingredient)
       - note: any other durable context worth remembering (training goal,
               schedule, household, motivation)
 
-    The same data is already injected into the seed context every turn —
+    The same data is already injected into the seed context every turn -
     use this tool only when you need a memory_id (e.g., to call forget_fact).
     """
     from src.db import get_user_memories
@@ -838,7 +838,7 @@ async def get_memories() -> str:
 async def remember_fact(kind: str, text: str) -> str:
     """Propose remembering a durable fact about the user across sessions.
 
-    Use sparingly — only for things that will matter in future chats:
+    Use sparingly - only for things that will matter in future chats:
       - allergy: "allergic to peanuts", "shellfish allergy"
       - restriction: "vegetarian", "lactose-free", "halal"
       - preference: "dislikes mushrooms", "loves Thai food"
@@ -846,9 +846,9 @@ async def remember_fact(kind: str, text: str) -> str:
 
     Do NOT use for one-off statements ("tired today", "had a busy week").
     Always check the seed context's "Allergies / Restrictions / Preferences /
-    Notes" lines first — never propose a fact that's already there.
+    Notes" lines first - never propose a fact that's already there.
 
-    Returns a pending_action — the actual save happens only after the user
+    Returns a pending_action - the actual save happens only after the user
     confirms via the chat confirmation card.
     """
     from src.db import MAX_USER_MEMORIES, USER_MEMORY_KINDS, count_user_memories
@@ -946,7 +946,7 @@ async def search_meals(query: str, limit: int = 10) -> str:
     limit: max results to return (default 10, capped at 50).
     Returns matching meals with meal_id, item_name, calories, protein,
     carbs, fat, logged_at, plus a `score` (cosine similarity 0-1) on
-    semantic hits — null on substring fallback.
+    semantic hits - null on substring fallback.
     """
     from src.services import search_user_meals
 

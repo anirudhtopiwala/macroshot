@@ -223,7 +223,7 @@ export default function Dashboard() {
   // IndexedDB, not the server. Cooks the same shape as the server
   // would so the rest of the component renders unchanged. Targets stay
   // at DEFAULT_TARGET, trend / workouts / challenges stay empty, and
-  // those cards render their zero state (which is fine — they exist
+  // those cards render their zero state (which is fine - they exist
   // to motivate signup, not to show fake data).
   const loadGuestToday = useCallback(async (date: string) => {
     const all = await listGuestMeals();
@@ -390,7 +390,7 @@ export default function Dashboard() {
 
     // Guest meals are stored in IndexedDB with negative ids derived
     // from the IDB autoincrement key. Delete from IDB instead of
-    // queueing a (no-op, 401-bound) server delete. No Undo for now —
+    // queueing a (no-op, 401-bound) server delete. No Undo for now -
     // adding it would require staging the deletion in memory.
     if (isGuest && id < 0) {
       deleteGuestMeal(-id).catch(() => { /* best-effort */ });
@@ -942,7 +942,7 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* Activity — single unified card. Empty state, stats, workout list, and
+      {/* Activity - single unified card. Empty state, stats, workout list, and
           add-workout entry point all live here. */}
       {workoutData && (() => {
         const isEmpty = workoutData.totals.workout_count === 0 && workoutData.totals.steps === 0;
@@ -975,7 +975,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Stats row — only when there's activity */}
+            {/* Stats row - only when there's activity */}
             {!isEmpty && (
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {workoutData.totals.active_calories > 0 && (
@@ -1012,7 +1012,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Empty state — sync hint for today, simple message for past dates */}
+            {/* Empty state - sync hint for today, simple message for past dates */}
             {isEmpty && selectedDate === today && (
               <Link
                 to="/settings/connected-apps"
@@ -1027,7 +1027,7 @@ export default function Dashboard() {
                     {isConnected ? 'No activity yet today' : 'Track your workouts'}
                   </p>
                   <p className="text-[11px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                    {isConnected ? 'Waiting for sync — pull to refresh or check your watch' : 'Connect Strava or Fitbit to sync automatically'}
+                    {isConnected ? 'Waiting for sync - pull to refresh or check your watch' : 'Connect Strava or Fitbit to sync automatically'}
                   </p>
                 </div>
                 <span className="text-sm font-semibold shrink-0" style={{ color: '#3b82f6' }}>→</span>

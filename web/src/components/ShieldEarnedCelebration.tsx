@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Shield } from './icons';
 
 interface Props {
-  /** Shield count before the award — popup animates upward from this. */
+  /** Shield count before the award - popup animates upward from this. */
   shieldsBefore: number;
   /** Shield count after the award. Should be shieldsBefore + 1 (or more on burst). */
   shieldsAfter: number;

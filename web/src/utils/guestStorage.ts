@@ -7,7 +7,7 @@
  * totals and so we can replay them into the user's real account on
  * signup via POST /meals/import-guest.
  *
- * Mirrors the offlineQueue.ts shape on purpose — same open/race
+ * Mirrors the offlineQueue.ts shape on purpose - same open/race
  * semantics, same 5s timeout cap. Different DB name so the two stores
  * are independent and the guest store survives a signed-in user's
  * logout (which deletes the offline queue DB).
@@ -17,7 +17,7 @@ import type { Nutrition } from '../types';
 
 export interface GuestMeal {
   id?: number;
-  /** Pre-formatted "YYYY-MM-DD HH:MM" — matches the server-side AcceptRequest pattern. */
+  /** Pre-formatted "YYYY-MM-DD HH:MM" - matches the server-side AcceptRequest pattern. */
   loggedAt: string;
   mealType: string;
   userInput: string;
@@ -72,7 +72,7 @@ export async function saveGuestMeal(meal: Omit<GuestMeal, 'id'>): Promise<void> 
       tx.onerror = () => reject(tx.error);
     });
   } catch {
-    // Private-mode / quota — silently drop. Dashboard will just be empty.
+    // Private-mode / quota - silently drop. Dashboard will just be empty.
   }
 }
 

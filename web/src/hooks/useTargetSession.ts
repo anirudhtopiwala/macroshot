@@ -23,7 +23,7 @@ export function useTargetSession() {
     setError(null);
     // When the caller seeds a first-turn user message (refine flow), echo
     // it into the chat IMMEDIATELY so the user sees their question above
-    // the spinner — mirrors how `refine` appends optimistically.
+    // the spinner - mirrors how `refine` appends optimistically.
     // Otherwise (onboarding step 3) start the chat empty; the AI's initial
     // reply lands in the explanation card only.
     setMessages(data.seed_message ? [{ role: 'user', text: data.seed_message }] : []);
@@ -33,7 +33,7 @@ export function useTargetSession() {
       if (res.targets) setTargets(res.targets);
       if (res.explanation) setExplanation(res.explanation);
       // For seeded suggests, the API's reply_text is the answer to the
-      // user's first message — show it as an assistant chat turn so the
+      // user's first message - show it as an assistant chat turn so the
       // conversation reads naturally. For unseeded onboarding suggests we
       // keep the legacy behavior (reply visible in the explanation card).
       if (data.seed_message && res.reply_text) {

@@ -30,7 +30,7 @@ const ROWS: Row[] = [
 export default function ItemTuneSheet({ item, disabled, onTune, onDelete, onClose }: Props) {
   if (!item) return null;
 
-  // Tap: fire the AI tune call (no await — fire-and-forget) and close the
+  // Tap: fire the AI tune call (no await - fire-and-forget) and close the
   // popup immediately so the user lands back in the chat where the
   // assistant typing indicator + reply will appear. The chip in chat is
   // already hidden while disabled, so spam-tap protection comes from there.

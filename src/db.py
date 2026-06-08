@@ -22,7 +22,7 @@ logger = logging.getLogger("macro_app")
 
 # B29: shared helper for dynamic UPDATE … SET clauses. Asserts every
 # column name matches a strict SQL identifier regex AND is in the caller's
-# allow-list — defense-in-depth so any future caller that accidentally
+# allow-list - defense-in-depth so any future caller that accidentally
 # forwards user-controlled keys can't introduce SQL injection through the
 # `f"… SET {set_clause} …"` pattern.
 _IDENT_RE = re.compile(r"[a-z_][a-z0-9_]*")
@@ -32,7 +32,7 @@ def _safe_set_clause(allowed: frozenset[str], kw: dict) -> tuple[str, list]:
     """Build a `<col> = ?, …` clause + matching params from kw.
 
     Drops keys that are None or not in `allowed`. Raises ValueError if any
-    surviving key fails the identifier regex (defense-in-depth — should be
+    surviving key fails the identifier regex (defense-in-depth - should be
     impossible if `allowed` only contains literal column names).
     """
     safe = {k: v for k, v in kw.items() if k in allowed and v is not None}
@@ -72,7 +72,7 @@ def _get_fernet():
     decrypt). Drop the secondary after one OAuth-refresh cycle per user
     (each refresh re-encrypts with the new primary, retiring legacy
     ciphertext). Forgetting the secondary on first rollout BRICKS every
-    existing OAuth row — they cannot be decrypted without the old key.
+    existing OAuth row - they cannot be decrypted without the old key.
     """
     global _fernet_instance
     if _fernet_instance is not None:
@@ -363,7 +363,7 @@ CREATE INDEX IF NOT EXISTS idx_web_auth_google ON web_auth(google_sub);
 -- intentionally NOT created here. The email_canonical column is added by
 -- versioned migration v3, and the UNIQUE index is created in v12 (after the
 -- _migrate_email_normalization backfill runs). Creating it in _DDL on a fresh
--- install would race with v3 on existing DBs (no such column) — instead the
+-- install would race with v3 on existing DBs (no such column) - instead the
 -- v12 migration is the single source of truth for both fresh and existing DBs.
 CREATE INDEX IF NOT EXISTS idx_meal_sessions_user ON meal_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_email_pins_email ON email_pins(email);
@@ -890,7 +890,7 @@ _VERSIONED_MIGRATIONS: list[tuple[int, str]] = [
     (12, "CREATE UNIQUE INDEX IF NOT EXISTS idx_web_auth_email_canonical ON web_auth(email_canonical) WHERE email_canonical IS NOT NULL"),
     # v13/v14: user_prefs columns for AI web-search grounding and "show macros
     # in push notifications". Defaults to 0 (off) so existing rows opt in
-    # explicitly via Settings — see src/web/schemas.py PrefsRequest.
+    # explicitly via Settings - see src/web/schemas.py PrefsRequest.
     (13, "ALTER TABLE user_prefs ADD COLUMN ai_web_search_enabled INTEGER NOT NULL DEFAULT 0"),
     (14, "ALTER TABLE user_prefs ADD COLUMN notif_show_macros INTEGER NOT NULL DEFAULT 0"),
     # v15: semantic meal lookup. Stores a Gemini text-embedding (float32 BLOB)
@@ -3006,7 +3006,7 @@ async def get_alias_by_name(db_path: str, user_id: int, alias_name: str) -> dict
 
 # Allowed `kind` values. Hard constraints (allergy, restriction) get
 # emphasized in the seed-context block; preference and note are soft signals.
-# `goal` is intentionally absent — users.goal / users.weight_goal_kg already
+# `goal` is intentionally absent - users.goal / users.weight_goal_kg already
 # track that and we don't want two sources of truth.
 USER_MEMORY_KINDS = frozenset({"allergy", "restriction", "preference", "note"})
 USER_MEMORY_SOURCES = frozenset({"user", "coach_suggested"})
@@ -3037,7 +3037,7 @@ async def add_user_memory(
     """Insert a memory and return its new id.
 
     Caller is expected to validate kind/text shape (the MCP tool layer does
-    this) — we do a defensive enum check anyway in case a new caller shows up.
+    this) - we do a defensive enum check anyway in case a new caller shows up.
     """
     if kind not in USER_MEMORY_KINDS:
         raise ValueError(f"invalid memory kind: {kind!r}")
@@ -3096,7 +3096,7 @@ async def update_user_memory(
 ) -> bool:
     """Update a memory's mutable fields. Returns True if a row was changed.
 
-    Only `kind` and `text` are updatable — everything else (id, user_id,
+    Only `kind` and `text` are updatable - everything else (id, user_id,
     source, created_at) is immutable. Embedding refresh is the caller's
     responsibility (schedule_embed_for_memory) when text changes.
 
@@ -3672,7 +3672,7 @@ async def delete_all_user_data(db_path: str, user_id: int) -> dict:
             "barcode_corrections", "email_engagement",
             # Internal telemetry - also user-identifiable, must be wiped
             "user_events",
-            # Idempotency markers for sent push reminders — small, but they
+            # Idempotency markers for sent push reminders - small, but they
             # tie a (user_id, tag, sent_at_utc) tuple back to the user.
             "reminder_sent",
         ]:
@@ -5676,7 +5676,7 @@ async def earn_streak_shield(db_path: str, user_id: int) -> bool:
 
 
 # Cap how far back a shield can bridge a gap. Without this, a long historical
-# absence can burn every available shield in a single walk-back pass — a
+# absence can burn every available shield in a single walk-back pass - a
 # real prod bug we hit (one user lost 7 shields to a single ancient gap).
 MAX_STREAK_GAP_LOOKBACK_DAYS = 7
 
@@ -5727,7 +5727,7 @@ async def _auto_bridge_with_conn(
     elif yesterday.isoformat() in all_valid:
         anchor = yesterday
     else:
-        # Provisional anchor at yesterday — only meaningful if it's within
+        # Provisional anchor at yesterday - only meaningful if it's within
         # the lookback window and the user's history. We'll only commit a
         # bridge for it below if the all-or-nothing guard passes.
         if yesterday < bridge_cutoff or yesterday.isoformat() < earliest_date_str:
@@ -5767,7 +5767,7 @@ async def _auto_bridge_with_conn(
     )).fetchall()
     available_ids = [r["id"] for r in avail_rows]
     if len(available_ids) < len(gaps):
-        return []  # not enough shields to fully bridge — preserve them
+        return []  # not enough shields to fully bridge - preserve them
 
     # used_at is stored as a date string (no time) for parity with the
     # legacy meal_accept consumption path and the `bridged_date >= since_date`
@@ -5887,7 +5887,7 @@ def _count_consecutive_runs_of_3(dates: list[date]) -> int:
 def _current_on_target_run(dates: list[date], today: date) -> int:
     """Length of the user's *active* trailing run of consecutive on-target days.
 
-    The run can end at today or yesterday — today's missing entry is treated
+    The run can end at today or yesterday - today's missing entry is treated
     as still-in-progress, not a break, so we don't tell users their progress
     just evaporated because they haven't logged dinner yet. Any earlier
     missed/off-target day breaks the run.
@@ -5909,7 +5909,7 @@ async def get_shield_progress(db_path: str, user_id: int, today_str: str | None 
     """Return shield earning progress: on_target_days, shields_earned_total, days_until_next.
 
     Shields are earned per run of 3 *consecutive* on-target days. `days_until_next`
-    reflects the active run only — if the user has missed/off-target days breaking
+    reflects the active run only - if the user has missed/off-target days breaking
     the chain, the counter resets to 3.
     """
     today = date.fromisoformat(today_str) if today_str else date.today()

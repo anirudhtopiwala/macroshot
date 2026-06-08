@@ -135,7 +135,7 @@ async def suggest_targets(request: Request, req: TargetSuggestRequest, user: Cur
 
     context = _build_context(req)
     # Fold the user's first-message intent into the prompt so the initial
-    # suggestion already reflects what they asked for — saves a round-trip
+    # suggestion already reflects what they asked for - saves a round-trip
     # vs the legacy suggest→refine sequence when the user is editing
     # existing targets.
     if req.seed_message:
@@ -326,7 +326,7 @@ async def accept_targets(request: Request, session_id: str, req: TargetAcceptReq
     # Mirror the accepted targets into the user_memories store so the chat
     # coach has the user's current baseline as semantic context. Overwrites
     # any prior "Targets baseline:" memory for this user (single-slot
-    # semantics — only the latest baseline should be visible to the coach).
+    # semantics - only the latest baseline should be visible to the coach).
     # If the chat refine session has substantive user turns, also generate
     # a one-sentence "Goal context:" memory from the user-stated intent.
     try:

@@ -105,7 +105,7 @@ def _strip_exif_to_jpeg(data: bytes) -> bytes:
 
     try:
         img = PILImage.open(BytesIO(data))
-        # B34: reject animated PNG/WebP/GIF — re-encoding silently drops
+        # B34: reject animated PNG/WebP/GIF - re-encoding silently drops
         # frames, so refuse them up front rather than producing a misleading
         # single-frame meal photo.
         if getattr(img, "is_animated", False):
@@ -414,7 +414,7 @@ async def import_guest_meals(
     * 30-cap per call (Pydantic max_length on the meals list).
     * `users.guest_meals_imported_at` is set atomically on first call;
       subsequent calls return 409 already_imported without inserting.
-    * Authenticated route — only the user themselves can trigger it.
+    * Authenticated route - only the user themselves can trigger it.
 
     No image is persisted: the guest path never uploaded images to the
     server, so there's nothing to attach. `meal_logs.source` is set to
@@ -455,7 +455,7 @@ async def import_guest_meals(
             )
             inserted += 1
         except Exception:
-            # Keep going — one malformed entry shouldn't lose the others.
+            # Keep going - one malformed entry shouldn't lose the others.
             # The whole call is one-shot; we won't get a retry, but the
             # bulk of legitimate entries should land.
             logger.exception("import-guest: failed to insert meal for user_id=%d", user_id)
@@ -778,7 +778,7 @@ async def search_meals_route(
 async def create_edit_session(request: Request, meal_id: int, user: CurrentUser, db_path: DbPath, sub: SubInfo):
     """Create an analysis session from an existing meal for AI editing.
 
-    B7: gated against the daily text_meal cap — this triggers a Gemini call
+    B7: gated against the daily text_meal cap - this triggers a Gemini call
     via create_session_from_meal, same upstream cost shape as a typed analysis.
     """
     today_str = await user_today_str(db_path, user["user_id"])

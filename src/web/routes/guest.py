@@ -6,8 +6,8 @@ IndexedDB; on signup, the client posts those entries to
 `/meals/import-guest` (auth-required) to seed the new user's history.
 
 Abuse model:
-  * Per-IP slowapi cap (tight) — primary defence.
-  * Global Gemini budget gate ($40) + Pub/Sub killswitch ($45) — backstop.
+  * Per-IP slowapi cap (tight) - primary defence.
+  * Global Gemini budget gate ($40) + Pub/Sub killswitch ($45) - backstop.
   * No DB rows are created here, so no signup-cap pressure and no
     storage to fill.
 """
@@ -31,7 +31,7 @@ router = APIRouter(prefix="/guest", tags=["guest"])
 
 # Tighter than authed limits. With killswitch at $45 and ~$0.005 per
 # image analysis, even 1000 distinct IPs hitting the daily cap can't
-# meaningfully threaten budget — and the gate at $40 fires first.
+# meaningfully threaten budget - and the gate at $40 fires first.
 _GUEST_ANALYZE_PER_DAY = "3/day"
 
 # Far smaller than /meals/analyze. Guests are demoing; a single shot is
@@ -43,7 +43,7 @@ MAX_GUEST_TEXT_LEN = 2000
 
 
 class GuestAnalyzeResponse(BaseModel):
-    """Subset of /meals/analyze response — no session_id (no DB row).
+    """Subset of /meals/analyze response - no session_id (no DB row).
 
     The frontend stores `nutrition` against a client-generated id in
     IndexedDB and replays it through /meals/import-guest on signup.
@@ -152,7 +152,7 @@ async def guest_analyze(
     try:
         # user_id=0 is reserved for guest/system calls so gemini_calls
         # accounting can distinguish them. db_path passed so the budget
-        # gate applies — guests still respect the global $40 ceiling.
+        # gate applies - guests still respect the global $40 ceiling.
         response_text, result = await gemini_analyze_meal(
             images=image_bytes,
             user_text=text.strip(),
@@ -175,7 +175,7 @@ async def guest_analyze(
             error=(
                 f"We couldn't extract macros from that. Here's what the AI saw:\n\n{snippet}"
                 if snippet
-                else "That one was tricky — our AI couldn't lock it in. Mind giving it another shot?"
+                else "That one was tricky - our AI couldn't lock it in. Mind giving it another shot?"
             ),
         )
 

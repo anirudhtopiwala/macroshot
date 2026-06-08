@@ -190,13 +190,13 @@ function AuthenticatedLayout() {
               <ErrorBoundary>
                 <AnimatedPage>
                   <Suspense fallback={<PageFallback />}>
-                    {/* Same shell for guests + signed-in users — guests
+                    {/* Same shell for guests + signed-in users - guests
                         see the real Dashboard, LogMeal, Trends, Journal
                         etc. with API calls degrading gracefully (the
                         401 interceptor skips its redirect when the
                         guest flag is set). A handful of routes that
-                        are conceptually auth-only — Chat with AI
-                        coach, Settings, OAuth integrations — route
+                        are conceptually auth-only - Chat with AI
+                        coach, Settings, OAuth integrations - route
                         to a SignupPrompt instead so guests aren't
                         teased by empty UI that won't work without
                         signing in. */}
@@ -206,7 +206,7 @@ function AuthenticatedLayout() {
                       <Route path="/journal" element={<Journal />} />
                       <Route path="/meals/:id" element={<MealDetail />} />
                       <Route path="/saved" element={<SavedMeals />} />
-                      <Route path="/trends" element={<Trends />} />
+                      <Route path="/trends" element={isGuest ? <SignupPrompt /> : <Trends />} />
                       <Route path="/settings" element={isGuest ? <SignupPrompt /> : <Settings />} />
                       <Route path="/settings/personal" element={isGuest ? <SignupPrompt /> : <SettingsPersonal />} />
                       <Route path="/settings/goals" element={isGuest ? <SignupPrompt /> : <SettingsGoals />} />
@@ -257,7 +257,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       {/* /signup is a convenience alias guest pages link to. Same target as
-          /login — Login.tsx hosts both sign-in and sign-up. */}
+          /login - Login.tsx hosts both sign-in and sign-up. */}
       <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/terms" element={
         <Suspense fallback={<PageFallback />}>

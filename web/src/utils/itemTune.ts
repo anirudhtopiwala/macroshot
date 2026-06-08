@@ -54,7 +54,7 @@ export function findRemovedItemNames(
  * Merge a Gemini correction response back into prev nutrition while honoring
  * the "only re-estimate this item" contract. We ignore changes to siblings
  * even if Gemini drifted on them, and we deliberately do NOT recompute the
- * meal-level totals at the top of the card — those are the user's manual
+ * meal-level totals at the top of the card - those are the user's manual
  * adjustment dial and should not be overwritten by per-item AI tunes.
  *
  * Match strategy: prefer the item at `index` in the response (Gemini almost

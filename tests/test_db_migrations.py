@@ -4,7 +4,7 @@ These tests construct an "old" SQLite DB that lacks recent columns and
 schema_version, then call init_db() and assert the migrations upgrade it
 without crashing. They guard against the kind of regression where a DDL
 fragment in `_DDL` references a column that's only added by a later
-versioned migration — that pattern works on a fresh install (the `_DDL`
+versioned migration - that pattern works on a fresh install (the `_DDL`
 runs once with all columns present) but crashes on an existing prod DB
 because `_DDL` runs BEFORE the versioned migrations.
 """
@@ -79,7 +79,7 @@ async def test_init_db_upgrades_old_shape_to_current(tmp_path):
     """init_db on a v1-shape DB should add email_canonical, backfill it,
     create the UNIQUE index (without crashing), and add the new prefs
     columns. This is the regression test for the 'CREATE UNIQUE INDEX
-    in _DDL' bug — that line referenced email_canonical before v3
+    in _DDL' bug - that line referenced email_canonical before v3
     added the column on existing DBs."""
     path = str(tmp_path / "old.db")
     await _build_v1_db(path)
@@ -125,7 +125,7 @@ async def test_init_db_idempotent_on_fresh_install(tmp_path):
     CREATE...IF NOT EXISTS so it's idempotent)."""
     path = str(tmp_path / "fresh.db")
     await db_mod.init_db(path)
-    # Re-run — should be a no-op.
+    # Re-run - should be a no-op.
     await db_mod.init_db(path)
 
     async with aiosqlite.connect(path) as conn:

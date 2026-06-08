@@ -186,7 +186,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /**
    * After a successful real login, migrate any cached guest meals into
    * the new user's history via /meals/import-guest. Idempotent on the
-   * server (users.guest_meals_imported_at) — safe if the migration
+   * server (users.guest_meals_imported_at) - safe if the migration
    * already ran on another device. Best-effort: a network failure here
    * loses the migration but logs to Sentry so we can investigate.
    */
@@ -223,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       }
     } finally {
-      // Always wipe local state — partial-import-then-retry would
+      // Always wipe local state - partial-import-then-retry would
       // duplicate rows in the new account, and the server's
       // already_imported flag protects against a fresh retry anyway.
       try { localStorage.removeItem(GUEST_FLAG_KEY); } catch { /* quota */ }
@@ -267,7 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch { /* malformed cache - treat as empty */ }
       setUser(me);
       try { localStorage.setItem(USER_CACHE_KEY, JSON.stringify(me)); } catch { /* quota */ }
-      // Real login won — replay any pre-signup guest meals into the
+      // Real login won - replay any pre-signup guest meals into the
       // new user's history, then exit guest mode locally.
       migrateGuestMealsIfAny().catch(() => { /* logged in Sentry */ });
       // Auto-detect timezone on login - send to backend if not already set
