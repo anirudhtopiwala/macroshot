@@ -42,7 +42,7 @@ def metrics(rows):
         mac[m]={"mae":round(s.mean(ae),1),"rel":round(s.mean(pe)*100) if pe else None,"med":round(s.median(pe)*100) if pe else None}
     return {"avgmae":round(s.mean(mac[m]["mae"] for m in M),1),"avgrel":round(s.mean(mac[m]["rel"] for m in M)),"avgmed":round(s.mean(mac[m]["med"] for m in M)),"macros":mac,"n":len(rows)}
 O47="runs/claude-opus-4-7-subagent_n100_20260527_060817/per_dish.csv"
-GLOB={"Flash-Lite":"runs/gemini-2.5-flash-lite_*","Flash-full":"runs/gemini-2.5-flash_2*","Opus 4.8":"runs/opus-4-8-*"}
+GLOB={"Flash-Lite":"runs/gemini-2.5-flash-lite_*","Flash-full":"runs/gemini-2.5-flash_2*","Opus 4.7":"runs/opus-4-7-*","Opus 4.8":"runs/opus-4-8-*"}
 models=["Flash-Lite","Flash-full","Opus 4.7","Opus 4.8"]
 FOCUS=[("Baseline","BASELINE_unlabeled","Generic Wang-style prompt &middot; photo only"),
  ("Baseline + GT ingredients","BASELINE_labeled","Generic prompt &middot; photo + the dish&rsquo;s <b>true ingredient names</b> &mdash; a best-case reference, not a real user flow"),
@@ -54,7 +54,10 @@ F={}
 for model in models:
     F[model]={}
     for lab,c,_ in FOCUS:
-        rows = rows_csv(O47,c) if model=="Opus 4.7" else best_dir(GLOB[model],c)
+        if model=="Opus 4.7":
+            rows = rows_csv(O47,c) or best_dir(GLOB[model],c)
+        else:
+            rows = best_dir(GLOB[model],c)
         F[model][c]=metrics(rows)
 def band(v): return "na" if v is None else ("g" if v<=50 else ("y" if v<=70 else "r"))
 def hcell(m,c):
@@ -69,10 +72,32 @@ def permodel(model):
     head="".join(f"<th>{LBL[m]}</th>" for m in M); body=""
     for lab,c in pres:
         x=F[model][c]; n=f" <span class=n>n{x['n']}</span>" if x['n']<100 else ""
-        cells="".join(f"<td>{x['macros'][m]['mae']}<span class=pct><br>{x['macros'][m]['rel']}% &middot; {x['macros'][m]['med']}%</span></td>" for m in M)
+        mb=lambda v:'na' if v is None else ('g' if v<=30 else ('y' if v<=50 else 'r'))
+        cells="".join(f"<td class={mb(x['macros'][m]['med'])}>{x['macros'][m]['mae']}<span class=pct><br>{x['macros'][m]['rel']}% &middot; {x['macros'][m]['med']}%</span></td>" for m in M)
         body+=f"<tr><td class=l>{lab}{n}</td>{cells}<td class=avg>{x['avgmae']}<span class=pct><br>{x['avgrel']}% &middot; {x['avgmed']}%</span></td></tr>"
     return f"<h3>{model}</h3><table><thead><tr><th>option</th>{head}<th>Avg</th></tr></thead><tbody>{body}</tbody></table>"
 permodel_html="".join(permodel(m) for m in models)
+# --- deltas / "what moves the needle" ---
+def dpct(model,fr,to):
+    a=F.get(model,{}).get(fr); b=F.get(model,{}).get(to)
+    if not a or not b: return None
+    return a["avgmae"],b["avgmae"],(b["avgmae"]-a["avgmae"])/a["avgmae"]*100
+def dcell(model,fr,to):
+    r=dpct(model,fr,to)
+    if not r: return '<td class=na>&mdash;</td>'
+    a,b,p=r; return f'<td class={"g" if p<0 else "r"}>{p:+.0f}%<span class=pct><br>{a:.0f}&rarr;{b:.0f}</span></td>'
+COMPS=[("MacroShot system prompt vs generic &mdash; photo only","BASELINE_unlabeled","X1"),
+ ("Add the true ingredient list to the <b>generic</b> prompt","BASELINE_unlabeled","BASELINE_labeled"),
+ ("Add the user&rsquo;s caption to <b>MacroShot</b>","X1","X3v2"),
+ ("Add the photo (same terse caption: text-only &rarr; photo)","E_terse","X3v2"),
+ ("Detailed vs terse &mdash; text-only logging","E_terse","E_detailed")]
+comprows="".join(f"<tr><td class=l>{lab}</td>{dcell('Flash-Lite',fr,to)}{dcell('Opus 4.8',fr,to)}</tr>" for lab,fr,to in COMPS)
+def _p(model,fr,to):
+    r=dpct(model,fr,to); return abs(round(r[2])) if r else None
+photo_fl,photo_op=_p('Flash-Lite','E_terse','X3v2'),_p('Opus 4.8','E_terse','X3v2')
+ingr_fl,ingr_op=_p('Flash-Lite','BASELINE_unlabeled','BASELINE_labeled'),_p('Opus 4.8','BASELINE_unlabeled','BASELINE_labeled')
+cap_fl,cap_op=_p('Flash-Lite','X1','X3v2'),_p('Opus 4.8','X1','X3v2')
+det_fl=F.get('Flash-Lite',{}).get('E_detailed',{}).get('avgmed'); det_op=F.get('Opus 4.8',{}).get('E_detailed',{}).get('avgmed')
 EX={"gt":"corn; garlic; caesar salad; nopales; olive oil; pepper; green beans; lime; sour cream; jicama; arugula; fish; carrot",
  "terse":"Had fish with caesar salad, green beans, corn, and some other veggies.",
  "detailed":"Had a good portion of fish, a side of caesar salad, and green beans. Also a small mix of corn and other veggies, with olive oil, lime, and sour cream."}
@@ -98,6 +123,12 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "<title>MacroShot &mdash; meal-macro accuracy eval</title><style>"+CSS+"</style></head><body><div class=wrap>",
  "<h1>MacroShot &mdash; meal-macro accuracy eval</h1>",
  f"<p class=sub>How accurately can an LLM read calories &amp; macros from a meal photo (and/or a typed description)? Benchmarked on <a href='{N5K}'>Nutrition5K</a> against the published baseline of <a href='{WANG}'>Wang et&nbsp;al. 2026</a>, n=100 dishes stratified by complexity. Lower error is better.</p>",
+ f"<div class=key style='border-left-color:var(--g)'><b>Key takeaways</b><ul style='margin:8px 0 0;padding-left:18px;color:#cdd6ea'>"
+ f"<li><b>The photo is the single biggest lever.</b> With the <i>same</i> user caption, adding the image cut error by ~{photo_fl}% (Flash-Lite) / ~{photo_op}% (Opus&nbsp;4.8).</li>"
+ f"<li><b>Extra information only helps if the prompt knows what to do with it.</b> Handing the <i>generic</i> prompt the true ingredient list made it <span style='color:var(--r)'>worse</span> (+{ingr_fl}% / +{ingr_op}%) &mdash; it stacks standard servings. Giving <i>MacroShot</i> the user&rsquo;s caption made it <span style='color:var(--g)'>better</span> (&minus;{cap_fl}% / &minus;{cap_op}%).</li>"
+ f"<li><b>Photo-free text logging still works.</b> With no image, detailed typed descriptions land within ~{det_op}% (Opus) / ~{det_fl}% (Flash-Lite) median error &mdash; rough, but far better than nothing.</li>"
+ f"<li><b>The frontier model (Opus) is more accurate, but the same patterns hold</b> on the cheap shipped model.</li>"
+ "</ul></div>",
  "<h2>Metrics</h2><dl class=glossary><dt>MAE &mdash; Mean Absolute Error</dt><dd>Average |prediction &minus; ground&nbsp;truth| in native units (kcal / grams). Primary, most interpretable.</dd>",
  "<dt>RelErr &mdash; Relative Error (MAPE)</dt><dd>mean(|pred &minus; truth| / truth) &times; 100%. Scale-free but inflated by tiny denominators.</dd>",
  "<dt>MedPE &mdash; Median Percent Error</dt><dd>median(|pred &minus; truth| / truth) &times; 100%. Robust counterpart &mdash; 'half of dishes within X%'. Best single UX number.</dd>",
@@ -117,7 +148,11 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "<h2>Results &mdash; headline (AvgMAE)</h2>",
  "<table><thead><tr><th>option</th><th>Flash-Lite<span class=n> shipped</span></th><th>Flash-full</th><th>Opus 4.7</th><th>Opus 4.8</th></tr></thead><tbody>"+hrows+"</tbody></table>",
  "<p class=sub>Color: AvgMAE green &le;50 &middot; yellow &le;70 &middot; red &gt;70. <code>nNN</code> = sample &lt;100. Blank = not run on that model.</p>",
- "<h2>Results &mdash; per-macro detail</h2><p class=sub>Each cell: <b>MAE</b> with <span class=pct>RelErr% &middot; MedPE%</span> beneath. AvgMAE over five nutrients over-weights Mass; for a nutrition app, Calories / Protein / Fat matter most.</p>",
+ "<h2>What moves the needle</h2>",
+ "<p class=sub>Each row applies one <i>change</i> to a prompt; the cell is the change in AvgMAE. <b style='color:var(--g)'>Green = error reduced (better)</b>, <b style='color:var(--r)'>red = error increased (worse)</b>; small numbers are AvgMAE before&rarr;after.</p>",
+ "<table><thead><tr><th>change</th><th>Flash-Lite</th><th>Opus 4.8</th></tr></thead><tbody>"+comprows+"</tbody></table>",
+ "<div class=key>Same move, opposite result: <b>adding the ground-truth ingredient list to the generic prompt makes it worse</b>, but <b>adding the user&rsquo;s caption to MacroShot makes it better</b> &mdash; the structured prompt knows to treat the text as identity and size portions from the image, instead of stacking a standard serving per named item. The <b>photo</b> is the largest single improvement (same caption, +image roughly halves the error). And <b>text-only logging</b>, while the weakest, still recovers usable macros.</div>",
+ "<h2>Results &mdash; per-macro detail</h2><p class=sub>Each cell: <b>MAE</b> with <span class=pct>RelErr% &middot; MedPE%</span> beneath, <b>colored by MedPE</b> (green &le;30% &middot; yellow &le;50% &middot; red &gt;50%). AvgMAE over five nutrients over-weights Mass; for a nutrition app, Calories / Protein / Fat matter most.</p>",
  permodel_html,
  f"<div class=foot><b>Method:</b> Nutrition5K (<a href='{N5K}'>Thames et&nbsp;al. 2021</a>) camera-C frame 10, n=100 stratified (seed 42). Frontier-model runs use one isolated, ground-truth-free sub-agent per dish. Baseline = our reconstruction of <a href='{WANG}'>Wang et&nbsp;al. 2026</a>&rsquo;s prompt. <b>Caveats:</b> cafeteria/single-cuisine heavy; RelErr noisy (prefer MAE / MedPE); Flash-full runs with chain-of-thought on; some Opus-4.8 cells may be small-n previews.</div>",
  "</div></body></html>"]
