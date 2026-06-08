@@ -13,7 +13,7 @@ Usage:  python3 tools/build_prompts.py 500
 import csv,json,os,sys
 HERE=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); os.chdir(HERE)
 N=int(sys.argv[1]) if len(sys.argv)>1 else 500
-CSV_DIR="/home/anirudh/Nutrition5k/sample/metadata"; MAC=["calories","mass_g","fat_g","carb_g","protein_g"]
+CSV_DIR=os.environ.get("NUTRITION5K_METADATA_DIR","data/metadata"); MAC=["calories","mass_g","fat_g","carb_g","protein_g"]
 def parse_csv():
     out={}
     for cafe,fn in [("cafe1","dish_metadata_cafe1.csv"),("cafe2","dish_metadata_cafe2.csv")]:

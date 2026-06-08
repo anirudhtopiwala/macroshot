@@ -154,8 +154,7 @@ det_fl=F.get('Flash-Lite',{}).get('E_detailed',{}).get('avgmed'); det_op=F.get('
 EX={"gt":"corn; garlic; caesar salad; nopales; olive oil; pepper; green beans; lime; sour cream; jicama; arugula; fish; carrot",
  "terse":"Had fish with caesar salad, green beans, corn, and some other veggies.",
  "detailed":"Had a good portion of fish, a side of caesar salad, and green beans. Also a small mix of corn and other veggies, with olive oil, lime, and sour cream."}
-try: WANGP=json.load(open("/tmp/_prompts.json"))["wang"]
-except: WANGP="Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\":<kcal>,\"mass_g\":<g>,\"fat_g\":<g>,\"carb_g\":<g>,\"protein_g\":<g>}."
+WANGP="Calculate the total calories (kcal), total weight (g), fat content (g), carbohydrate content (g), and protein content (g) for the food in this image. Reply with JSON only: {\"calories\":<kcal>,\"mass_g\":<g>,\"fat_g\":<g>,\"carb_g\":<g>,\"protein_g\":<g>}."
 CSS="""
 :root{--bg:#0f1115;--card:#171a21;--line:#272c36;--mut:#8b93a7;--fg:#e7eaf0;--g:#34d399;--y:#fbbf24;--r:#f87171;--blue:#7aa2ff}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14.5px/1.6 -apple-system,Segoe UI,Roboto,sans-serif}

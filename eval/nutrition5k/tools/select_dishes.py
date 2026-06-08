@@ -14,7 +14,7 @@ import csv,json,os,sys,random
 HERE=os.path.dirname(os.path.dirname(os.path.abspath(__file__))); os.chdir(HERE)
 N=int(sys.argv[1]) if len(sys.argv)>1 else 500
 RATIO=(0.40,0.35,0.25)  # simple / medium / complex, from the original n=100
-CSV_DIR="/home/anirudh/Nutrition5k/sample/metadata"
+CSV_DIR=os.environ.get("NUTRITION5K_METADATA_DIR","data/metadata")  # dish_metadata_cafe{1,2}.csv from the public Nutrition5K release
 MAC=["calories","mass_g","fat_g","carb_g","protein_g"]
 def parse_meta():
     """dish_id -> {cafe, totals, ingredients(real, deduped, >=1g), n_real_ingr}"""
