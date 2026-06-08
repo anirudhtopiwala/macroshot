@@ -69,7 +69,7 @@ export default function SettingsReminders() {
   const [pushServerSubscribed, setPushServerSubscribed] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
   // Saved-snapshot must be state (not ref) so that updating it after an
-  // async PUT triggers a re-render — otherwise `dirty` stays stale and the
+  // async PUT triggers a re-render - otherwise `dirty` stays stale and the
   // Save Changes button stays visible until something else re-renders.
   const [savedSnapshot, setSavedSnapshot] = useState<string>(cachedPrefs ? JSON.stringify(cachedPrefs) : '');
 
@@ -100,7 +100,7 @@ export default function SettingsReminders() {
     const togglePayload: Prefs = { ...saved, reminders_on: enabling ? 1 : 0 };
     const togglePayloadJson = JSON.stringify(togglePayload);
     // Optimistically update snapshot so `dirty` doesn't flash true during the
-    // async PUT — the Save Changes button must not appear for a pure toggle.
+    // async PUT - the Save Changes button must not appear for a pure toggle.
     setPrefs({ ...prefs, reminders_on: enabling ? 1 : 0 });
     setSavedSnapshot(togglePayloadJson);
 
@@ -249,7 +249,7 @@ export default function SettingsReminders() {
               onClick={async () => {
                 setPushLoading(true);
                 try {
-                  // This is the explicit diagnostic surface — surface the
+                  // This is the explicit diagnostic surface - surface the
                   // failure reason in the toast so a user (or we, debugging
                   // their report) can see which step broke without needing
                   // Safari remote-debugger on iOS PWA.
@@ -296,7 +296,7 @@ export default function SettingsReminders() {
           </div>
         )}
 
-        {/* Save — only shown when there are unsaved timezone/meal-time edits.
+        {/* Save - only shown when there are unsaved timezone/meal-time edits.
             The Push reminders toggle saves itself on flip, so it never needs
             this button. */}
         {dirty && (

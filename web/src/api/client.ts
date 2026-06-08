@@ -62,7 +62,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       // Guest mode: the visitor has no cookie by design. Any 401 here
       // is expected (Dashboard/today, /events/batch, /subscription/me,
       // etc.). Throw a normal ApiError so callers can decide how to
-      // degrade — but DO NOT wipe cached state and DO NOT redirect to
+      // degrade - but DO NOT wipe cached state and DO NOT redirect to
       // /login, which would yank them off the app shell.
       let isGuest = false;
       try { isGuest = localStorage.getItem('macro_guest_mode') === '1'; } catch { /* ignore */ }

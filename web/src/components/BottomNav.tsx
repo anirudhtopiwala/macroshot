@@ -58,7 +58,7 @@ export default function BottomNav() {
 
   // Hide the nav while the on-screen keyboard is up. Without this, iOS
   // resizes the visual viewport above the keyboard and our position:fixed
-  // bottom nav abruptly jumps up to sit just above the keyboard — which
+  // bottom nav abruptly jumps up to sit just above the keyboard - which
   // looks like the nav is "moving around" as the user types.
   //
   // We combine two signals:

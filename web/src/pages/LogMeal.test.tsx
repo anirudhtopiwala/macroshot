@@ -44,7 +44,7 @@ vi.mock('../context/OfflineQueueContext', () => ({
 
 vi.mock('../context/AuthContext', () => ({
   // LogMeal reads isGuest from the auth context. Tests run as a real
-  // user — false ensures the existing test bodies still hit the
+  // user - false ensures the existing test bodies still hit the
   // /meals/analyze + aliases code paths.
   useAuth: () => ({ isGuest: false, user: { user_id: 1 } }),
 }));

@@ -16,7 +16,7 @@ export default function GuestBanner() {
       if (!cancelled) setCount(meals.length);
     });
     // Refresh on the same custom event LogMeal fires after accept so the
-    // counter ticks up without a navigation. Cheap — listGuestMeals is
+    // counter ticks up without a navigation. Cheap - listGuestMeals is
     // one IndexedDB getAll.
     const onAdded = () => listGuestMeals().then((m) => { if (!cancelled) setCount(m.length); });
     window.addEventListener('guest-meal-added', onAdded);

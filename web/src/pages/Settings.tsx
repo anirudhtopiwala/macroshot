@@ -59,7 +59,7 @@ export default function Settings() {
   const [updatePhase, setUpdatePhase] = useState<UpdateProgressPhase | null>(null);
   const [updateProgress, setUpdateProgress] = useState({ done: 0, total: 0 });
   // Aborts an in-flight checkForUpdate on unmount so a route change away from
-  // Settings doesn't leave the SW lifecycle subscription dangling — and, more
+  // Settings doesn't leave the SW lifecycle subscription dangling - and, more
   // importantly, doesn't fire applyUpdate() (which triggers a page reload)
   // under a user who is now mid-task on another page.
   const updateAbortRef = useRef<AbortController | null>(null);
@@ -853,7 +853,7 @@ export default function Settings() {
             setUpdateProgress(getPrecacheProgress());
             const unsubProgress = onPrecacheProgress((p) => setUpdateProgress(p));
 
-            // Already-precached update from a previous tab — skip to apply.
+            // Already-precached update from a previous tab - skip to apply.
             if (isUpdateAvailable()) {
               setUpdatePhase('applying');
               applyUpdate();

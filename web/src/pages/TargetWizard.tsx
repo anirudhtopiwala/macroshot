@@ -181,7 +181,7 @@ export default function TargetWizard() {
   const [editTargets, setEditTargets] = useState<Targets>({ calories: 2000, protein: 150, carbs: 200, fat: 70 });
   const [saving, setSaving] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-  // New badges from /accept (or PUT /settings/targets) — celebrated then
+  // New badges from /accept (or PUT /settings/targets) - celebrated then
   // navigated. Pre-fix this response was discarded, so users hit Goal Setter
   // in the DB without ever seeing the popup.
   const [newBadges, setNewBadges] = useState<NewBadge[]>([]);
@@ -228,7 +228,7 @@ export default function TargetWizard() {
   }, [units]);
 
   // Pre-fill from existing data in settings/refine mode. In refine mode we
-  // intentionally do NOT auto-call session.suggest — the user lands looking
+  // intentionally do NOT auto-call session.suggest - the user lands looking
   // at their CURRENT targets, and the first AI call fires only when they
   // send a refine message (handleRefine seeds session.suggest with that
   // message via the new `seed_message` field). This saves a Gemini round-
@@ -318,7 +318,7 @@ export default function TargetWizard() {
 
       // Accept via session or save directly. Both endpoints return
       // `new_badges` (Goal Setter fires here for first-time target setters)
-      // — capture and celebrate before navigating away.
+      // - capture and celebrate before navigating away.
       let earned: NewBadge[] = [];
       if (session.sessionId) {
         const res = await session.accept(editTargets);
@@ -389,7 +389,7 @@ export default function TargetWizard() {
         const prefsOk = await api.put('/settings/prefs', { reminders_on: 1, timezone: tz })
           .then(() => true).catch(() => false);
         if (!prefsOk) {
-          toast("Couldn't enable reminders — toggle them in Settings → Reminders", 'error');
+          toast("Couldn't enable reminders - toggle them in Settings → Reminders", 'error');
         }
       }
     } catch { /* user denied or not supported - that's fine */ }

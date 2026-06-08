@@ -12,7 +12,7 @@ from io import BytesIO
 from typing import Any
 
 # B15: process-wide cap on concurrent Gemini API calls. Single uvicorn
-# worker on a 1 GB VM cannot safely fan out unbounded — both for memory
+# worker on a 1 GB VM cannot safely fan out unbounded - both for memory
 # (each call holds image bytes) and to avoid amplifying upstream
 # rate-limit / cost spikes when traffic surges.
 _GEMINI_SEM = asyncio.Semaphore(8)
@@ -957,7 +957,7 @@ async def _get_or_create_meal_prompt_cache(
             cache_name, expires_at = entry
             if now < expires_at - _MEAL_PROMPT_CACHE_REFRESH_LEAD_SEC:
                 return cache_name
-            # Expired or about to expire — drop and re-create below.
+            # Expired or about to expire - drop and re-create below.
             _MEAL_PROMPT_CACHE.pop(key, None)
         try:
             cached = await aclient.caches.create(
@@ -1476,7 +1476,7 @@ async def gemini_summarize_target_chat(
     Used after target acceptance to seed a "Goal context:" memory the coach
     can reference later (e.g. "training for a marathon", "post-partum",
     "vegetarian high-protein push"). Pass only the user-authored turns from
-    the refine chat — assistant turns add noise.
+    the refine chat - assistant turns add noise.
 
     Returns the summary (≤180 chars, no leading marker) or None when the
     chat had no meaningful signal beyond raw numeric tweaks, when the model

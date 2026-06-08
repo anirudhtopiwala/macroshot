@@ -1,7 +1,7 @@
 import { api } from './client';
 import type { Nutrition } from '../types';
 
-/** Subset of /meals/analyze AnalyzeResponse — no session_id (no DB row). */
+/** Subset of /meals/analyze AnalyzeResponse - no session_id (no DB row). */
 export interface GuestAnalyzeResponse {
   nutrition: Nutrition | null;
   raw_text: string;
@@ -10,7 +10,7 @@ export interface GuestAnalyzeResponse {
 
 export interface ImportGuestMealItem {
   nutrition: Nutrition;
-  /** "YYYY-MM-DD HH:MM[:SS]" — same pattern as AcceptRequest.logged_at. */
+  /** "YYYY-MM-DD HH:MM[:SS]" - same pattern as AcceptRequest.logged_at. */
   logged_at: string;
   meal_type?: string;
   user_input?: string;

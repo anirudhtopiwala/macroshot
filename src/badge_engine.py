@@ -118,7 +118,7 @@ async def _count_full_days(db: aiosqlite.Connection, user_id: int, **_) -> int:
 
     Restricts the DISTINCT count to the 4 known meal-type values. Without
     this, an empty-string or fallback "meal" row could combine with three
-    real types to satisfy COUNT(DISTINCT) >= 4 — so a day with only three
+    real types to satisfy COUNT(DISTINCT) >= 4 - so a day with only three
     real meals (breakfast/lunch/dinner) plus one mistyped row would
     incorrectly satisfy the badge.
     """
@@ -269,7 +269,7 @@ async def _count_comebacks(db: aiosqlite.Connection, user_id: int, **_) -> int:
 
 
 async def _count_unique_meals(db: aiosqlite.Connection, user_id: int, **_) -> int:
-    # TRIM with explicit whitespace chars — SQLite's bare TRIM() only strips
+    # TRIM with explicit whitespace chars - SQLite's bare TRIM() only strips
     # ASCII spaces, so a stray tab or newline would still slip through and
     # let "Pizza" vs "Pizza\t" count as two unique meals.
     row = await (await db.execute(
@@ -303,7 +303,7 @@ async def _count_weight_entries(db: aiosqlite.Connection, user_id: int, **_) -> 
 
 
 async def _count_weight_weeks(db: aiosqlite.Connection, user_id: int, **_) -> int:
-    # ISO week computed in Python — SQLite's strftime supports %W (locale,
+    # ISO week computed in Python - SQLite's strftime supports %W (locale,
     # Monday-based with a partial "week 0") but not %G-%V (ISO year/week),
     # and %W splits ISO week 1 across two buckets at the year boundary.
     rows = await (await db.execute(
@@ -419,7 +419,7 @@ async def evaluate_badges(
         # Serialize the read-then-UPSERT and the shield-earning loop against
         # concurrent meal_accepts on the same user. Without this, two parallel
         # accepts can both see the same old_tier, both UPSERT the new tier,
-        # and both push a "you earned this!" notification — duplicate UX.
+        # and both push a "you earned this!" notification - duplicate UX.
         # Same hazard for the shield earning cap (3 unused).
         await db.execute("BEGIN IMMEDIATE")
 
@@ -481,7 +481,7 @@ async def evaluate_badges(
             })
 
         # Shield earning: award 1 shield per *run of 3 consecutive* on-target days
-        # (within 20% of calorie target). Non-overlapping — a 6-day run earns 2.
+        # (within 20% of calorie target). Non-overlapping - a 6-day run earns 2.
         # Free users get max 1 lifetime shield; Pro users earn unlimited (capped at 3 unused).
         if trigger == "meal_accept":
             from src.db import _fetch_on_target_dates, _count_consecutive_runs_of_3

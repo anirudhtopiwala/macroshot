@@ -288,7 +288,7 @@ export default function LogMeal() {
   };
 
   const refreshAliases = useCallback(async () => {
-    // Aliases require auth — guests have none and the request would 401.
+    // Aliases require auth - guests have none and the request would 401.
     if (isGuest) return;
     const data = await aliasesApi.list();
     setAliases(data);
@@ -301,7 +301,7 @@ export default function LogMeal() {
     refreshAliases().catch(() => {});
   }, [refreshAliases]);
 
-  // Fetch recent unique meals on mount (skip for guests — endpoint 401s).
+  // Fetch recent unique meals on mount (skip for guests - endpoint 401s).
   useEffect(() => {
     if (isGuest) return;
     mealsApi.recentUnique().then((data) => {

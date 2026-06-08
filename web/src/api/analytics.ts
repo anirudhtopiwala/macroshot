@@ -116,7 +116,7 @@ function scheduleFlush() {
  */
 export function track(event_type: string, metadata?: EventMetadata): void {
   if (!event_type.startsWith('ui_')) return;
-  // Guests have no session cookie — every /events/batch POST would
+  // Guests have no session cookie - every /events/batch POST would
   // 401 on the server and we'd burn requests for nothing. Skip them
   // entirely. Real users resume tracking the moment they sign in.
   try {
