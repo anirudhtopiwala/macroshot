@@ -14,11 +14,14 @@ Abuse model:
 
 from io import BytesIO
 import logging
+import re
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 
+from src.barcode_lookup import lookup_barcode
 from src.gemini import gemini_analyze_meal
+from src.models import FoodItem, NutritionResult
 from src.web.budget_gate import BudgetExceededError
 from src.web.constants import BUDGET_EXCEEDED_MESSAGE
 from src.web.deps import DbPath
@@ -27,6 +30,8 @@ from src.web.schemas import FoodItemOut, NutritionOut
 
 logger = logging.getLogger("macro_app")
 router = APIRouter(prefix="/guest", tags=["guest"])
+
+_BARCODE_RE = re.compile(r"^\d{8,14}$")
 
 
 # Tighter than authed limits. With killswitch at $45 and ~$0.005 per
@@ -183,4 +188,112 @@ async def guest_analyze(
         nutrition=_nutrition_to_out(result),
         raw_text=response_text or "",
         error=None,
+    )
+
+
+# ── Guest barcode lookup ────────────────────────────────────────────
+
+
+class GuestBarcodeRequest(BaseModel):
+    barcode: str
+    servings: float = Field(default=1.0, gt=0, le=1000)
+
+
+class GuestBarcodeResponse(BaseModel):
+    """Subset of /meals/barcode AnalyzeResponse — no session_id (no DB row).
+
+    Carries the per-serving product metadata the LogMeal barcode review
+    UI renders (serving label / size, image, item name). The guest
+    accept path mints a synthetic session id client-side so the
+    existing UI can consume this verbatim.
+    """
+
+    nutrition: NutritionOut | None = None
+    error: str | None = None
+    image_url: str | None = None
+    serving_label: str | None = None
+    serving_size_g: float | None = None
+    serving_size_unit: str = "g"
+
+
+@router.post("/barcode", response_model=GuestBarcodeResponse)
+@limiter.limit("20/minute")
+async def guest_barcode(
+    request: Request,
+    req: GuestBarcodeRequest,
+    db_path: DbPath,
+):
+    """Look up a barcode for a non-signed-in visitor.
+
+    No DB writes, no per-user correction overlay, no telemetry row.
+    Returns the per-serving nutrition (multiplied by ``servings``) so
+    the existing barcode review UI can consume the response shape.
+    OFF/FatSecret caches in ``barcode_cache`` ARE consulted (and
+    populated) because they're product-keyed, not user-keyed — so
+    guest scans accelerate future authed scans of the same product.
+    """
+    barcode = req.barcode.strip()
+    if not _BARCODE_RE.match(barcode):
+        raise HTTPException(status_code=400, detail="Invalid barcode format (must be 8-14 digits)")
+
+    product = await lookup_barcode(barcode, db_path, user_id=None)
+    if not product:
+        return GuestBarcodeResponse(
+            nutrition=None,
+            error="Product not found. Try logging this meal with a photo or text description instead.",
+        )
+
+    servings = req.servings
+    calories = round(product["calories"] * servings, 1)
+    protein = round(product["protein"] * servings, 1)
+    carbs = round(product["carbs"] * servings, 1)
+    fat = round(product["fat"] * servings, 1)
+    serving_g = product.get("serving_size_g")
+    weight_g = round(serving_g * servings, 1) if serving_g else None
+
+    product_name = product["product_name"]
+    brand = product.get("brand", "") or ""
+    serving_label = product.get("serving_label", "") or ""
+
+    desc_parts = []
+    if brand:
+        desc_parts.append(brand)
+    if serving_label:
+        desc_parts.append(serving_label)
+    if servings != 1.0:
+        desc_parts.append(f"{servings}x servings")
+    description = " | ".join(desc_parts) if desc_parts else ""
+
+    item_name = f"{brand} {product_name}".strip() if brand else product_name
+
+    food_item = FoodItem(
+        name=product_name,
+        description=description,
+        brand=brand or None,
+        has_label=False,
+        calories=calories,
+        protein=protein,
+        carbs=carbs,
+        fat=fat,
+        weight_g=weight_g,
+        source="barcode",
+    )
+    result = NutritionResult(
+        item_name=item_name,
+        meal_description=description,
+        items=[food_item],
+        calories=calories,
+        protein=protein,
+        carbs=carbs,
+        fat=fat,
+        source="barcode",
+    )
+
+    return GuestBarcodeResponse(
+        nutrition=_nutrition_to_out(result),
+        error=None,
+        image_url=product.get("image_url"),
+        serving_label=serving_label or None,
+        serving_size_g=serving_g,
+        serving_size_unit=product.get("serving_size_unit") or "g",
     )

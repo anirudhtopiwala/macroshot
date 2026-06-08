@@ -28,6 +28,7 @@ import { track } from '../api/analytics';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useCapState } from '../hooks/useCapState';
 import { useAuth } from '../context/AuthContext';
+import { guestApi } from '../api/guest';
 import UpgradeCard from '../components/UpgradeCard';
 import UsageMeter from '../components/UsageMeter';
 import Button from '../components/Button';
@@ -474,6 +475,41 @@ export default function LogMeal() {
     }
 
     try {
+      // Guests hit /guest/barcode which returns the same product
+      // metadata shape but no session_id. We mint a synthetic id
+      // (matching the GUEST_SESSION_PREFIX convention in
+      // useMealSession) so applyBarcodeResult -> session.setSessionId
+      // routes through the existing review/accept UI without forking.
+      if (isGuest) {
+        const res = await guestApi.barcodeLookup(barcode, 1);
+        if (res.error || !res.nutrition) {
+          setBarcodeNotFound(true);
+          if (cached) setBaseNutrition(null);
+          hapticWarning();
+          return;
+        }
+        hapticSuccess();
+        setCachedBarcode(
+          barcode,
+          res.nutrition,
+          res.nutrition.item_name,
+          res.image_url ?? null,
+        );
+        const fakeId = `guest:${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+        // Seed mealType so the guest accept path tags the IDB entry
+        // with the user's selection. applyBarcodeResult itself only
+        // sets nutrition/session - mealType lives on the hook.
+        session.setPendingMealType(mealType);
+        applyBarcodeResult(
+          res.nutrition, fakeId, res.image_url ?? null, [],
+          res.serving_label ?? undefined, res.serving_size_g ?? undefined,
+          res.serving_size_unit ?? null,
+          false, null,
+          false, null, preserveServings,
+        );
+        return;
+      }
+
       const res = await mealsApi.barcodeLookup(barcode, 1, mealType);
       if (res.error || !res.nutrition) {
         setBarcodeNotFound(true);
@@ -509,7 +545,7 @@ export default function LogMeal() {
       setBarcodeLoading(false);
       barcodeLoadingRef.current = false;
     }
-  }, [mealType, applyBarcodeResult, resetBarcodeUiState]);
+  }, [mealType, applyBarcodeResult, resetBarcodeUiState, isGuest]);
 
   // QR-code scan handler - server classifies the payload.
   //   digits 8–14  → server delegates to barcode flow; response shape matches.

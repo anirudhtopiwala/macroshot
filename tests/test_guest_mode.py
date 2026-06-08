@@ -298,7 +298,120 @@ class TestImportGuest:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 3. mark_guest_imported race semantics
+# 3. /weight/import-guest
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestImportGuestWeights:
+    @pytest.mark.asyncio
+    async def test_happy_path_inserts_entries(self, auth_client):
+        payload = {"entries": [
+            {"weight_kg": 78.5, "logged_at": "2026-06-01 08:00"},
+            {"weight_kg": 78.2, "logged_at": "2026-06-03 08:00"},
+            {"weight_kg": 77.9, "logged_at": "2026-06-05 08:00"},
+        ]}
+        resp = await auth_client.post(f"{API}/weight/import-guest", json=payload)
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["imported"] == 3
+        assert body["already_imported"] is False
+
+        # Confirm entries actually landed in weight_logs.
+        import aiosqlite
+        async with aiosqlite.connect(auth_client._db_path) as db:
+            rows = await (await db.execute(
+                "SELECT weight_kg FROM weight_logs WHERE user_id = ? ORDER BY logged_at",
+                (auth_client._user_id,),
+            )).fetchall()
+        assert [r[0] for r in rows] == [78.5, 78.2, 77.9]
+
+    @pytest.mark.asyncio
+    async def test_second_call_is_noop(self, auth_client):
+        first = await auth_client.post(
+            f"{API}/weight/import-guest",
+            json={"entries": [{"weight_kg": 80.0, "logged_at": "2026-06-01 08:00"}]},
+        )
+        assert first.status_code == 200
+        assert first.json()["imported"] == 1
+
+        second = await auth_client.post(
+            f"{API}/weight/import-guest",
+            json={"entries": [{"weight_kg": 82.0, "logged_at": "2026-06-02 08:00"}]},
+        )
+        assert second.status_code == 200
+        body = second.json()
+        assert body["imported"] == 0
+        assert body["already_imported"] is True
+
+    @pytest.mark.asyncio
+    async def test_requires_auth(self, override_db):
+        transport = ASGITransport(app=app)
+        async with AsyncClient(
+            transport=transport, base_url="http://test",
+            headers={"X-Requested-With": "MacroApp"},
+        ) as c:
+            resp = await c.post(
+                f"{API}/weight/import-guest",
+                json={"entries": [{"weight_kg": 80.0, "logged_at": "2026-06-01 08:00"}]},
+            )
+        assert resp.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_ninety_one_entries_rejected(self, auth_client):
+        payload = {"entries": [
+            {"weight_kg": 80.0 + i * 0.01, "logged_at": f"2026-06-{(i % 28) + 1:02d} 08:00"}
+            for i in range(91)
+        ]}
+        resp = await auth_client.post(f"{API}/weight/import-guest", json=payload)
+        assert resp.status_code == 422
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 4. /guest/barcode
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestGuestBarcode:
+    @pytest.mark.asyncio
+    @patch("src.web.routes.guest.lookup_barcode", new_callable=AsyncMock)
+    async def test_happy_path(self, mock_lookup, guest_client):
+        mock_lookup.return_value = {
+            "product_name": "Chobani Greek Yogurt",
+            "brand": "Chobani",
+            "calories": 100.0,
+            "protein": 18.0,
+            "carbs": 6.0,
+            "fat": 0.0,
+            "serving_size_g": 170.0,
+            "serving_size_unit": "g",
+            "serving_label": "1 container (170g)",
+            "image_url": "https://example.com/y.jpg",
+        }
+        resp = await guest_client.post(f"{API}/guest/barcode", json={"barcode": "0894700010014"})
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["nutrition"]["calories"] == 100.0
+        assert body["serving_size_g"] == 170.0
+        assert body["image_url"] == "https://example.com/y.jpg"
+
+    @pytest.mark.asyncio
+    async def test_invalid_format(self, guest_client):
+        resp = await guest_client.post(f"{API}/guest/barcode", json={"barcode": "abc"})
+        assert resp.status_code == 400
+
+    @pytest.mark.asyncio
+    @patch("src.web.routes.guest.lookup_barcode", new_callable=AsyncMock)
+    async def test_product_not_found(self, mock_lookup, guest_client):
+        mock_lookup.return_value = None
+        resp = await guest_client.post(f"{API}/guest/barcode", json={"barcode": "1234567890123"})
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["nutrition"] is None
+        assert "not found" in body["error"].lower()
+
+
+# ═══════════════════════════════════════════════════════════════════
+# 5. mark_guest_imported race semantics
 # ═══════════════════════════════════════════════════════════════════
 
 

@@ -931,6 +931,10 @@ _VERSIONED_MIGRATIONS: list[tuple[int, str]] = [
     # the endpoint from being re-runnable (which would let an attacker
     # spray fake high-cal entries past the per-call 30-cap by replaying).
     (20, "ALTER TABLE users ADD COLUMN guest_meals_imported_at TEXT"),
+    # v21: same idea but for guest weight history. Mirrors v20 so a
+    # signup can backfill both meals AND weight in one round-trip per
+    # data type without either getting re-runnable.
+    (21, "ALTER TABLE users ADD COLUMN guest_weights_imported_at TEXT"),
 ]
 
 
@@ -2435,6 +2439,32 @@ async def mark_guest_imported(db_path: str, user_id: int) -> bool:
         cur = await db.execute(
             "UPDATE users SET guest_meals_imported_at = ? "
             "WHERE user_id = ? AND guest_meals_imported_at IS NULL",
+            (now_str, user_id),
+        )
+        await db.commit()
+        return cur.rowcount > 0
+
+
+async def get_guest_weights_imported_at(db_path: str, user_id: int) -> str | None:
+    """Return the timestamp the user imported pre-signup guest weights, or None."""
+    async with get_db(db_path) as db:
+        row = await (await db.execute(
+            "SELECT guest_weights_imported_at FROM users WHERE user_id = ?",
+            (user_id,),
+        )).fetchone()
+    return row[0] if row and row[0] else None
+
+
+async def mark_guest_weights_imported(db_path: str, user_id: int) -> bool:
+    """Atomic once-per-user gate for /weight/import-guest. Same semantics
+    as `mark_guest_imported` (meals) - UPDATE ... WHERE ... IS NULL wins
+    exactly once across concurrent calls."""
+    from datetime import datetime, timezone as _tz
+    now_str = datetime.now(_tz.utc).strftime("%Y-%m-%d %H:%M:%S")
+    async with get_db(db_path) as db:
+        cur = await db.execute(
+            "UPDATE users SET guest_weights_imported_at = ? "
+            "WHERE user_id = ? AND guest_weights_imported_at IS NULL",
             (now_str, user_id),
         )
         await db.commit()
