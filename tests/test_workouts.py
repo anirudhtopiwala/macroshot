@@ -22,7 +22,7 @@ from src.web.deps import get_db_path, get_current_user
 def db_path(tmp_path):
     """Create a temporary SQLite database."""
     path = str(tmp_path / "test.db")
-    asyncio.get_event_loop().run_until_complete(init_db(path))
+    asyncio.run(init_db(path))
     return path
 
 

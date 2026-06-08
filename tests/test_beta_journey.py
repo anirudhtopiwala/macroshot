@@ -95,7 +95,7 @@ def mode_env():
 @pytest.fixture
 def db_path(tmp_path):
     path = str(tmp_path / "journey.db")
-    asyncio.get_event_loop().run_until_complete(init_db(path))
+    asyncio.run(init_db(path))
     return path
 
 
