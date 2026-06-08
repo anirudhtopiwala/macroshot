@@ -1,6 +1,17 @@
 import { useState, useCallback } from 'react';
 import { mealsApi } from '../api/meals';
+import { guestApi } from '../api/guest';
+import { useAuth } from '../context/AuthContext';
+import { saveGuestMeal } from '../utils/guestStorage';
+import { formatLocalDateTime } from '../utils/date';
 import type { Nutrition, AnalyzeResponse, AcceptResponse } from '../types';
+
+// Synthetic session id used when running an analyze in guest mode. No
+// server-side meal_sessions row exists for this id; only the local
+// nutrition/messages state is hydrated. Lets the existing UI re-use
+// every existing sessionId-gated render branch (review card, accept
+// button) without a parallel "guest result" pathway.
+const GUEST_SESSION_PREFIX = 'guest:';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -24,6 +35,7 @@ function macrosChanged(a: Nutrition | null, b: Nutrition | null): boolean {
 }
 
 export function useMealSession() {
+  const { isGuest } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [nutrition, setNutrition] = useState<Nutrition | null>(null);
   const [questions, setQuestions] = useState<string[]>([]);
@@ -34,6 +46,8 @@ export function useMealSession() {
   const [error, setError] = useState<string | null>(null);
   const [correctionCount, setCorrectionCount] = useState(0);
   const [correctionLimitReached, setCorrectionLimitReached] = useState(false);
+  const [pendingMealType, setPendingMealType] = useState<string>('');
+  const [pendingUserInput, setPendingUserInput] = useState<string>('');
 
   const analyze = useCallback(async (images: File[], text: string, mealType: string) => {
     setAnalyzing(true);
@@ -45,7 +59,33 @@ export function useMealSession() {
       const fd = new FormData();
       images.forEach((img) => fd.append('images', img));
       fd.append('text', text);
-      fd.append('meal_type', mealType);
+      // Guest analyze ignores meal_type server-side — but we hold onto
+      // it locally so accept can attach it to the IndexedDB row.
+      if (!isGuest) fd.append('meal_type', mealType);
+
+      if (isGuest) {
+        const guestRes = await guestApi.analyze(fd);
+        const fakeId = `${GUEST_SESSION_PREFIX}${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+        setSessionId(fakeId);
+        setNutrition(guestRes.nutrition);
+        setQuestions([]);
+        setPendingMealType(mealType);
+        setPendingUserInput(text.trim());
+        if (text.trim()) {
+          setMessages([{ role: 'user', text: text.trim() }]);
+        }
+        if (guestRes.error) setError(guestRes.error);
+        // Match the AnalyzeResponse shape so existing callers can read
+        // session_id/nutrition/questions/raw_text/error.
+        const res: AnalyzeResponse = {
+          session_id: fakeId,
+          nutrition: guestRes.nutrition,
+          questions: [],
+          raw_text: guestRes.raw_text,
+          error: guestRes.error,
+        };
+        return res;
+      }
 
       const res: AnalyzeResponse = await mealsApi.analyze(fd);
       setSessionId(res.session_id);
@@ -69,10 +109,23 @@ export function useMealSession() {
     } finally {
       setAnalyzing(false);
     }
-  }, []);
+  }, [isGuest]);
 
   const correct = useCallback(async (text: string, displayText?: string) => {
     if (!sessionId) return null;
+    // Guests don't have a server-side correction loop. Surface a soft
+    // prompt instead of letting the call 404.
+    if (sessionId.startsWith(GUEST_SESSION_PREFIX)) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: displayText ?? text },
+        {
+          role: 'assistant',
+          text: 'Sign up to refine this meal with AI corrections.',
+        },
+      ]);
+      return null;
+    }
     setCorrecting(true);
     setQuestions([]); // Clear questions while correction is in-flight
     try {
@@ -120,6 +173,40 @@ export function useMealSession() {
     if (!sessionId) return null;
     setAccepting(true);
     try {
+      if (sessionId.startsWith(GUEST_SESSION_PREFIX)) {
+        const n = nutritionOverride ?? nutrition;
+        if (!n) {
+          setError('Nothing to log');
+          return null;
+        }
+        // Servings multiplier is applied server-side for real users on
+        // /meals/{id}/accept (barcode path); for guests we always log
+        // the displayed values verbatim because no upstream
+        // per-serving math has happened.
+        const _servings = servings ?? 1;
+        const scaled: Nutrition = _servings === 1 ? n : {
+          ...n,
+          calories: n.calories * _servings,
+          protein: n.protein * _servings,
+          carbs: n.carbs * _servings,
+          fat: n.fat * _servings,
+          items: n.items.map((it) => ({
+            ...it,
+            calories: it.calories * _servings,
+            protein: it.protein * _servings,
+            carbs: it.carbs * _servings,
+            fat: it.fat * _servings,
+          })),
+        };
+        await saveGuestMeal({
+          loggedAt: loggedAt ?? formatLocalDateTime(),
+          mealType: pendingMealType,
+          userInput: pendingUserInput,
+          nutrition: scaled,
+        });
+        window.dispatchEvent(new Event('guest-meal-added'));
+        return { meal_id: null, nutrition: scaled, progress: {}, new_badges: [], error: null };
+      }
       const res = await mealsApi.accept(sessionId, nutritionOverride, loggedAt, servings);
       if (res.error) setError(res.error);
       return res;
@@ -130,7 +217,7 @@ export function useMealSession() {
     } finally {
       setAccepting(false);
     }
-  }, [sessionId]);
+  }, [sessionId, nutrition, pendingMealType, pendingUserInput]);
 
   const reset = useCallback(() => {
     setSessionId(null);
@@ -140,14 +227,19 @@ export function useMealSession() {
     setError(null);
     setCorrectionCount(0);
     setCorrectionLimitReached(false);
+    setPendingMealType('');
+    setPendingUserInput('');
   }, []);
 
   const cancel = useCallback(async () => {
     if (!sessionId) return;
-    try {
-      await mealsApi.cancel(sessionId);
-    } catch {
-      // ignore
+    // Guest sessions have no server row to cancel.
+    if (!sessionId.startsWith(GUEST_SESSION_PREFIX)) {
+      try {
+        await mealsApi.cancel(sessionId);
+      } catch {
+        // ignore
+      }
     }
     reset();
   }, [sessionId, reset]);

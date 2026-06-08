@@ -23,9 +23,11 @@ from src.db import (
     insert_meal_feedback,
     log_event,
     log_meal as db_log_meal,
+    get_guest_imported_at,
     get_meal_by_id,
     get_meals_paginated,
     get_meal_session,
+    mark_guest_imported,
     update_meal as db_update_meal,
     update_meal_session,
 )
@@ -45,6 +47,8 @@ from src.web.schemas import (
     CorrectionRequest,
     CorrectionResponse,
     FoodItemOut,
+    ImportGuestMealsRequest,
+    ImportGuestMealsResponse,
     ItemRemovedRequest,
     MealOut,
     MealUpdateRequest,
@@ -391,6 +395,86 @@ async def analyze(
         raw_text=result.get("raw_text", ""),
         error=result.get("error"),
     )
+
+
+@router.post("/import-guest", response_model=ImportGuestMealsResponse)
+@limiter.limit("3/hour")
+async def import_guest_meals(
+    request: Request,
+    req: ImportGuestMealsRequest,
+    user: CurrentUser,
+    db_path: DbPath,
+):
+    """Import a fresh signup's pre-signup guest-mode meals into meal_logs.
+
+    The endpoint trusts the client-supplied macros (which came from
+    /guest/analyze, so we already paid the Gemini cost). Abuse is
+    bounded three ways:
+
+    * 30-cap per call (Pydantic max_length on the meals list).
+    * `users.guest_meals_imported_at` is set atomically on first call;
+      subsequent calls return 409 already_imported without inserting.
+    * Authenticated route — only the user themselves can trigger it.
+
+    No image is persisted: the guest path never uploaded images to the
+    server, so there's nothing to attach. `meal_logs.source` is set to
+    'guest_import' for audit/traceability.
+    """
+    if not req.meals:
+        return ImportGuestMealsResponse(imported=0, already_imported=False)
+
+    user_id = user["user_id"]
+
+    # Race-safe gate. UPDATE ... WHERE guest_meals_imported_at IS NULL
+    # returns rowcount=1 only for the winning request; concurrent dupes
+    # see rowcount=0 and short-circuit.
+    if not await mark_guest_imported(db_path, user_id):
+        return ImportGuestMealsResponse(imported=0, already_imported=True)
+
+    inserted = 0
+    for meal in req.meals:
+        n = meal.nutrition
+        items_json_str = json.dumps([i.model_dump() for i in n.items]) if n.items else "[]"
+        try:
+            await db_log_meal(
+                db_path=db_path,
+                user_id=user_id,
+                logged_at=meal.logged_at,
+                item_name=n.item_name or "Meal",
+                meal_description=n.meal_description or "",
+                calories=float(n.calories),
+                protein=float(n.protein),
+                carbs=float(n.carbs),
+                fat=float(n.fat),
+                source="guest_import",
+                meal_type=meal.meal_type or "",
+                items_json=items_json_str,
+                image_path="",
+                analysis_snapshot_json="",
+                user_input=meal.user_input or "",
+            )
+            inserted += 1
+        except Exception:
+            # Keep going — one malformed entry shouldn't lose the others.
+            # The whole call is one-shot; we won't get a retry, but the
+            # bulk of legitimate entries should land.
+            logger.exception("import-guest: failed to insert meal for user_id=%d", user_id)
+
+    await log_event(
+        db_path, user_id, "guest_meals_imported",
+        metadata={"requested": len(req.meals), "inserted": inserted},
+    )
+
+    return ImportGuestMealsResponse(imported=inserted, already_imported=False)
+
+
+# Status probe so the frontend can avoid offering "import guest meals"
+# UI to users who've already done it (e.g., signed in on a new device).
+@router.get("/import-guest/status")
+@limiter.limit("30/minute")
+async def import_guest_status(request: Request, user: CurrentUser, db_path: DbPath):
+    ts = await get_guest_imported_at(db_path, user["user_id"])
+    return {"already_imported": ts is not None, "imported_at": ts}
 
 
 @router.post("/sessions/{session_id}/correct", response_model=CorrectionResponse)

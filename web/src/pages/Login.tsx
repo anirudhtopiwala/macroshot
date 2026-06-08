@@ -124,6 +124,7 @@ export default function Login() {
   const navigate = useNavigate();
   const {
     refetch,
+    enterGuestMode,
     waitlistedEmail,
     waitlistedMessage,
     markWaitlisted,
@@ -496,6 +497,28 @@ export default function Login() {
         {error && (
           <p className="text-red-400 text-sm text-center">{error}</p>
         )}
+
+        <div className="flex items-center gap-4 pt-2">
+          <div className="flex-1 h-px" style={{ background: 'var(--border-glass)' }} />
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>or</span>
+          <div className="flex-1 h-px" style={{ background: 'var(--border-glass)' }} />
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="lg"
+          className="w-full"
+          onClick={() => {
+            enterGuestMode();
+            navigate('/');
+          }}
+        >
+          Continue as guest
+        </Button>
+        <p className="text-xs text-center" style={{ color: 'var(--text-muted)' }}>
+          Try a meal analysis without signing up. Meals you log stay on
+          this device until you create an account.
+        </p>
         </>
         )}
       </div>

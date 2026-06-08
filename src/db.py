@@ -925,6 +925,12 @@ _VERSIONED_MIGRATIONS: list[tuple[int, str]] = [
     # primary meal reminders or the streak-alert hour.
     (18, "ALTER TABLE user_prefs ADD COLUMN quiet_hours_start INTEGER NOT NULL DEFAULT 23"),
     (19, "ALTER TABLE user_prefs ADD COLUMN quiet_hours_end INTEGER NOT NULL DEFAULT 7"),
+    # v20: one-shot flag for guest-mode meal import on signup. NULL = the
+    # user has never imported their pre-signup guest meals; a UTC ISO
+    # timestamp means they already did. Gate in /meals/import-guest stops
+    # the endpoint from being re-runnable (which would let an attacker
+    # spray fake high-cal entries past the per-call 30-cap by replaying).
+    (20, "ALTER TABLE users ADD COLUMN guest_meals_imported_at TEXT"),
 ]
 
 
@@ -2403,6 +2409,36 @@ async def get_web_user_by_google_sub(db_path: str, google_sub: str) -> dict | No
     if not row:
         return None
     return dict(row)
+
+
+async def get_guest_imported_at(db_path: str, user_id: int) -> str | None:
+    """Return the timestamp the user imported pre-signup guest meals, or None."""
+    async with get_db(db_path) as db:
+        row = await (await db.execute(
+            "SELECT guest_meals_imported_at FROM users WHERE user_id = ?",
+            (user_id,),
+        )).fetchone()
+    return row[0] if row and row[0] else None
+
+
+async def mark_guest_imported(db_path: str, user_id: int) -> bool:
+    """Atomically flip users.guest_meals_imported_at if still NULL.
+
+    Returns True if this call won the race (and may proceed to insert
+    meals), False if a concurrent /meals/import-guest already ran for
+    this user. UPDATE … WHERE … IS NULL gives us the atomicity needed
+    for "once-per-user" without an explicit transaction.
+    """
+    from datetime import datetime, timezone as _tz
+    now_str = datetime.now(_tz.utc).strftime("%Y-%m-%d %H:%M:%S")
+    async with get_db(db_path) as db:
+        cur = await db.execute(
+            "UPDATE users SET guest_meals_imported_at = ? "
+            "WHERE user_id = ? AND guest_meals_imported_at IS NULL",
+            (now_str, user_id),
+        )
+        await db.commit()
+        return cur.rowcount > 0
 
 
 async def get_web_user_by_id(db_path: str, user_id: int) -> dict | None:

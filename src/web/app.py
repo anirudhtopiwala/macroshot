@@ -149,7 +149,7 @@ from slowapi.errors import RateLimitExceeded
 from src.db import init_db
 from src.db_pool import init_pool, close_pool
 from src.web.deps import DB_PATH
-from src.web.routes import achievements, admin, aliases, auth, barcode, chat, dashboard, events, fitbit, meals, memory, oura, settings, strava, subscription, targets, weight, workouts
+from src.web.routes import achievements, admin, aliases, auth, barcode, chat, dashboard, events, fitbit, guest, meals, memory, oura, settings, strava, subscription, targets, weight, workouts
 
 logger = logging.getLogger("macro_app")
 
@@ -744,6 +744,7 @@ app.include_router(workouts.router, prefix=api_prefix)
 app.include_router(achievements.router, prefix=api_prefix)
 app.include_router(memory.router, prefix=api_prefix)
 app.include_router(events.router, prefix=api_prefix)
+app.include_router(guest.router, prefix=api_prefix)
 # Admin router excluded from OpenAPI schema - defense-in-depth so an
 # enumeration of public docs (when enabled) does not reveal admin paths.
 app.include_router(admin.router, prefix=api_prefix, include_in_schema=False)
