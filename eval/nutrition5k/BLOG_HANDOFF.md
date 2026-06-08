@@ -8,6 +8,55 @@
 
 ---
 
+## 0. HOW TO CALCULATE METRICS (read first if scoring new runs)
+
+**Ground truth** lives in `data/prompts.json`: for each dish,
+`D[dish_id]["ground_truth"]["totals"]` = `{calories, mass_g, fat_g, carb_g, protein_g}`
+(calories in kcal, the rest in grams). This is the single GT source — score every
+run against it. (`data/selected_300_meta.json` holds GT for the 300 expansion dishes.)
+
+**Prediction file formats** (all keyed by the 5 macros above):
+- **Opus sub-agent runs** (`runs/opus-*/predictions/<cond>/<dish>.json`): flat object
+  `{"dish_id","calories","mass_g","fat_g","carb_g","protein_g"}`.
+- **Gemini `run.py` runs** (`runs/gemini-*/predictions/<cond>/<dish>.json`): nested —
+  use the `"parsed"` sub-dict (it also stores `ground_truth`/`abs_err`).
+- **Opus 4.7 historical** (`runs/claude-opus-4-7-subagent_n100_*/per_dish.csv`):
+  columns `gt_<macro>` / `pred_<macro>`.
+- `mass_g` = total grams of all food. Sub-agents output it directly; the production
+  Macroshot JSON schema has no top-level mass, so `parsers.py` sums `items[].weight_g`
+  — new sub-agent prompts must ask for the summed total explicitly.
+
+**Per macro `m`, over the dishes** (skip dishes where `gt[m] == 0` for the % metrics):
+- `MAE_m   = mean(|pred − gt|)`            — native units; the primary metric
+- `RelErr_m = mean(|pred − gt| / gt) × 100`  — MAPE; noisy (tiny denominators)
+- `MedPE_m  = median(|pred − gt| / gt) × 100` — robust; best UX number
+
+**Composites** (what the paper reports): `AvgMAE / AvgRelErr / AvgMedPE` =
+mean of the per-macro value across the 5 macros. Wang et al. 2026 baseline =
+AvgMAE 45.55 / AvgRelErr 161% (image-only). Caveats: AvgMAE over-weights mass
+(raw grams); RelErr is inflated by near-zero fat/carb dishes — prefer MAE/MedPE.
+
+**Reusable scorer + dashboard:** `tools/build_dashboard.py` does all of the above —
+auto-discovers, per (model,condition), the run dir with the most scoreable
+predictions, scores vs `prompts.json`, and regenerates `runs/FINAL_RESULTS.html`.
+Run it after any new run: `.venv/bin/python eval/nutrition5k/tools/build_dashboard.py`.
+Minimal hand-scoring snippet:
+```python
+import json,glob,os,statistics as s
+M=["calories","mass_g","fat_g","carb_g","protein_g"]
+GT={d:v["ground_truth"]["totals"] for d,v in json.load(open("data/prompts.json")).items()}  # adapt if prompts.json is a list
+def score(run,cond):
+    rows=[]
+    for f in glob.glob(f"runs/{run}/predictions/{cond}/*.json"):
+        d=json.load(open(f)); did=os.path.basename(f)[:-5]
+        p=d.get("parsed") if isinstance(d.get("parsed"),dict) else d   # handle both formats
+        if did in GT and all(isinstance(p.get(m),(int,float)) for m in M): rows.append((p,GT[did]))
+    mac={m:{"mae":s.mean(abs(p[m]-g[m]) for p,g in rows),
+            "rel":s.mean(abs(p[m]-g[m])/g[m] for p,g in rows if g[m])*100,
+            "med":s.median(abs(p[m]-g[m])/g[m] for p,g in rows if g[m])*100} for m in M}
+    return {"avgmae":s.mean(mac[m]["mae"] for m in M), "n":len(rows), "macros":mac}
+```
+
 ## 1. Where everything lives
 
 | What | Path |
@@ -162,6 +211,17 @@ caption fix (small-model win) → Gemini vs Opus.
   (NO Gemini — see [[feedback_no_gemini_without_approval]]) + 7-variant eval. **Checkpoint at +100 new dishes:**
   compare to original-100 metrics; stop if converged (saves ~$380). Total ~$1k approved. Auto-pause if rate-limited;
   check `/usage` before resuming.
+- [ ] **Opus 4.7 — complete its column (OTHER AGENT, needs a 4.7-capable session).**
+  Opus 4.7 (`runs/claude-opus-4-7-subagent_n100_20260527_060817/per_dish.csv`) already has n=100 for
+  Baseline, Baseline+GT-ingredients, MacroShot (X1), X2, X3 (pre-fix), Text-only terse & detailed.
+  **Missing: "MacroShot + user caption (terse)" = the X3v2 condition** (the fixed caption prompt).
+  To finish it: system prompt = shipped MacroShot photo prompt (`src/gemini.py`
+  `CONVERSATIONAL_INITIAL_PROMPT`, now includes the caption block) or `conditions.py`
+  `CONVERSATIONAL_PROMPT_X3V2`; inputs per dish = View-C image (`data/images/<dish>_view_c.jpg`) +
+  terse caption (`prompts.json` → `text_descriptions.terse`); dish ids = `data/selected_100.txt`.
+  **GT-free, one isolated sub-agent per dish** (no macro GT in the input — see §8). Write
+  `{dish_id,calories,mass_g,fat_g,carb_g,protein_g}` to `runs/opus-4-7-x3v2/predictions/X3v2/<dish>.json`,
+  score with §0. Sub-agents are 4.8 unless the session's own model is 4.7 — hence the other agent.
 - [ ] ~~Expanded Opus 4.8 run (n=100)~~ (done above). Old plan note:
   BASELINE_unlabeled, X1, X3, X3v2 at n=100 → full current-frontier ladder +
   paper-repro on the CURRENT model. Use the Workflow sub-agent harness
