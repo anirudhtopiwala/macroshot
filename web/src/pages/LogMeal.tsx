@@ -27,6 +27,7 @@ import { trackEvent } from '../utils/analytics';
 import { track } from '../api/analytics';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useCapState } from '../hooks/useCapState';
+import { useAuth } from '../context/AuthContext';
 import UpgradeCard from '../components/UpgradeCard';
 import UsageMeter from '../components/UsageMeter';
 import Button from '../components/Button';
@@ -128,6 +129,7 @@ export default function LogMeal() {
   const savedMealsCap = useCapState('saved_meals');
   const atImageLimit = imageCap.atLimit;
 
+  const { isGuest } = useAuth();
   const session = useMealSession();
   const [editedNutrition, setEditedNutrition] = useState<Nutrition | null>(null);
   const [modified, setModified] = useState(false);
@@ -286,10 +288,12 @@ export default function LogMeal() {
   };
 
   const refreshAliases = useCallback(async () => {
+    // Aliases require auth — guests have none and the request would 401.
+    if (isGuest) return;
     const data = await aliasesApi.list();
     setAliases(data);
     setCache('saved_meals', data);
-  }, []);
+  }, [isGuest]);
 
   useRegisterRefresh(refreshAliases);
 
@@ -297,15 +301,16 @@ export default function LogMeal() {
     refreshAliases().catch(() => {});
   }, [refreshAliases]);
 
-  // Fetch recent unique meals on mount
+  // Fetch recent unique meals on mount (skip for guests — endpoint 401s).
   useEffect(() => {
+    if (isGuest) return;
     mealsApi.recentUnique().then((data) => {
       if (data.length > 0) {
         setRecentMeals(data);
         setCache('recent_meals', data);
       }
     }).catch(() => {});
-  }, []);
+  }, [isGuest]);
 
   const openEditAlias = (alias: Alias) => {
     const items = alias.items.length > 0
