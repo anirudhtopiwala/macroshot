@@ -71,6 +71,7 @@ for model in models:
             rows = best_dir(GLOB[model],c)
         F[model][c]=metrics(rows)
 def band(v): return "na" if v is None else ("g" if v<=BAND1 else ("y" if v<=BAND2 else "r"))
+def mb(v): return "na" if v is None else ("g" if v<=30 else ("y" if v<=50 else "r"))  # MedPE bands
 HMAX=max([F[m][c][PRIMARY] for m in models for _,c,_ in FOCUS if F.get(m,{}).get(c)] or [1])
 def hcell(m,c):
     x=F.get(m,{}).get(c)
@@ -136,10 +137,11 @@ def costmeal(model):  # $ per single meal
     pi,po=PRICE[model]; ti,to,_=TOK[model]; return (ti*pi+to*po)/1e6
 def costmonth(model): return costmeal(model)*MEALS_MONTH  # $ per active user / month
 def costrow(model):
-    x=F.get(model,{}).get("X3v2"); acc=f"{x['avgmed']}%" if x else "&mdash;"
+    x=F.get(model,{}).get("X3v2")
+    macs="".join((f"<td class={mb(x['macros'][mm]['med'])}>{x['macros'][mm]['med']}%</td>" if x else "<td class=na>&mdash;</td>") for mm in M4)
     ti,to,kind=TOK[model]; m=costmonth(model); mult=m/costmonth("Flash-Lite"); star="*" if kind=="estimated" else ""
     ms=f"{mult:.1f}" if mult<10 else f"{mult:.0f}"
-    return f"<tr><td class=l>{model}</td><td>{acc}</td><td>{ti} / {to}{star}</td><td>${m:.2f}</td><td>{ms}&times;</td></tr>"
+    return f"<tr><td class=l>{model}</td>{macs}<td>{ti} / {to}{star}</td><td>${m:.2f}</td><td>{ms}&times;</td></tr>"
 costrows="".join(costrow(m) for m in models)
 opus_mult=round(costmonth("Opus 4.8")/costmonth("Flash-Lite")); ff_mult=round(costmonth("Flash-full")/costmonth("Flash-Lite"),1)
 fl_month=costmonth("Flash-Lite"); op_month=costmonth("Opus 4.8")
@@ -189,8 +191,8 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "<table><thead><tr><th>option</th><th>Flash-Lite<span class=n> shipped</span></th><th>Flash-full</th><th>Opus 4.7</th><th>Opus 4.8</th></tr></thead><tbody>"+hrows+"</tbody></table>",
  f"<p class=leg>Cells show <b>{PRLBL}{PSUF}</b> (color) with <b>{SCLBL}{SSUF}</b> beneath; bar length is relative {PRLBL} (shorter = better). Color: <span class='chip g'></span>&le;{BAND1}{PSUF} <span class='chip y'></span>&le;{BAND2}{PSUF} <span class='chip r'></span>&gt;{BAND2}{PSUF}. <code>nNN</code> = sample &lt;100; blank = not run.</p>",
  "<h2>Cost vs accuracy</h2>",
- f"<p class=sub>What each model costs <b>per active user per month</b> (assuming <b>3 meals/day, {MEALS_MONTH} meals/month</b>), against how well it does on the shipped flow (MacroShot + user caption). Prices are <b>list rates per 1M tokens, June 2026</b> (<a href='{GEM_PRICE_URL}'>Gemini</a> $0.10/$0.40 Flash-Lite, $0.30/$2.50 Flash; <a href='{CLA_PRICE_URL}'>Claude</a> Opus $5/$25). Gemini tokens are <b>measured</b> from our runs; Opus tokens are <b>estimated</b> for an equivalent single-shot call (image (w&times;h)/750 &asymp; 1844 + prompt &asymp; 2050; output comparable to the same task on Gemini), marked <b>*</b>. Monthly cost = {MEALS_MONTH} &times; (in&times;price_in + out&times;price_out).</p>",
- f"<table><thead><tr><th>model</th><th>Median err (shipped)</th><th>tokens in / out<br><span class=pct>per meal</span></th><th>$ / user / month<br><span class=pct>3 meals/day</span></th><th>relative cost</th></tr></thead><tbody>"+costrows+"</tbody></table>",
+ f"<p class=sub>What each model costs <b>per active user per month</b> (assuming <b>3 meals/day, {MEALS_MONTH} meals/month</b>), against accuracy on the shipped flow (MacroShot + user caption). The four nutrient columns are the <b>median percent error</b> per macro &mdash; <span class='chip g'></span>&le;30% <span class='chip y'></span>&le;50% <span class='chip r'></span>&gt;50%. Prices are <b>list rates per 1M tokens, June 2026</b> (<a href='{GEM_PRICE_URL}'>Gemini</a> $0.10/$0.40 Flash-Lite, $0.30/$2.50 Flash; <a href='{CLA_PRICE_URL}'>Claude</a> Opus $5/$25). Gemini tokens are <b>measured</b> from our runs; Opus tokens are <b>estimated</b> for an equivalent single-shot call (image (w&times;h)/750 &asymp; 1844 + prompt &asymp; 2050; output comparable to the same task on Gemini), marked <b>*</b>. Monthly cost = {MEALS_MONTH} &times; (in&times;price_in + out&times;price_out).</p>",
+ "<table><thead><tr><th>model</th>"+"".join(f"<th>{LBL[m]}</th>" for m in M4)+"<th>tokens in / out<br><span class=pct>per meal</span></th><th>$ / user / month<br><span class=pct>3 meals/day</span></th><th>relative cost</th></tr></thead><tbody>"+costrows+"</tbody></table>",
  f"<div class=key>A daily user (3 meals/day, {MEALS_MONTH}/month) costs <b>~${fl_month:.2f}/month</b> on Flash-Lite vs <b>~${op_month:.2f}/month</b> on Opus &mdash; <b>~{opus_mult}&times;</b> for roughly a dozen points better median error. <b>Flash-full costs ~{ff_mult}&times;</b> Flash-Lite while scoring <i>worse</i> on the shipped flow (its chain-of-thought over-estimates portions). For a free consumer app the cheap model + the right prompt is the rational ship; the frontier model is a quality ceiling, not a cost-effective default. Prompt caching / batch can cut Opus by up to ~90% / 50%.</div>",
  "<h2>What moves the needle</h2>",
  (f"<p class=sub>Each row applies one <i>change</i> to a prompt, broken out by the nutrients an app cares about &mdash; <b>mass/grams excluded</b>. Each cell is the % change in that nutrient&rsquo;s {'MedPE' if METRIC=='medpe' else 'MAE'} (<b style='color:var(--g)'>&#9660; green = better</b>, <b style='color:var(--r)'>&#9650; red = worse</b>); small numbers are {'MedPE% before&rarr;after' if METRIC=='medpe' else 'MAE before&rarr;after in native units (kcal for calories, g for the rest)'}. <b>Avg (4)</b> is the grams-free average across the four.</p>"),
