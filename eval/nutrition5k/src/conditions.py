@@ -242,6 +242,11 @@ CONDITIONS: list[Condition] = [
         comparison_ref="(experiment — compare to E_terse baseline)",
     ),
     Condition(
+        id="Etx_detailed",
+        description="Experiment: text-only FIXED prompt (composite-meal realism) + detailed description",
+        comparison_ref="(experiment — compare to E_detailed baseline)",
+    ),
+    Condition(
         id="X3q",
         description="Experiment: shipped caption fix (X3v2) + explicit-quantity override; check it matches X3v2 on quantity-free captions",
         comparison_ref="(experiment — compare to X3v2=56.6 Flash-Lite)",
@@ -323,6 +328,12 @@ def build_inputs(condition_id: str, dish: dict) -> dict:
         return {
             "system": TEXT_ONLY_PROMPT_FIXED,
             "user":   dish["text_descriptions"]["terse"],
+            "image":  None,
+        }
+    if condition_id == "Etx_detailed":
+        return {
+            "system": TEXT_ONLY_PROMPT_FIXED,
+            "user":   dish["text_descriptions"]["detailed"],
             "image":  None,
         }
     if condition_id == "X3q":

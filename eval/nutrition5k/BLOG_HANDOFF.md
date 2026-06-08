@@ -122,8 +122,10 @@ here. **Anchor the paper-repro on Opus (46.9 ≈ 45.55), NOT Flash-full.**
    never even fires) REGRESSED Flash-Lite. The minimal fix (X3v2) won. The
    explicit-quantity feature ("0.5 lb fish") regressed by 14% in-prompt →
    **must be done in code (parse + inject grams), not the prompt.**
-4. **It's a small-model phenomenon.** Opus barely changes; the fix targets the
-   cheap model we actually ship, and is harmless on big models.
+4. **The fix helps both models (bigger on the small one).** UPDATED at n=100:
+   Opus 4.8 image X3 50.8 -> X3v2 41.1 (-19%); Opus 4.8 text -14-15% too. Flash-Lite
+   -32%. The n=50 "wash" was a favorable first-half artifact. So NOT small-model-only
+   — but the effect is larger on the cheaper model we ship.
 4b. **Chain-of-thought hurt portion accuracy.** Flash-full (thinks) over-estimated
    far more than Flash-Lite (doesn't) — BASELINE 89 vs 54.5 on identical dishes,
    +203 kcal bias. Reasoning is not free accuracy for portion estimation.
@@ -148,7 +150,19 @@ caption fix (small-model win) → Gemini vs Opus.
 - [x] **Gemini 2.5 Flash (full) n=100** — DONE → `runs/gemini-2.5-flash_20260608_004059/`
   (BASELINE 89.0 / X1 85.6 / X3v2 67.3; cost $2.02). See §3b. Conclusion: thinking
   inflates → doesn't repro Wang; anchor repro on Opus.
-- [ ] **Expanded Opus 4.8 run (n=100)** — NEXT. Currently only n=50 (X3,X3v2). Plan:
+- [x] **Opus 4.8 image X3/X3v2 → n=100** (`runs/opus-4-8-subagent_n50_x3_x3v2/`, now 100 each): X3 50.8, X3v2 41.1.
+- [x] **Opus 4.8 text n=100** (`runs/opus-4-8-text_n100/`): E_terse 92.2/Etx_terse 78.8/E_detailed 80.7/Etx_detailed 69.7 (fix helps).
+- [x] **Consolidated dashboard** regenerated: `runs/FINAL_RESULTS.html` (all 4 models, image+text+oracle preview).
+- [ ] **7-variant × 400-dish Opus-4.8 rollout (IN PROGRESS / PAUSED for go).** Variants (7):
+  BASELINE_unlabeled, BASELINE_labeled, X1, X2, X3v2, Etx_terse, Etx_detailed (use FIXED prompts;
+  oracle = +GT ingredient names, no macro GT). Batch 1 (10 dishes) done → `runs/opus-4-8-fullset/`.
+  300 more dishes sampled (`data/selected_300.txt` + `selected_300_meta.json`, stratified 120/105/75 seed 42);
+  **150/300 images fetched** (`/tmp/fetch_300.sh` stopped early — re-run for the rest; idempotent).
+  Plan: 10 dishes/10min idempotent loop; each new-dish batch does Opus rotation-check+fix + Opus caption-gen
+  (NO Gemini — see [[feedback_no_gemini_without_approval]]) + 7-variant eval. **Checkpoint at +100 new dishes:**
+  compare to original-100 metrics; stop if converged (saves ~$380). Total ~$1k approved. Auto-pause if rate-limited;
+  check `/usage` before resuming.
+- [ ] ~~Expanded Opus 4.8 run (n=100)~~ (done above). Old plan note:
   BASELINE_unlabeled, X1, X3, X3v2 at n=100 → full current-frontier ladder +
   paper-repro on the CURRENT model. Use the Workflow sub-agent harness
   (one agent/dish, model:'opus'=4.8). **Slim the per-agent input** (inline the one
