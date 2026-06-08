@@ -6,9 +6,20 @@ predictions, scores against ground truth from data/prompts.json, computes
 per-macro MAE / RelErr / MedPE + Avg composites, and renders the public page.
 Run:  .venv/bin/python -m eval.nutrition5k.tools.build_dashboard
 """
-import json,os,glob,csv,html,statistics as s
+import json,os,glob,csv,html,sys,statistics as s
 HERE=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # .../nutrition5k
 os.chdir(HERE)
+# Headline metric: AvgMAE (default) or AvgMedPE (pass "medpe" as an arg) -> separate output file
+METRIC = "medpe" if "medpe" in sys.argv else "avgmae"
+PRIMARY = "avgmed" if METRIC=="medpe" else "avgmae"   # colored value in the headline table
+SECOND  = "avgmae" if METRIC=="medpe" else "avgmed"   # shown beneath
+PSUF = "%" if METRIC=="medpe" else ""
+SSUF = "%" if SECOND=="avgmed" else ""
+SLAB = "med" if SECOND=="avgmed" else "MAE"
+PRLBL = "AvgMedPE" if METRIC=="medpe" else "AvgMAE"
+SCLBL = "AvgMAE" if METRIC=="medpe" else "AvgMedPE"
+BAND1,BAND2 = (30,50) if METRIC=="medpe" else (50,70)
+OUTNAME = "runs/FINAL_RESULTS_MEDPE.html" if METRIC=="medpe" else "runs/FINAL_RESULTS.html"
 M=["calories","mass_g","fat_g","carb_g","protein_g"]; LBL={"calories":"Calories","mass_g":"Mass","fat_g":"Fat","carb_g":"Carbs","protein_g":"Protein"}
 GH="https://github.com/anirudhtopiwala/macroshot/blob/main/src/gemini.py"; WANG="https://doi.org/10.1016/j.crfs.2026.101405"; N5K="https://arxiv.org/abs/2103.03375"
 esc=lambda t: html.escape(t)
@@ -59,15 +70,15 @@ for model in models:
         else:
             rows = best_dir(GLOB[model],c)
         F[model][c]=metrics(rows)
-def band(v): return "na" if v is None else ("g" if v<=50 else ("y" if v<=70 else "r"))
-HMAX=max([F[m][c]["avgmae"] for m in models for _,c,_ in FOCUS if F.get(m,{}).get(c)] or [1])
+def band(v): return "na" if v is None else ("g" if v<=BAND1 else ("y" if v<=BAND2 else "r"))
+HMAX=max([F[m][c][PRIMARY] for m in models for _,c,_ in FOCUS if F.get(m,{}).get(c)] or [1])
 def hcell(m,c):
     x=F.get(m,{}).get(c)
     if not x: return '<td class="na">&mdash;</td>'
     nt=f'<span class="n"> n{x["n"]}</span>' if x["n"]<100 else ''
-    w=min(100,round(x["avgmae"]/HMAX*100))
-    return f'<td class="hc {band(x["avgmae"])}"><span class=bar style="width:{w}%"></span><span class=v>{x["avgmae"]}{nt}<span class=pct><br>{x["avgmed"]}% med</span></span></td>'
-WANG_REF='<tr class=ref><td class=l>Wang et al. 2026 &middot; Gemini Flash, image-only (n=3466)</td><td colspan=4 style=text-align:left>AvgMAE 45.55 &middot; the published baseline this reconstructs</td></tr>'
+    prim=x[PRIMARY]; sec=x[SECOND]; w=min(100,round(prim/HMAX*100))
+    return f'<td class="hc {band(prim)}"><span class=bar style="width:{w}%"></span><span class=v>{prim}{PSUF}{nt}<span class=pct><br>{sec}{SSUF} {SLAB}</span></span></td>'
+WANG_REF=('<tr class=ref><td class=l>Wang et al. 2026 &middot; Gemini Flash, image-only (n=3466)</td><td colspan=4 style=text-align:left>RelErr 161% &middot; AvgMAE 45.55 &middot; the published baseline (median PE not reported)</td></tr>' if METRIC=="medpe" else '<tr class=ref><td class=l>Wang et al. 2026 &middot; Gemini Flash, image-only (n=3466)</td><td colspan=4 style=text-align:left>AvgMAE 45.55 &middot; the published baseline this reconstructs</td></tr>')
 hrows=WANG_REF+"".join("<tr><td class=l>"+lab+"</td>"+"".join(hcell(m,c) for m in models)+"</tr>" for lab,c,_ in FOCUS)
 def permodel(model):
     pres=[(lab,c) for lab,c,_ in FOCUS if F.get(model,{}).get(c)]
@@ -84,11 +95,11 @@ permodel_html="".join(permodel(m) for m in models)
 def dpct(model,fr,to):
     a=F.get(model,{}).get(fr); b=F.get(model,{}).get(to)
     if not a or not b: return None
-    return a["avgmae"],b["avgmae"],(b["avgmae"]-a["avgmae"])/a["avgmae"]*100
+    return a[PRIMARY],b[PRIMARY],(b[PRIMARY]-a[PRIMARY])/a[PRIMARY]*100
 def dcell(model,fr,to):
     r=dpct(model,fr,to)
     if not r: return '<td class=na>&mdash;</td>'
-    a,b,p=r; return f'<td class={"g" if p<0 else "r"}>{"&#9660;" if p<0 else "&#9650;"} {p:+.0f}%<span class=pct><br>{a:.0f}&rarr;{b:.0f}</span></td>'
+    a,b,p=r; return f'<td class={"g" if p<0 else "r"}>{"&#9660;" if p<0 else "&#9650;"} {p:+.0f}%<span class=pct><br>{a:.0f}{PSUF}&rarr;{b:.0f}{PSUF}</span></td>'
 COMPS=[("Baseline &rarr; MacroShot &middot; photo only","BASELINE_unlabeled","X1"),
  ("Baseline &rarr; Baseline + GT ingredients","BASELINE_unlabeled","BASELINE_labeled"),
  ("MacroShot &rarr; MacroShot + user caption","X1","X3v2"),
@@ -137,11 +148,11 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  f"<li><b>Photo-free text logging still works.</b> With no image, detailed typed descriptions land within ~{det_op}% (Opus) / ~{det_fl}% (Flash-Lite) median error &mdash; rough, but far better than nothing.</li>"
  f"<li><b>The frontier model (Opus) is more accurate, but the same patterns hold</b> on the cheap shipped model.</li>"
  "</ul></div>",
- "<h2>Results &mdash; headline</h2>",
+ f"<h2>Results &mdash; headline ({PRLBL})</h2>",
  "<table><thead><tr><th>option</th><th>Flash-Lite<span class=n> shipped</span></th><th>Flash-full</th><th>Opus 4.7</th><th>Opus 4.8</th></tr></thead><tbody>"+hrows+"</tbody></table>",
- "<p class=leg>Cells show <b>AvgMAE</b> (color) with <b>AvgMedPE%</b> beneath; bar length is relative AvgMAE (shorter = better). Color: <span class='chip g'></span>&le;50 <span class='chip y'></span>&le;70 <span class='chip r'></span>&gt;70. <code>nNN</code> = sample &lt;100; blank = not run.</p>",
+ f"<p class=leg>Cells show <b>{PRLBL}{PSUF}</b> (color) with <b>{SCLBL}{SSUF}</b> beneath; bar length is relative {PRLBL} (shorter = better). Color: <span class='chip g'></span>&le;{BAND1}{PSUF} <span class='chip y'></span>&le;{BAND2}{PSUF} <span class='chip r'></span>&gt;{BAND2}{PSUF}. <code>nNN</code> = sample &lt;100; blank = not run.</p>",
  "<h2>What moves the needle</h2>",
- "<p class=sub>Each row applies one <i>change</i> to a prompt; the cell is the change in AvgMAE. <b style='color:var(--g)'>&#9660; Green = error reduced (better)</b>, <b style='color:var(--r)'>&#9650; red = error increased (worse)</b>; small numbers are AvgMAE before&rarr;after.</p>",
+ f"<p class=sub>Each row applies one <i>change</i> to a prompt; the cell is the change in {PRLBL}. <b style='color:var(--g)'>&#9660; Green = error reduced (better)</b>, <b style='color:var(--r)'>&#9650; red = error increased (worse)</b>; small numbers are {PRLBL} before&rarr;after.</p>",
  "<table><thead><tr><th>change</th><th>Flash-Lite</th><th>Opus 4.8</th></tr></thead><tbody>"+comprows+"</tbody></table>",
  "<div class=key>Same move, opposite result: <b>adding the ground-truth ingredient list to the generic prompt makes it worse</b>, but <b>adding the user&rsquo;s caption to MacroShot makes it better</b> &mdash; the structured prompt knows to treat the text as identity and size portions from the image, instead of stacking a standard serving per named item. The <b>photo</b> is the largest single improvement (same caption, +image roughly halves the error). And <b>text-only logging</b>, while the weakest, still recovers usable macros.</div>",
  "<div class=key><b>Same caption, with vs without the photo.</b> The identical <b>terse</b> caption feeds BOTH <b>MacroShot + user caption (terse)</b> (photo prompt + image + caption) and <b>Text-only (terse)</b> (text prompt + caption, no image) &mdash; so comparing them isolates what the <b>photo</b> adds, holding the user&rsquo;s words constant.</div>",
@@ -167,9 +178,9 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
 _html="\n".join(H)
 # no em dashes anywhere (user preference): collapse spaced/unspaced em dashes to a hyphen
 _html=_html.replace(" &mdash; "," - ").replace("&mdash;"," - ").replace(" — "," - ").replace("—"," - ")
-open("runs/FINAL_RESULTS.html","w").write(_html)
-print("regenerated runs/FINAL_RESULTS.html — discovered cells:")
+open(OUTNAME,"w").write(_html)
+print(f"regenerated {OUTNAME} (headline metric: {PRLBL}) - discovered cells:")
 for m in models:
     for lab,c,_ in FOCUS:
         x=F[m].get(c)
-        if x: print(f"  {m:<12} {lab:<34} AvgMAE={x['avgmae']} n={x['n']}")
+        if x: print(f"  {m:<12} {lab:<34} {PRLBL}={x[PRIMARY]} n={x['n']}")
