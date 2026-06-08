@@ -192,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    */
   const migrateGuestMealsIfAny = useCallback(async (): Promise<void> => {
     if (!readGuestFlag()) return;
-    let meals;
+    let meals: Awaited<ReturnType<typeof listGuestMeals>>;
     try {
       meals = await listGuestMeals();
     } catch {

@@ -205,7 +205,14 @@ export function useMealSession() {
           nutrition: scaled,
         });
         window.dispatchEvent(new Event('guest-meal-added'));
-        return { meal_id: null, nutrition: scaled, progress: {}, new_badges: [], error: null };
+        const emptyTotals = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+        return {
+          meal_id: null,
+          nutrition: scaled,
+          progress: { totals: emptyTotals, target: null, remaining: null },
+          new_badges: [],
+          error: null,
+        };
       }
       const res = await mealsApi.accept(sessionId, nutritionOverride, loggedAt, servings);
       if (res.error) setError(res.error);
