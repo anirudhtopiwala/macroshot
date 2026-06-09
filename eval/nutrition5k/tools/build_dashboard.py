@@ -71,10 +71,12 @@ for model in models:
 def band(v): return "na" if v is None else ("g" if v<=BAND1 else ("y" if v<=BAND2 else "r"))
 def mb(v): return "na" if v is None else ("g" if v<=30 else ("y" if v<=50 else "r"))  # MedPE bands
 HMAX=max([F[m][c][PRIMARY] for m in models for _,c,_ in FOCUS if F.get(m,{}).get(c)] or [1])
+# Per-model sample size (max scored dishes across that model's conditions) - models differ now.
+NMODEL={m: max([F[m][c]["n"] for _,c,_ in FOCUS if F.get(m,{}).get(c)] or [0]) for m in models}
 def hcell(m,c):
     x=F.get(m,{}).get(c)
     if not x: return '<td class="na">&mdash;</td>'
-    nt=f'<span class="n"> n{x["n"]}</span>' if x["n"]<100 else ''
+    nt=f'<span class="n"> n{x["n"]}</span>' if x["n"]<NMODEL[m] else ''
     prim=x[PRIMARY]; sec=x[SECOND]; w=min(100,round(prim/HMAX*100))
     return f'<td class="hc {band(prim)}"><span class=bar style="width:{w}%"></span><span class=v>{prim}{PSUF}{nt}<span class=pct><br>{sec}{SSUF} {SLAB}</span></span></td>'
 WANG_REF=('<tr class=ref><td class=l>Wang et al. 2026 &middot; Gemini Flash, image-only (n=3466)</td><td colspan=4 style=text-align:left>RelErr 161% &middot; AvgMAE 45.55 &middot; the published baseline (median PE not reported)</td></tr>' if METRIC=="medpe" else '<tr class=ref><td class=l>Wang et al. 2026 &middot; Gemini Flash, image-only (n=3466)</td><td colspan=4 style=text-align:left>AvgMAE 45.55 &middot; the published baseline this reconstructs</td></tr>')
@@ -84,11 +86,11 @@ def permodel(model):
     if not pres: return ""
     head="".join(f"<th>{LBL[m]}</th>" for m in M); body=""
     for lab,c in pres:
-        x=F[model][c]; n=f" <span class=n>n{x['n']}</span>" if x['n']<100 else ""
+        x=F[model][c]; n=f" <span class=n>n{x['n']}</span>" if x['n']<NMODEL[model] else ""
         mb=lambda v:'na' if v is None else ('g' if v<=30 else ('y' if v<=50 else 'r'))
         cells="".join(f"<td class={mb(x['macros'][m]['med'])}>{x['macros'][m]['mae']}<span class=pct><br>{x['macros'][m]['rel']}% &middot; {x['macros'][m]['med']}%</span></td>" for m in M)
         body+=f"<tr><td class=l>{lab}{n}</td>{cells}<td class=avg>{x['avgmae']}<span class=pct><br>{x['avgrel']}% &middot; {x['avgmed']}%</span></td></tr>"
-    return f"<h3>{dn(model)}</h3><table><thead><tr><th>option</th>{head}<th>Avg</th></tr></thead><tbody>{body}</tbody></table>"
+    return f"<h3>{dn(model)} <span class=n>n={NMODEL[model]}</span></h3><table><thead><tr><th>option</th>{head}<th>Avg</th></tr></thead><tbody>{body}</tbody></table>"
 permodel_html="".join(permodel(m) for m in models)
 # --- deltas / "what moves the needle" ---
 def dpct(model,fr,to):
@@ -241,7 +243,7 @@ paper_block="\n".join([
 H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>",
  "<title>MacroShot &mdash; meal-macro accuracy eval</title><style>"+CSS+"</style></head><body><div class=wrap>",
  "<h1>MacroShot &mdash; meal-macro accuracy eval</h1>",
- f"<p class=sub>How accurately can an LLM read calories &amp; macros from a meal photo (and/or a typed description)? Benchmarked on <a href='{N5K}'>Nutrition5K</a> against the published baseline of <a href='{WANG}'>Wang et&nbsp;al. 2026</a>, n=100 dishes stratified by complexity. Lower error is better.</p>",
+ f"<p class=sub>How accurately can an LLM read calories &amp; macros from a meal photo (and/or a typed description)? Benchmarked on <a href='{N5K}'>Nutrition5K</a> against the published baseline of <a href='{WANG}'>Wang et&nbsp;al. 2026</a>, dishes stratified by complexity (seed 42). <b>Gemini&nbsp;2.5&nbsp;Flash-Lite (the shipped model) is evaluated on the full n={NMODEL['Flash-Lite']}</b>; the other models are at n&asymp;100 previews. Each model column shows its n. Lower error is better.</p>",
  "<p class=sub style='margin-top:-2px'>&rarr; <a href='gallery.html'><b>Per-dish gallery</b></a>: the meals every model nails, and the ones they all miss (best 5 / worst 5, with the photo and each model&rsquo;s read).</p>",
  f"<div class=key style='border-left-color:var(--g)'><b>Key takeaways</b><ul style='margin:8px 0 0;padding-left:18px;color:#cdd6ea'>"
  f"<li><b>The photo is the single biggest lever.</b> With the <i>same</i> user caption, adding the image cut error by ~{photo_fl}% (Gemini&nbsp;2.5&nbsp;Flash-Lite) / ~{photo_op}% (Claude&nbsp;Opus&nbsp;4.8).</li>"
@@ -251,8 +253,8 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "</ul></div>",
  paper_block,
  f"<h2>Results &mdash; headline ({PRLBL})</h2>",
- "<table><thead><tr><th>option</th>"+"".join(f"<th>{dn(m)}{' <span class=n>shipped</span>' if m=='Flash-Lite' else ''}</th>" for m in models)+"</tr></thead><tbody>"+hrows+"</tbody></table>",
- f"<p class=leg>Cells show <b>{PRLBL}{PSUF}</b> (color) with <b>{SCLBL}{SSUF}</b> beneath; bar length is relative {PRLBL} (shorter = better). Color: <span class='chip g'></span>&le;{BAND1}{PSUF} <span class='chip y'></span>&le;{BAND2}{PSUF} <span class='chip r'></span>&gt;{BAND2}{PSUF}. <code>nNN</code> = sample &lt;100; blank = not run.</p>",
+ "<table><thead><tr><th>option</th>"+"".join(f"<th>{dn(m)}{' <span class=n>shipped</span>' if m=='Flash-Lite' else ''}<br><span class=pct>n={NMODEL[m]}</span></th>" for m in models)+"</tr></thead><tbody>"+hrows+"</tbody></table>",
+ f"<p class=leg>Cells show <b>{PRLBL}{PSUF}</b> (color) with <b>{SCLBL}{SSUF}</b> beneath; bar length is relative {PRLBL} (shorter = better). Color: <span class='chip g'></span>&le;{BAND1}{PSUF} <span class='chip y'></span>&le;{BAND2}{PSUF} <span class='chip r'></span>&gt;{BAND2}{PSUF}. Each model column lists its sample size n; a <code>nNN</code> tag on a cell flags a condition scored on fewer dishes than that model&rsquo;s headline n; blank = not run.</p>",
  "<h2>Cost vs accuracy</h2>",
  f"<p class=sub>What each model costs <b>per active user per month</b> (assuming <b>3 meals/day, {MEALS_MONTH} meals/month</b>), against accuracy on the shipped flow (<b>MacroShot Cam Text Terse</b>). The four nutrient columns are the <b>median percent error</b> per macro &mdash; <span class='chip g'></span>&le;30% <span class='chip y'></span>&le;50% <span class='chip r'></span>&gt;50%. Prices are <b>list rates per 1M tokens, June 2026</b> (<a href='{GEM_PRICE_URL}'>Gemini</a> $0.10/$0.40 Gemini&nbsp;2.5&nbsp;Flash-Lite, $0.30/$2.50 Gemini&nbsp;2.5&nbsp;Flash; <a href='{CLA_PRICE_URL}'>Claude</a> Opus $5/$25). Gemini tokens are <b>measured</b> from our runs; Opus tokens are <b>estimated</b> for an equivalent single-shot call (image (w&times;h)/750 &asymp; 1844 + prompt &asymp; 2050; output comparable to the same task on Gemini), marked <b>*</b>. Monthly cost = {MEALS_MONTH} &times; (in&times;price_in + out&times;price_out).</p>",
  "<table><thead><tr><th>model</th>"+"".join(f"<th>{LBL[m]}<br><span class=pct>median % err</span></th>" for m in M4)+"<th>tokens in / out<br><span class=pct>per meal</span></th><th>$ / user / month<br><span class=pct>3 meals/day</span></th><th>relative cost</th></tr></thead><tbody>"+costrows+"</tbody></table>",
@@ -279,7 +281,7 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "<details><summary>How the user captions were generated</summary>"
  "<p class=sub>Each caption was generated by <b>Gemini</b> from the dish&rsquo;s <b>ground-truth ingredient list</b>: a casual log entry, <b>no exact grams/macros leaked</b>, literal, sub-1&nbsp;g seasonings skipped. The generator <b>does see each ingredient&rsquo;s gram weight</b> and uses it for the <b>detailed</b> caption&rsquo;s vague portion cues ('a good portion') &mdash; never a number &mdash; so 'detailed' carries a mild GT-derived portion hint 'terse' does not. Verified faithful (&asymp;76% coverage, ~0 hallucinations).</p>"
  f"<div class=ex><div class=lab>Ground-truth ingredients (input to Gemini)</div><div class=v>{esc(EX['gt'])}</div><div class=lab>&rarr; Terse caption</div><div class=v>&ldquo;{esc(EX['terse'])}&rdquo;</div><div class=lab>&rarr; Detailed caption</div><div class=v>&ldquo;{esc(EX['detailed'])}&rdquo;</div></div></details>",
- f"<div class=foot><b>Method:</b> Nutrition5K (<a href='{N5K}'>Thames et&nbsp;al. 2021</a>) camera-C frame 10, n=100 stratified (seed 42). Frontier-model runs use one isolated, ground-truth-free sub-agent per dish. Baseline = our reconstruction of <a href='{WANG}'>Wang et&nbsp;al. 2026</a>&rsquo;s prompt. <b>Caveats:</b> cafeteria/single-cuisine heavy; RelErr noisy (prefer MAE / MedPE); some Claude Opus 4.8 cells may be small-n previews.</div>",
+ f"<div class=foot><b>Method:</b> Nutrition5K (<a href='{N5K}'>Thames et&nbsp;al. 2021</a>) camera-C frame 10, stratified by complexity (seed 42). <b>Gemini&nbsp;2.5&nbsp;Flash-Lite is scored on the full n={NMODEL['Flash-Lite']} set; the other models are n&asymp;100 previews</b> (see each model column / section for its exact n). Frontier-model runs use one isolated, ground-truth-free sub-agent per dish. Baseline = our reconstruction of <a href='{WANG}'>Wang et&nbsp;al. 2026</a>&rsquo;s prompt. <b>Caveats:</b> cafeteria/single-cuisine heavy; RelErr noisy (prefer MAE / MedPE).</div>",
  "</div></body></html>"]
 _html="\n".join(H)
 # no em dashes anywhere (user preference): collapse spaced/unspaced em dashes to a hyphen
