@@ -149,6 +149,6 @@ for root,_,fs in os.walk(OUT):
     for fn in fs:
         if fn.rsplit(".",1)[-1] in ("txt","md","csv","html"):
             fp=os.path.join(root,fn); t=open(fp,encoding="utf-8").read()
-            t2=t.replace(" — "," - ").replace("—"," - ").replace(" – "," - ").replace("–","-")
+            t2=t.replace(" - "," - ").replace("-"," - ").replace(" - "," - ").replace("-","-")
             if t2!=t: open(fp,"w",encoding="utf-8").write(t2)
 print("bundle built at",OUT)

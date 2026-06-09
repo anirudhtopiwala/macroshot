@@ -56,7 +56,7 @@ WANG2026_USER_BASE = (
 CAPTION_ADDENDUM = """
 
 ==============================================================
-ACCOMPANYING USER TEXT — READ CAREFULLY
+ACCOMPANYING USER TEXT - READ CAREFULLY
 ==============================================================
 A short caption from the user accompanies this image. The caption tells you
 WHAT is on the plate, NOT how much. Use it ONLY to identify and disambiguate
@@ -65,11 +65,11 @@ berry, a dressing is caesar). It is an identity hint, never a quantity signal.
 
 - NEVER size an item from its name. A named ingredient is NOT a standard
   serving. Every weight_g MUST come from the visual portion in the image.
-- Items the user lists SHARE the food visible on the plate — they do not each
+- Items the user lists SHARE the food visible on the plate - they do not each
   add a full serving. A caption listing "chicken, beef, potatoes, broccoli,
   pizza" describes ONE normal plate divided among those items, not five full
   servings stacked together. The more items named, the SMALLER each one's
-  share of the same plate — listing more food does not mean more total food.
+  share of the same plate - listing more food does not mean more total food.
 - If the user names an item you cannot actually find in the image, give it a
   near-zero weight and add a clarifying question. Do NOT assume a default
   serving for something you can't see.
@@ -101,37 +101,37 @@ CONDITIONS: list[Condition] = [
     Condition(
         id="generic_cam",
         description="Generic baseline prompt + View C image, no user text",
-        comparison_ref="Wang et al. 2026 — Gemini 2.5 Flash, image only (AvgMAE 45.55)",
+        comparison_ref="Wang et al. 2026 - Gemini 2.5 Flash, image only (AvgMAE 45.55)",
     ),
     Condition(
         id="generic_cam_ingredients",
         description="Generic baseline prompt + View C image + ground-truth ingredient list",
-        comparison_ref="Wang et al. 2026 — Gemini 2.5 Flash, image + ingredients (AvgMAE 44.12)",
+        comparison_ref="Wang et al. 2026 - Gemini 2.5 Flash, image + ingredients (AvgMAE 44.12)",
     ),
     Condition(
         id="macroshot_cam",
         description="MacroShot system prompt + View C image, no user text",
-        comparison_ref="vs generic_cam — isolates prompt style (image only)",
+        comparison_ref="vs generic_cam - isolates prompt style (image only)",
     ),
     Condition(
         id="macroshot_cam_ingredients",
         description="MacroShot system prompt + View C image + ground-truth ingredient list",
-        comparison_ref="vs generic_cam_ingredients — isolates prompt style (image + ingredients)",
+        comparison_ref="vs generic_cam_ingredients - isolates prompt style (image + ingredients)",
     ),
     Condition(
         id="macroshot_cam_text_terse",
         description="MacroShot system prompt + caption addendum + View C image + terse user caption (shipped flow)",
-        comparison_ref="vs macroshot_cam — isolates the user caption + caption fix",
+        comparison_ref="vs macroshot_cam - isolates the user caption + caption fix",
     ),
     Condition(
         id="macroshot_text_terse",
         description="MacroShot text-only prompt + terse user description, no photo",
-        comparison_ref="(no published equivalent — text-only floor)",
+        comparison_ref="(no published equivalent - text-only floor)",
     ),
     Condition(
         id="macroshot_text_detailed",
         description="MacroShot text-only prompt + detailed user description, no photo",
-        comparison_ref="(no published equivalent — text-only ceiling)",
+        comparison_ref="(no published equivalent - text-only ceiling)",
     ),
 ]
 

@@ -5,11 +5,11 @@ Usage:
       --start 0 --count 10
 
 Produces two descriptions per dish:
-  terse:    ~10–15 words, casual ("had X with Y")
-  detailed: ~25–35 words, casual but with rough portion cues
+  terse:    ~10-15 words, casual ("had X with Y")
+  detailed: ~25-35 words, casual but with rough portion cues
             ("had a palm-sized portion of X, a side of Y")
 
-No exact grams or macro numbers leak — these descriptions simulate user
+No exact grams or macro numbers leak - these descriptions simulate user
 typed input.
 
 Skips ingredients <1 g (seasonings the user wouldn't mention) and the
@@ -39,13 +39,13 @@ from google.genai import types  # noqa: E402
 _META_PROMPT = """You write meal-log entries for a nutrition-tracking app, simulating what a real user would type after eating.
 
 Given a list of ingredients with their gram amounts, write TWO descriptions of the meal:
-  - "terse": ~10–15 words, casual, e.g. "had chicken with rice and broccoli"
-  - "detailed": ~25–35 words, casual but with rough portion cues, e.g. "lunch was a palm-sized portion of grilled chicken, about a cup of rice, and a side of broccoli"
+  - "terse": ~10-15 words, casual, e.g. "had chicken with rice and broccoli"
+  - "detailed": ~25-35 words, casual but with rough portion cues, e.g. "lunch was a palm-sized portion of grilled chicken, about a cup of rice, and a side of broccoli"
 
 Rules:
 - DO NOT include exact grams, calories, or macro numbers.
 - DO NOT include ingredients under 1 gram (seasonings the user wouldn't mention).
-- DO NOT include any ingredient named "deprecated" — it's a placeholder.
+- DO NOT include any ingredient named "deprecated" - it's a placeholder.
 - Use casual food-logging phrasing ("had ...", "lunch was ...", "grabbed ...").
 - Portion cues should be vague: "a small bowl", "a few strips", "a side of", "about a cup", "a palm-sized portion", "a handful".
 
@@ -57,7 +57,7 @@ PRECISION (important):
   - GOOD: "some tofu"
 - It's fine to use a single grouping word like "salad" or "mixed greens" if the GT names already imply one (e.g., "mixed greens", "caesar salad" are GT items themselves). Otherwise list ingredients directly.
 - If 3+ vegetables appear together with no explicit GT salad name, you may say "a mix of [X, Y, Z]" but do not invent a name like "mediterranean bowl" or "rice pilaf".
-- Do not infer cooking methods (grilled / roasted / pan-fried / sauteed) unless the GT name contains it (e.g., "grilled chicken", "fried rice", "roasted potatoes" are already-cooked GT names — keep those literal).
+- Do not infer cooking methods (grilled / roasted / pan-fried / sauteed) unless the GT name contains it (e.g., "grilled chicken", "fried rice", "roasted potatoes" are already-cooked GT names - keep those literal).
 
 Return JSON only: {"terse": "...", "detailed": "..."}
 """

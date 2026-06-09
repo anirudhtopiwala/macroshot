@@ -283,7 +283,7 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "</div></body></html>"]
 _html="\n".join(H)
 # no em dashes anywhere (user preference): collapse spaced/unspaced em dashes to a hyphen
-_html=_html.replace(" &mdash; "," - ").replace("&mdash;"," - ").replace(" — "," - ").replace("—"," - ")
+_html=_html.replace(" &mdash; "," - ").replace("&mdash;"," - ").replace(" - "," - ").replace("-"," - ")
 open(OUTNAME,"w").write(_html)
 print(f"regenerated {OUTNAME} (headline metric: {PRLBL}) - discovered cells:")
 for m in models:

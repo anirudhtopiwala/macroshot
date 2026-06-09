@@ -8,7 +8,7 @@ Differences from prod that we intentionally keep for eval cleanliness:
 Differences we DO replicate from prod:
   - temperature=0.1
   - The "system" prompt is sent as a role=user turn (not as
-    system_instruction) — prod does this for prompt-injection hardening
+    system_instruction) - prod does this for prompt-injection hardening
     and we mirror so token paths and model behavior match.
   - Image is attached to the same first user turn as the instructional text.
   - Image downscaled to max edge 1024 px before send.
@@ -71,7 +71,7 @@ def call(
           Part(text=system_prompt),     # if system (delivered as user!)
         ]),
         Content(role="user", parts=[
-          Part(text=user_msg),          # if user (separate turn — matches prod)
+          Part(text=user_msg),          # if user (separate turn - matches prod)
         ]),
       ]
     """
@@ -106,7 +106,7 @@ def call(
         temperature=temperature,
         max_output_tokens=max_output_tokens,
         response_mime_type="application/json",
-        # NOTE: prod does NOT pass system_instruction — see module docstring.
+        # NOTE: prod does NOT pass system_instruction - see module docstring.
     )
 
     t0 = time.perf_counter()

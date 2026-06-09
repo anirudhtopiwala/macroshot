@@ -1,5 +1,5 @@
 """Nutrient-estimation metrics from Wang et al. 2026 (Curr. Res. Food Sci.
-12:101405, eqs 10–13). See REFERENCES.md for full citation.
+12:101405, eqs 10-13). See REFERENCES.md for full citation.
 
 MAE_x        = mean_k |y_k - y_hat_k|                       for x in {cal, mass, fat, carb, prot}
 MedianAE_x   = median_k |y_k - y_hat_k|                     (we add this; not in Wang 2026)
@@ -11,7 +11,7 @@ AvgMedianAE  = mean of 5 MedianAEs
 AvgMedianPE  = mean of 5 MedianPEs
 
 Mean vs median: mean MAE/RelErr matches Wang 2026; median is the robust
-companion because nutrient errors are heavy-tailed — Wang 2026 Table 5
+companion because nutrient errors are heavy-tailed - Wang 2026 Table 5
 shows mean RelErr_fat hitting 482% for Gemini 2.5 Flash because many dishes
 have near-zero fat denominators. Median collapses that tail. Report both.
 """

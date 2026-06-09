@@ -143,8 +143,8 @@ td.l{color:#cdd6ea}.u{color:var(--mut);font-size:10px}tr.gt td{color:#fff;font-w
 
 H = [
     "<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>",
-    "<title>MacroShot — per-dish gallery</title><style>" + CSS + "</style></head><body><div class=wrap>",
-    "<h1>Per-dish gallery — best &amp; worst</h1>",
+    "<title>MacroShot - per-dish gallery</title><style>" + CSS + "</style></head><body><div class=wrap>",
+    "<h1>Per-dish gallery - best &amp; worst</h1>",
     "<p class=sub><a href='index.html'>&larr; back to the accuracy dashboard</a></p>",
     f"<p class=sub>Each model's read on the <b>shipped flow</b> (photo + a terse user caption) vs ground truth, "
     f"for the dishes the models collectively get <b>closest</b> and <b>furthest</b>. "
@@ -152,13 +152,13 @@ H = [
     f"<span style='color:var(--g)'>&le;15%</span> / <span style='color:var(--y)'>&le;35%</span> / "
     f"<span style='color:var(--r)'>&gt;35%</span>. Ranked by mean error across calories, fat, carbs &amp; protein "
     f"over {len(common)} dishes all {len(MODELS)} models scored; mass shown as grams.</p>",
-    section("Best 5 — models nail these", "Simple, well-separated plates where the photo + caption pin the portions.", best5),
-    section("Worst 5 — every model misses", "Dense, mixed, or visually ambiguous plates where portion size is hard to read.", worst5),
+    section("Best 5 - models nail these", "Simple, well-separated plates where the photo + caption pin the portions.", best5),
+    section("Worst 5 - every model misses", "Dense, mixed, or visually ambiguous plates where portion size is hard to read.", worst5),
     f"<p class=sub style='margin-top:34px'>Nutrition5K camera-C frame 10. Condition <code>{COND}</code>. "
     f"GT from <code>data/prompts.json</code>.</p>",
     "</div></body></html>",
 ]
 out = "\n".join(H)
-out = out.replace(" &mdash; ", " - ").replace("&mdash;", " - ").replace(" — ", " - ").replace("—", " - ")
+out = out.replace(" &mdash; ", " - ").replace("&mdash;", " - ").replace(" - ", " - ").replace("-", " - ")
 open("runs/gallery.html", "w").write(out)
-print(f"wrote runs/gallery.html — best5={best5} worst5={worst5} (n_common={len(common)})")
+print(f"wrote runs/gallery.html - best5={best5} worst5={worst5} (n_common={len(common)})")

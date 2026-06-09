@@ -24,19 +24,19 @@ _METRIC_LABELS = {
 }
 
 # Reference numbers from Wang et al. 2026 (Curr. Res. Food Sci. 12:101405),
-# Table 4 — Gemini 2.5 Flash on Nutrition5K test set (n=3466).
+# Table 4 - Gemini 2.5 Flash on Nutrition5K test set (n=3466).
 # See REFERENCES.md for full citation.
 WANG2026_REF = {
     "generic_cam":             {"avg_mae": 45.55, "avg_rel_err": 161.19, "n": 3466,
-                                "label": "Wang et al. 2026 — Gemini 2.5 Flash, image only (n=3466)"},
+                                "label": "Wang et al. 2026 - Gemini 2.5 Flash, image only (n=3466)"},
     "generic_cam_ingredients": {"avg_mae": 44.12, "avg_rel_err": 138.95, "n": 3466,
-                                "label": "Wang et al. 2026 — Gemini 2.5 Flash, image+ingredients (n=3466)"},
+                                "label": "Wang et al. 2026 - Gemini 2.5 Flash, image+ingredients (n=3466)"},
 }
 
 
 def _fmt(v) -> str:
     if v is None or (isinstance(v, float) and v != v):
-        return "—"
+        return "-"
     return f"{v:.1f}"
 
 
@@ -67,8 +67,8 @@ def render(run_dir: Path) -> Path:
         if c in WANG2026_REF:
             ref = WANG2026_REF[c]
             lines.append(
-                f"| └ *{ref['label']}* | *{ref['avg_mae']}* | — | "
-                f"*{ref['avg_rel_err']}%* | — | *{ref['n']}* |"
+                f"| └ *{ref['label']}* | *{ref['avg_mae']}* | - | "
+                f"*{ref['avg_rel_err']}%* | - | *{ref['n']}* |"
             )
     lines.append("")
 
@@ -110,7 +110,7 @@ def render(run_dir: Path) -> Path:
                 err = rec["abs_err"].get(k)
                 pct = rec["pct_err"].get(k)
                 if pred is None:
-                    cells.append("—")
+                    cells.append("-")
                 else:
                     err_str = f"Δ{_fmt(err)} ({_fmt(pct)}%)"
                     cells.append(f"{_fmt(pred)} <br>_{err_str}_")
@@ -123,7 +123,7 @@ def render(run_dir: Path) -> Path:
             if not p.exists():
                 continue
             rec = json.loads(p.read_text())
-            lines.append(f"<details><summary><b>{c}</b> — prompt & response</summary>\n")
+            lines.append(f"<details><summary><b>{c}</b> - prompt & response</summary>\n")
             sys_text = rec["prompt"].get("system")
             sys_sha  = rec["prompt"].get("system_sha256")
             if sys_text:

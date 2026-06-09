@@ -1,6 +1,6 @@
 """Apply 180° rotation to listed images.
 
-Use this in tandem with the visual orientation review pass — list inverted
+Use this in tandem with the visual orientation review pass - list inverted
 dish IDs (one per line) in a file and run:
 
     .venv/bin/python -m eval.nutrition5k.tools.rotate_images --from-file inverted_ids.txt

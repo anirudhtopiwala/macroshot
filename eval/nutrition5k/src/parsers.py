@@ -4,7 +4,7 @@ Two formats appear in our eval:
   1. Macroshot's nested schema (the macroshot_* conditions all use it because
      they import CONVERSATIONAL_INITIAL_PROMPT / TEXT_ONLY_INITIAL_PROMPT,
      both of which specify the same JSON shape with items[] + totals).
-  2. Loose / unstructured responses — fallback in case the model deviates.
+  2. Loose / unstructured responses - fallback in case the model deviates.
 
 Unified output:
   {"calories": float, "mass_g": float, "fat_g": float,
@@ -49,7 +49,7 @@ _NUM_PATTERNS = {
     "protein_g": re.compile(r'"protein(?:_g)?"\s*:\s*([-+]?\d+(?:\.\d+)?)'),
 }
 
-# Mass handling is special: Macroshot's schema has NO top-level mass field —
+# Mass handling is special: Macroshot's schema has NO top-level mass field -
 # total mass = sum(items[].weight_g). Wang et al. 2026's schema has a single
 # top-level mass_g. So we try explicit top-level keys first; only if none
 # found do we fall back to summing weight_g matches (assumed to be per-item).
@@ -90,7 +90,7 @@ def parse(text: str) -> dict[str, float | None]:
     }
     obj = _extract_json(text)
     if obj is None:
-        # Malformed JSON — fall back to regex extraction of top-level totals.
+        # Malformed JSON - fall back to regex extraction of top-level totals.
         return _regex_fallback(text)
 
     # Pull top-level totals. Accept both Macroshot's ("fat", "carbs",
