@@ -326,8 +326,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch { /* malformed cache - treat as empty */ }
       setUser(me);
       try { localStorage.setItem(USER_CACHE_KEY, JSON.stringify(me)); } catch { /* quota */ }
-      // Real login won - replay any pre-signup guest meals into the
-      // new user's history, then exit guest mode locally.
+      // Real login won - clear guest mode immediately and replay any
+      // pre-signup guest meals into the new user's history.
+      try { localStorage.removeItem(GUEST_FLAG_KEY); } catch { /* quota */ }
+      setIsGuest(false);
       migrateGuestMealsIfAny().catch(() => { /* logged in Sentry */ });
       // Auto-detect timezone on login - send to backend if not already set
       try {
