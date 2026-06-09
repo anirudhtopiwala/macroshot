@@ -73,6 +73,21 @@ gates):
 
 See `.env.example` for the full list with comments.
 
+### Upstream free-tier limits
+
+Both Gemini and Resend have free tiers that will rate-limit or reject
+requests before the app does. If meals stop analyzing or PIN emails
+stop arriving for no obvious reason, check the upstream dashboard
+first — what looks like an app bug is usually a quota hit:
+
+- Gemini API — see [ai.google.dev/pricing](https://ai.google.dev/pricing)
+  for current rate limits and the free-tier cap.
+- Resend — see [resend.com/pricing](https://resend.com/pricing) for
+  the current daily-send cap on the free tier.
+
+For a personal or family instance the free tiers are usually plenty;
+for anything wider, budget for a paid tier on both services.
+
 ## 3. systemd unit
 
 Copy `docs/systemd.service.example` to `/etc/systemd/system/macroshot.service`
@@ -94,6 +109,13 @@ sudo systemctl status macroshot.service
 The service binds to `127.0.0.1:8000`. The reverse proxy in front of it
 handles TLS and the public hostname.
 
+> **Single worker only.** The app's in-memory rate limits, budget gate,
+> and Gemini concurrency caps assume one process. The bundled systemd
+> unit deliberately omits `--workers`, and the app refuses to start if
+> `UVICORN_WORKERS` or `WEB_CONCURRENCY` is set to anything other than
+> `1`. To scale, put more instances behind your reverse proxy with
+> separate databases — don't raise the worker count.
+
 ## 4. Reverse proxy
 
 ### Caddy (simplest)
@@ -113,11 +135,27 @@ plus your usual TLS setup (e.g. `certbot --nginx`).
 
 ## 5. Verify
 
+First, the health endpoint:
+
 ```bash
 curl https://your-domain.example.com/macro_app/api/health
 ```
 
 Expect `{"status":"ok","service":"macro_web"}`.
+
+Then verify the full auth path end-to-end:
+
+1. Open `https://your-domain.example.com/macro_app/` in a browser.
+   You should see the login screen.
+2. Enter your email and request a PIN.
+3. If Resend is configured, the 6-digit PIN arrives by email. If you
+   left `DEBUG_SHOW_PINS=1` for a personal instance, the PIN appears
+   in `journalctl -u macroshot.service` instead.
+4. Paste the PIN. You should land on the empty dashboard.
+
+If the login screen renders but no PIN ever appears (neither in email
+nor in the journal), either `RESEND_API_KEY` / `RESEND_FROM_EMAIL` is
+wrong or `DEBUG_SHOW_PINS` is unset — pick one and retry.
 
 ## 6. Backups
 

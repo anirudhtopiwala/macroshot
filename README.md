@@ -86,6 +86,17 @@ Three things make MacroShot different:
 
 ## Self-Hosting
 
+> **Scope — personal or trusted-circle only.** MacroShot is built for
+> personal use or a small trusted group (you, family, friends). Any
+> email address can sign up and use the app once your instance is
+> reachable. There is no per-user admin role beyond an `ADMIN_EMAIL`
+> allowlist for the read-only metrics dashboard, no per-user quotas
+> beyond the global free/Pro caps, and no tenant isolation beyond
+> per-`user_id` row scoping. If you intend to run a public instance,
+> put auth or IP allowlisting at the reverse proxy in front of it and
+> read [`docs/self-hosting-legal.md`](docs/self-hosting-legal.md)
+> first.
+
 ### Prerequisites
 
 - Python 3.10+
