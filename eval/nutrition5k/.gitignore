@@ -1,6 +1,8 @@
 # Regenerable / heavy artifacts — not published in-tree.
 # Raw images come from the public Nutrition5K GCS bucket (see tools/fetch_extract_images.py).
 data/images/
+# Raw Nutrition5K metadata CSVs the user downloads (see README "Get the dataset").
+data/metadata/
 
 # Raw run outputs (per-dish prediction JSON) ship as a release asset, not git.
 runs/
