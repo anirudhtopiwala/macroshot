@@ -58,12 +58,12 @@ models=["Flash-Lite","Flash-full","Opus 4.7","Opus 4.8"]
 # Internal keys above map to run dirs / pricing; DISP = full model name shown in the page.
 DISP={"Flash-Lite":"Gemini 2.5 Flash-Lite","Flash-full":"Gemini 2.5 Flash","Opus 4.7":"Claude Opus 4.7","Opus 4.8":"Claude Opus 4.8"}
 def dn(m): return DISP.get(m,m)
-FOCUS=[("Baseline","BASELINE_unlabeled","Generic Wang-style prompt &middot; photo only"),
- ("Baseline + GT ingredients","BASELINE_labeled","Generic prompt &middot; photo + the dish&rsquo;s <b>true ingredient names</b> &mdash; a best-case reference, not a real user flow"),
- ("MacroShot","X1","MacroShot system prompt &middot; photo only"),
- ("MacroShot + user caption (terse)","X3v2","MacroShot system prompt &middot; photo + a terse user caption &middot; <i>shipped flow</i>"),
- ("Text-only (terse)","E_terse","Text-only prompt &middot; terse description, no photo"),
- ("Text-only (detailed)","E_detailed","Text-only prompt &middot; detailed description, no photo")]
+FOCUS=[("Generic Cam","generic_cam","Generic Wang-style prompt &middot; photo only"),
+ ("Generic Cam Ingredients","generic_cam_ingredients","Generic prompt &middot; photo + the dish&rsquo;s <b>true ingredient names</b> &mdash; a best-case reference, not a real user flow"),
+ ("MacroShot Cam","macroshot_cam","MacroShot system prompt &middot; photo only"),
+ ("MacroShot Cam Text Terse","macroshot_cam_text_terse","MacroShot system prompt &middot; photo + a terse user caption &middot; <i>shipped flow</i>"),
+ ("MacroShot Text Terse","macroshot_text_terse","MacroShot text-only prompt &middot; terse description, no photo"),
+ ("MacroShot Text Detailed","macroshot_text_detailed","MacroShot text-only prompt &middot; detailed description, no photo")]
 F={}
 for model in models:
     F[model]={}
@@ -104,11 +104,11 @@ def dcell(model,fr,to):
     r=dpct(model,fr,to)
     if not r: return '<td class=na>&mdash;</td>'
     a,b,p=r; return f'<td class={"g" if p<0 else "r"}>{"&#9660;" if p<0 else "&#9650;"} {p:+.0f}%<span class=pct><br>{a:.0f}{PSUF}&rarr;{b:.0f}{PSUF}</span></td>'
-COMPS=[("Baseline &rarr; MacroShot &middot; photo only","BASELINE_unlabeled","X1"),
- ("Baseline &rarr; Baseline + GT ingredients","BASELINE_unlabeled","BASELINE_labeled"),
- ("MacroShot &rarr; MacroShot + user caption","X1","X3v2"),
- ("Text-only (terse) &rarr; MacroShot + user caption &middot; adds photo","E_terse","X3v2"),
- ("Text-only (terse) &rarr; Text-only (detailed)","E_terse","E_detailed")]
+COMPS=[("Generic Cam &rarr; MacroShot Cam &middot; same photo, our prompt","generic_cam","macroshot_cam"),
+ ("Generic Cam &rarr; Generic Cam Ingredients &middot; add GT ingredients","generic_cam","generic_cam_ingredients"),
+ ("MacroShot Cam &rarr; MacroShot Cam Text Terse &middot; add user caption","macroshot_cam","macroshot_cam_text_terse"),
+ ("MacroShot Text Terse &rarr; MacroShot Cam Text Terse &middot; add the photo","macroshot_text_terse","macroshot_cam_text_terse"),
+ ("MacroShot Text Terse &rarr; MacroShot Text Detailed","macroshot_text_terse","macroshot_text_detailed")]
 comprows="".join(f"<tr><td class=l>{lab}</td>{dcell('Flash-Lite',fr,to)}{dcell('Opus 4.8',fr,to)}</tr>" for lab,fr,to in COMPS)
 # per-macro deltas (the nutrients an app cares about; mass/grams excluded)
 M4=["calories","protein_g","carb_g","fat_g"]; PMAC="med" if METRIC=="medpe" else "mae"
@@ -140,7 +140,7 @@ def costmeal(model):  # $ per single meal
     pi,po=PRICE[model]; ti,to,_=TOK[model]; return (ti*pi+to*po)/1e6
 def costmonth(model): return costmeal(model)*MEALS_MONTH  # $ per active user / month
 def costrow(model):
-    x=F.get(model,{}).get("X3v2")
+    x=F.get(model,{}).get("macroshot_cam_text_terse")
     macs="".join((f"<td class={mb(x['macros'][mm]['med'])}>{x['macros'][mm]['med']}%</td>" if x else "<td class=na>&mdash;</td>") for mm in M4)
     ti,to,kind=TOK[model]; m=costmonth(model); mult=m/costmonth("Flash-Lite"); star="*" if kind=="estimated" else ""
     ms=f"{mult:.1f}" if mult<10 else f"{mult:.0f}"
@@ -150,10 +150,10 @@ opus_mult=round(costmonth("Opus 4.8")/costmonth("Flash-Lite")); ff_mult=round(co
 fl_month=costmonth("Flash-Lite"); op_month=costmonth("Opus 4.8")
 def _p(model,fr,to):
     r=dpct(model,fr,to); return abs(round(r[2])) if r else None
-photo_fl,photo_op=_p('Flash-Lite','E_terse','X3v2'),_p('Opus 4.8','E_terse','X3v2')
-ingr_fl,ingr_op=_p('Flash-Lite','BASELINE_unlabeled','BASELINE_labeled'),_p('Opus 4.8','BASELINE_unlabeled','BASELINE_labeled')
-cap_fl,cap_op=_p('Flash-Lite','X1','X3v2'),_p('Opus 4.8','X1','X3v2')
-det_fl=F.get('Flash-Lite',{}).get('E_detailed',{}).get('avgmed'); det_op=F.get('Opus 4.8',{}).get('E_detailed',{}).get('avgmed')
+photo_fl,photo_op=_p('Flash-Lite','macroshot_text_terse','macroshot_cam_text_terse'),_p('Opus 4.8','macroshot_text_terse','macroshot_cam_text_terse')
+ingr_fl,ingr_op=_p('Flash-Lite','generic_cam','generic_cam_ingredients'),_p('Opus 4.8','generic_cam','generic_cam_ingredients')
+cap_fl,cap_op=_p('Flash-Lite','macroshot_cam','macroshot_cam_text_terse'),_p('Opus 4.8','macroshot_cam','macroshot_cam_text_terse')
+det_fl=F.get('Flash-Lite',{}).get('macroshot_text_detailed',{}).get('avgmed'); det_op=F.get('Opus 4.8',{}).get('macroshot_text_detailed',{}).get('avgmed')
 EX={"gt":"corn; garlic; caesar salad; nopales; olive oil; pepper; green beans; lime; sour cream; jicama; arugula; fish; carrot",
  "terse":"Had fish with caesar salad, green beans, corn, and some other veggies.",
  "detailed":"Had a good portion of fish, a side of caesar salad, and green beans. Also a small mix of corn and other veggies, with olive oil, lime, and sour cream."}
@@ -188,9 +188,9 @@ PAPER={  # avgmae, avgrel% (Table 4); mac = per-nutrient RelErr% (Table 5)
  "Gemini 2.5 Flash":     {"avgmae":45.6,"avgrel":161,"mac":{"calories":93,"mass_g":47,"fat_g":482,"carb_g":90, "protein_g":94}},
 }
 PAPER_ORDER=["Doubao-1.5-vision-pro","GPT-4.1 mini","Gemini 2.5 Flash"]
-OUR_IMG=[("Flash-Lite","BASELINE_unlabeled"),("Flash-full","BASELINE_unlabeled"),
- ("Opus 4.7","BASELINE_unlabeled"),("Opus 4.8","BASELINE_unlabeled")]
-OUR_CAP=[("Flash-Lite","X3v2"),("Opus 4.7","X3v2"),("Opus 4.8","X3v2")]
+OUR_IMG=[("Flash-Lite","generic_cam"),("Flash-full","generic_cam"),
+ ("Opus 4.7","generic_cam"),("Opus 4.8","generic_cam")]
+OUR_CAP=[("Flash-Lite","macroshot_cam_text_terse"),("Opus 4.7","macroshot_cam_text_terse"),("Opus 4.8","macroshot_cam_text_terse")]
 PN=["calories","mass_g","fat_g","carb_g","protein_g"]
 # best MacroShot result (lowest AvgMAE among our comparison rows) - highlighted in both tables
 _avail=[(m,c) for m,c in OUR_IMG+OUR_CAP if F.get(m,{}).get(c)]
@@ -227,7 +227,7 @@ pn_tbl=("<table><thead><tr><th>model</th><th>input</th>"+"".join(f"<th>{LBL[m]}<
  +"</tbody></table>")
 _pbn,_pb=min(PAPER.items(),key=lambda kv:kv[1]["avgmae"])  # strongest published model
 if WIN:
-    _wx=F[WIN[0]][WIN[1]]; _wn=dn(WIN[0]); _wi="with a user caption" if WIN[1]=="X3v2" else "from the photo alone"
+    _wx=F[WIN[0]][WIN[1]]; _wn=dn(WIN[0]); _wi="with a user caption" if WIN[1]=="macroshot_cam_text_terse" else "from the photo alone"
     _d=_wx["avgmae"]-_pb["avgmae"]; _rel="beats" if _d<=-1.5 else ("matches" if abs(_d)<=1.5 else "comes close to")
     _gf=PAPER["Gemini 2.5 Flash"]["avgmae"]; _gftxt=f", and lands ahead of their Gemini&nbsp;2.5&nbsp;Flash ({_gf})" if _wx["avgmae"]<_gf else ""
     win_callout=(f"<div class=key style='border-left-color:var(--g)'><b>Best result.</b> MacroShot&rsquo;s strongest configuration &mdash; <b>{_wn} {_wi}</b> &mdash; reaches <b>AvgMAE&nbsp;{_wx['avgmae']}</b>, which <b>{_rel} the best of the 17 models</b> benchmarked by Wang et&nbsp;al. (<b>{_pbn}, {_pb['avgmae']}</b>){_gftxt}. And the cheap, <b>shipped Gemini&nbsp;2.5&nbsp;Flash-Lite</b> sits inside that published pack at a fraction of the per-meal cost.</div>")
@@ -258,14 +258,14 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "<table><thead><tr><th>option</th>"+"".join(f"<th>{dn(m)}{' <span class=n>shipped</span>' if m=='Flash-Lite' else ''}</th>" for m in models)+"</tr></thead><tbody>"+hrows+"</tbody></table>",
  f"<p class=leg>Cells show <b>{PRLBL}{PSUF}</b> (color) with <b>{SCLBL}{SSUF}</b> beneath; bar length is relative {PRLBL} (shorter = better). Color: <span class='chip g'></span>&le;{BAND1}{PSUF} <span class='chip y'></span>&le;{BAND2}{PSUF} <span class='chip r'></span>&gt;{BAND2}{PSUF}. <code>nNN</code> = sample &lt;100; blank = not run.</p>",
  "<h2>Cost vs accuracy</h2>",
- f"<p class=sub>What each model costs <b>per active user per month</b> (assuming <b>3 meals/day, {MEALS_MONTH} meals/month</b>), against accuracy on the shipped flow (MacroShot + user caption). The four nutrient columns are the <b>median percent error</b> per macro &mdash; <span class='chip g'></span>&le;30% <span class='chip y'></span>&le;50% <span class='chip r'></span>&gt;50%. Prices are <b>list rates per 1M tokens, June 2026</b> (<a href='{GEM_PRICE_URL}'>Gemini</a> $0.10/$0.40 Gemini&nbsp;2.5&nbsp;Flash-Lite, $0.30/$2.50 Gemini&nbsp;2.5&nbsp;Flash; <a href='{CLA_PRICE_URL}'>Claude</a> Opus $5/$25). Gemini tokens are <b>measured</b> from our runs; Opus tokens are <b>estimated</b> for an equivalent single-shot call (image (w&times;h)/750 &asymp; 1844 + prompt &asymp; 2050; output comparable to the same task on Gemini), marked <b>*</b>. Monthly cost = {MEALS_MONTH} &times; (in&times;price_in + out&times;price_out).</p>",
+ f"<p class=sub>What each model costs <b>per active user per month</b> (assuming <b>3 meals/day, {MEALS_MONTH} meals/month</b>), against accuracy on the shipped flow (<b>MacroShot Cam Text Terse</b>). The four nutrient columns are the <b>median percent error</b> per macro &mdash; <span class='chip g'></span>&le;30% <span class='chip y'></span>&le;50% <span class='chip r'></span>&gt;50%. Prices are <b>list rates per 1M tokens, June 2026</b> (<a href='{GEM_PRICE_URL}'>Gemini</a> $0.10/$0.40 Gemini&nbsp;2.5&nbsp;Flash-Lite, $0.30/$2.50 Gemini&nbsp;2.5&nbsp;Flash; <a href='{CLA_PRICE_URL}'>Claude</a> Opus $5/$25). Gemini tokens are <b>measured</b> from our runs; Opus tokens are <b>estimated</b> for an equivalent single-shot call (image (w&times;h)/750 &asymp; 1844 + prompt &asymp; 2050; output comparable to the same task on Gemini), marked <b>*</b>. Monthly cost = {MEALS_MONTH} &times; (in&times;price_in + out&times;price_out).</p>",
  "<table><thead><tr><th>model</th>"+"".join(f"<th>{LBL[m]}<br><span class=pct>median % err</span></th>" for m in M4)+"<th>tokens in / out<br><span class=pct>per meal</span></th><th>$ / user / month<br><span class=pct>3 meals/day</span></th><th>relative cost</th></tr></thead><tbody>"+costrows+"</tbody></table>",
  f"<div class=key>A daily user (3 meals/day, {MEALS_MONTH}/month) costs <b>~${fl_month:.2f}/month</b> on Gemini&nbsp;2.5&nbsp;Flash-Lite vs <b>~${op_month:.2f}/month</b> on Claude&nbsp;Opus &mdash; <b>~{opus_mult}&times;</b> for roughly a dozen points better median error. <b>Gemini&nbsp;2.5&nbsp;Flash costs ~{ff_mult}&times;</b> Gemini&nbsp;2.5&nbsp;Flash-Lite while scoring <i>worse</i> on the shipped flow (it over-estimates portions). For a free consumer app the cheap model + the right prompt is the rational ship; the frontier model is a quality ceiling, not a cost-effective default. Prompt caching / batch can cut Opus by up to ~90% / 50%.</div>",
  "<h2>What moves the needle</h2>",
  (f"<p class=sub>Each row applies one <i>change</i> to a prompt, broken out by the nutrients an app cares about &mdash; <b>mass/grams excluded</b>. Each cell is the % change in that nutrient&rsquo;s {'MedPE' if METRIC=='medpe' else 'MAE'} (<b style='color:var(--g)'>&#9660; green = better</b>, <b style='color:var(--r)'>&#9650; red = worse</b>); small numbers are {'MedPE% before&rarr;after' if METRIC=='medpe' else 'MAE before&rarr;after in native units (kcal for calories, g for the rest)'}. <b>Avg (4)</b> is the grams-free average across the four.</p>"),
  needle_macro_html,
  "<div class=key>Same move, opposite result: <b>adding the ground-truth ingredient list to the generic prompt makes it worse</b>, but <b>adding the user&rsquo;s caption to MacroShot makes it better</b> &mdash; the structured prompt knows to treat the text as identity and size portions from the image, instead of stacking a standard serving per named item. The <b>photo</b> is the largest single improvement (same caption, +image roughly halves the error). And <b>text-only logging</b>, while the weakest, still recovers usable macros.</div>",
- "<div class=key><b>Same caption, with vs without the photo.</b> The identical <b>terse</b> caption feeds BOTH <b>MacroShot + user caption (terse)</b> (photo prompt + image + caption) and <b>Text-only (terse)</b> (text prompt + caption, no image) &mdash; so comparing them isolates what the <b>photo</b> adds, holding the user&rsquo;s words constant.</div>",
+ "<div class=key><b>Same caption, with vs without the photo.</b> The identical <b>terse</b> caption feeds BOTH <b>MacroShot Cam Text Terse</b> (photo prompt + image + caption) and <b>MacroShot Text Terse</b> (text prompt + caption, no image) &mdash; so comparing them isolates what the <b>photo</b> adds, holding the user&rsquo;s words constant.</div>",
  "<h2>Results &mdash; per-macro detail</h2><p class=sub>Each cell: <b>MAE</b> with <span class=pct>RelErr% &middot; MedPE%</span> beneath, colored by MedPE: <span class='chip g'></span>&le;30% <span class='chip y'></span>&le;50% <span class='chip r'></span>&gt;50%. AvgMAE over five nutrients over-weights Mass; for a nutrition app, Calories / Protein / Fat matter most.</p>",
  permodel_html,
  "<h2>Methodology &amp; definitions</h2>",

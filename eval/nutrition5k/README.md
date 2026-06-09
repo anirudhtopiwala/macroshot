@@ -25,22 +25,25 @@ report you can open directly.
 
 ## Conditions
 
+Names are `<prompt>_<input-mode>[_variant]`. Prompt is `generic` (our Wang
+et al. 2026 reconstruction) or `macroshot` (the production prompt); input mode
+is `cam` (photo), `cam_ingredients` (photo + GT ingredients), `cam_text`
+(photo + user caption), or `text` (no photo).
+
 | ID | What it tests |
 |----|---------------|
-| `X1` | Macroshot system prompt + side-angle image, no user text |
-| `X2` | Macroshot system prompt + side-angle image + GT ingredient list |
-| `X3` | Macroshot system prompt + image + natural-language user caption (no exact grams) |
-| `X3v2` | `X3` + the caption fix (text=identity, image=portion, whole-plate mass budget) |
-| `E_terse` | Macroshot text-only prompt + short user-style description |
-| `E_detailed` | Macroshot text-only prompt + longer user-style description |
-| `BASELINE_unlabeled` | Wang et al. 2026 reproduction (minimal prompt + image, no ingredients) |
-| `BASELINE_labeled` | Wang et al. 2026 reproduction (minimal prompt + image + GT ingredients) |
+| `generic_cam` | Wang et al. 2026 reproduction: minimal prompt + image, no ingredients |
+| `generic_cam_ingredients` | Wang et al. 2026 reproduction: minimal prompt + image + GT ingredients |
+| `macroshot_cam` | MacroShot system prompt + image, no user text |
+| `macroshot_cam_ingredients` | MacroShot system prompt + image + GT ingredient list |
+| `macroshot_cam_text_terse` | MacroShot prompt + caption fix + image + terse user caption (**shipped flow**) |
+| `macroshot_text_terse` | MacroShot text-only prompt + short user-style description |
+| `macroshot_text_detailed` | MacroShot text-only prompt + longer user-style description |
 
-Apples-to-apples: `X1` vs `BASELINE_unlabeled`, and `X2` vs `BASELINE_labeled`,
-isolate **prompt style** as the only variable; `X3` vs `X3v2` isolates the
-caption fix. `src/conditions.py` also defines a handful of experimental
-iterations (`X3v3`, `X3v4`, `X1b`, `Etx_*`, `X3q`) used during prompt
-development — see their descriptions there.
+Apples-to-apples: `macroshot_cam` vs `generic_cam`, and
+`macroshot_cam_ingredients` vs `generic_cam_ingredients`, isolate **prompt
+style** as the only variable; `macroshot_cam` vs `macroshot_cam_text_terse`
+isolates the user caption + caption fix.
 
 ## Metrics
 
@@ -54,7 +57,7 @@ From Wang et al. 2026 eqs 10–13, with median variants added for robustness:
 
 ## Reproducing Wang 2026's setup
 
-`BASELINE_unlabeled` and `BASELINE_labeled` use:
+`generic_cam` and `generic_cam_ingredients` use:
 - View C (side-angle camera) frame 10 — same as Wang 2026 §2.2
 - Temperature 0.1, max_tokens 8192 (Wang 2026 used 0.2/4096; minor deviation
   — see `client.py` docstring)

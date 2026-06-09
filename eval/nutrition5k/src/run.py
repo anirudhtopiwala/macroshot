@@ -4,7 +4,7 @@ Usage:
   cd <macroshot-root>
   .venv/bin/python -m eval.nutrition5k.src.run \
       --model gemini-2.5-flash \
-      --conditions X1,X2,E_terse,E_detailed \
+      --conditions generic_cam,macroshot_cam,macroshot_cam_text_terse,macroshot_text_terse \
       --dishes dish_1562871537
 """
 from __future__ import annotations

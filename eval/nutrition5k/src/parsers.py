@@ -1,7 +1,7 @@
 """Parse Gemini responses into a unified prediction dict.
 
 Two formats appear in our eval:
-  1. Macroshot's nested schema (X1, X2, E_terse, E_detailed all use it because
+  1. Macroshot's nested schema (the macroshot_* conditions all use it because
      they import CONVERSATIONAL_INITIAL_PROMPT / TEXT_ONLY_INITIAL_PROMPT,
      both of which specify the same JSON shape with items[] + totals).
   2. Loose / unstructured responses — fallback in case the model deviates.

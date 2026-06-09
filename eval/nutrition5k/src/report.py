@@ -27,10 +27,10 @@ _METRIC_LABELS = {
 # Table 4 — Gemini 2.5 Flash on Nutrition5K test set (n=3466).
 # See REFERENCES.md for full citation.
 WANG2026_REF = {
-    "BASELINE_unlabeled": {"avg_mae": 45.55, "avg_rel_err": 161.19, "n": 3466,
-                           "label": "Wang et al. 2026 — Gemini 2.5 Flash, image only (n=3466)"},
-    "BASELINE_labeled":   {"avg_mae": 44.12, "avg_rel_err": 138.95, "n": 3466,
-                           "label": "Wang et al. 2026 — Gemini 2.5 Flash, image+ingredients (n=3466)"},
+    "generic_cam":             {"avg_mae": 45.55, "avg_rel_err": 161.19, "n": 3466,
+                                "label": "Wang et al. 2026 — Gemini 2.5 Flash, image only (n=3466)"},
+    "generic_cam_ingredients": {"avg_mae": 44.12, "avg_rel_err": 138.95, "n": 3466,
+                                "label": "Wang et al. 2026 — Gemini 2.5 Flash, image+ingredients (n=3466)"},
 }
 
 

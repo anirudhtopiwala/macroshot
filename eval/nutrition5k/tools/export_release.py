@@ -10,8 +10,8 @@ GT={d:Dm[d]['ground_truth']['totals'] for d in Dm}
 meta={x['dish_id']:x for x in json.load(open('data/sample100_meta.json'))}
 O47="runs/claude-opus-4-7-subagent_n100_20260527_060817/per_dish.csv"
 GLOB={"Flash-Lite":"runs/gemini-2.5-flash-lite_*","Flash-full":"runs/gemini-2.5-flash_2*","Opus 4.8":"runs/opus-4-8-*"}
-FOCUS=[("Baseline","BASELINE_unlabeled"),("Baseline + GT ingredients","BASELINE_labeled"),("MacroShot","X1"),
- ("MacroShot + user caption (terse)","X3v2"),("Text-only (terse)","E_terse"),("Text-only (detailed)","E_detailed")]
+FOCUS=[("Generic Cam","generic_cam"),("Generic Cam Ingredients","generic_cam_ingredients"),("MacroShot Cam","macroshot_cam"),
+ ("MacroShot Cam Text Terse","macroshot_cam_text_terse"),("MacroShot Text Terse","macroshot_text_terse"),("MacroShot Text Detailed","macroshot_text_detailed")]
 models=["Flash-Lite","Flash-full","Opus 4.7","Opus 4.8"]
 def rows_dir(run,cond):
     o=[]
