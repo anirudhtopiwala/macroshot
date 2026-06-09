@@ -84,6 +84,13 @@ Three things make MacroShot different:
 - **A coach that actually reads your data.** Not a chatbot that gives generic advice - an AI coach with structured access (via [MCP](https://modelcontextprotocol.io)) to your meals, targets, weight history, and connected workouts (Strava / Fitbit / Oura). Ask "did I hit protein this week?" and it answers from your real numbers.
 - **Open source. Your data, your call.** Use the hosted version for zero-setup convenience, or self-host for total control. Either way the code is open and the data model is yours to inspect.
 
+## Accuracy
+
+MacroShot's meal-reading prompt is benchmarked against the published baseline from Wang et al. 2026 on the public [Nutrition5K](https://arxiv.org/abs/2103.03375) dataset - measuring how closely it reads calories and macros from a photo.
+
+- **[Live results dashboard →](https://anirudhtopiwala.github.io/macroshot/macroshot_eval/)** - accuracy across models, plus a per-dish gallery of the meals the models nail and the ones they miss.
+- **[Reproducible eval harness](eval/nutrition5k/)** - the conditions, metrics, and dataset pipeline, runnable against any Gemini or Claude model.
+
 ## Self-Hosting
 
 > **Scope — personal or trusted-circle only.** MacroShot is built for

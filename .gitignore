@@ -82,10 +82,11 @@ backups/
 logs/
 
 # Meal-analysis eval: real meals + images + run outputs are private to the
-# operator. README and the sanitized example dataset are explicitly kept.
+# operator. The Nutrition5k benchmark is explicitly tracked; it has its
+# own nested .gitignore for large image bytes and run outputs.
 eval/*
-!eval/README.md
-!eval/meals_groundtruth.example.json
+!eval/nutrition5k/
+!eval/nutrition5k/**
 
 # Offline validation review - pulled via scripts/pull_validation_dataset.py.
 # Private per-user meal images + text; never commit.
