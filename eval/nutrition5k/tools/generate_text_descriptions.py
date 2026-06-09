@@ -13,8 +13,8 @@ No exact grams or macro numbers leak - these descriptions simulate user
 typed input.
 
 Skips ingredients <1 g (seasonings the user wouldn't mention) and the
-"deprecated" placeholder. Reads dish list from data/sample100_meta.json
-(pre-built by the sampler) and appends to data/prompts.json.
+"deprecated" placeholder. Reads dishes from data/prompts.json and fills in
+captions for any whose text_descriptions are still empty.
 """
 from __future__ import annotations
 
@@ -90,48 +90,32 @@ def generate_for_dish(client: genai.Client, ingredients: list[dict]) -> dict:
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--start", type=int, default=0,
-                   help="0-indexed start position in sample100_meta.json")
+                   help="0-indexed start position in prompts.json")
     p.add_argument("--count", type=int, default=10,
                    help="Number of dishes to process")
     args = p.parse_args()
 
-    sample = json.loads((_BENCH / "data" / "sample100_meta.json").read_text())
-    chunk = sample[args.start:args.start + args.count]
-    print(f"Generating descriptions for {len(chunk)} dishes (offset {args.start})")
+    prompts_path = _BENCH / "data" / "prompts.json"
+    dishes = json.loads(prompts_path.read_text())
+    chunk = dishes[args.start:args.start + args.count]
+    print(f"Scanning {len(chunk)} dishes for missing captions (offset {args.start})")
 
     client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
-    # Load existing prompts.json or start fresh
-    prompts_path = _BENCH / "data" / "prompts.json"
-    existing = json.loads(prompts_path.read_text()) if prompts_path.exists() else []
-    existing_ids = {e["dish_id"] for e in existing}
-
+    filled = 0
     for s in chunk:
-        if s["dish_id"] in existing_ids:
-            print(f"  {s['dish_id']}  (already present, skipping)")
-            continue
+        if s.get("text_descriptions", {}).get("terse"):
+            continue  # already has a caption
         try:
-            desc = generate_for_dish(client, s["ingredients"])
-            entry = {
-                "dish_id":        s["dish_id"],
-                "cafe":           s["cafe"],
-                "image_view_c":   f"data/images/{s['dish_id']}_view_c.jpg",
-                "ground_truth": {
-                    "totals":      s["totals"],
-                    "ingredients": s["ingredients"],
-                },
-                "ingredient_list_paper1_format": s["ingredient_list_paper1_format"],
-                "real_ingredient_list":          s["real_ingredient_list"],
-                "text_descriptions":             desc,
-            }
-            existing.append(entry)
+            desc = generate_for_dish(client, s["ground_truth"]["ingredients"])
+            s["text_descriptions"] = desc
+            filled += 1
             print(f"  {s['dish_id']}  terse: {desc['terse'][:60]}...")
-            print(f"  {' '*15}  detailed: {desc['detailed'][:60]}...")
         except Exception as e:
             print(f"  {s['dish_id']}  ERROR: {e}", file=sys.stderr)
 
-    prompts_path.write_text(json.dumps(existing, indent=2))
-    print(f"\nWrote {len(existing)} entries to {prompts_path}")
+    prompts_path.write_text(json.dumps(dishes, indent=2))
+    print(f"\nFilled {filled} captions; wrote {len(dishes)} dishes to {prompts_path}")
     return 0
 
 

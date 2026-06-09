@@ -7,7 +7,7 @@ M=["calories","mass_g","fat_g","carb_g","protein_g"]; LBL={"calories":"Calories"
 P=json.load(open('data/prompts.json')); ds=P['dishes'] if isinstance(P,dict) and 'dishes' in P else P
 Dm=ds if isinstance(ds,dict) else {x['dish_id']:x for x in ds}
 GT={d:Dm[d]['ground_truth']['totals'] for d in Dm}
-meta={x['dish_id']:x for x in json.load(open('data/sample100_meta.json'))}
+meta=json.load(open('data/selected_500_meta.json'))  # dict: dish_id -> {cafe, n_real_ingr, ...}
 O47="runs/claude-opus-4-7-subagent_n100_20260527_060817/per_dish.csv"
 GLOB={"Flash-Lite":"runs/gemini-2.5-flash-lite_*","Flash-full":"runs/gemini-2.5-flash_2*","Opus 4.8":"runs/opus-4-8-*"}
 FOCUS=[("Generic Cam","generic_cam"),("Generic Cam Ingredients","generic_cam_ingredients"),("MacroShot Cam","macroshot_cam"),
@@ -65,14 +65,14 @@ with open(OUT+"/per_dish_predictions.csv","w",newline="") as fh:
 # ground_truth.csv
 with open(OUT+"/ground_truth.csv","w",newline="") as fh:
     w=csv.writer(fh); w.writerow(["dish_id","cafe","n_ingredients","difficulty"]+M)
-    sel=[l.strip() for l in open('data/selected_100.txt') if l.strip()]
+    sel=[l.strip() for l in open('data/selected_500.txt') if l.strip()]
     for d in sel:
         n=meta.get(d,{}).get("n_real_ingr",""); diff="simple" if isinstance(n,int) and n<=5 else ("medium" if isinstance(n,int) and n<=9 else "complex")
         w.writerow([d,meta.get(d,{}).get("cafe",""),n,diff]+[round(GT[d][m],2) for m in M])
 # captions.csv
 with open(OUT+"/captions.csv","w",newline="") as fh:
     w=csv.writer(fh); w.writerow(["dish_id","terse","detailed"])
-    for d in [l.strip() for l in open('data/selected_100.txt') if l.strip()]:
+    for d in [l.strip() for l in open('data/selected_500.txt') if l.strip()]:
         td=Dm[d]["text_descriptions"]; w.writerow([d,td["terse"],td["detailed"]])
 # prompts
 from src.gemini import CONVERSATIONAL_INITIAL_PROMPT as CONV, TEXT_ONLY_INITIAL_PROMPT as TXT
@@ -95,7 +95,7 @@ contains everything needed to reproduce and inspect the numbers.
 
 An evaluation of LLM accuracy at estimating meal macronutrients (calories,
 mass, fat, carbs, protein) from a food photo and/or a text description, run on
-a stratified n=100 sample of the Nutrition5K dataset (Thames et al. 2021).
+a stratified n=500 sample of the Nutrition5K dataset (Thames et al. 2021).
 We compare a generic baseline prompt (our reconstruction of Wang et al. 2026)
 against the MacroShot system prompt, across Gemini 2.5 Flash-Lite, Flash, and
 Claude Opus 4.7 / 4.8.
@@ -108,7 +108,7 @@ Claude Opus 4.7 / 4.8.
   (mean abs percent error / MAPE), MedPE_pct (median percent error, robust), n.
 - `per_dish_predictions.csv` - every prediction with ground truth and absolute
   error, per model x option x dish.
-- `ground_truth.csv` - the n=100 dishes: cafe, ingredient count, difficulty tier,
+- `ground_truth.csv` - the n=500 dishes: cafe, ingredient count, difficulty tier,
   and ground-truth macros.
 - `captions.csv` - the terse and detailed user captions per dish.
 - `prompts/` - the exact prompts used:

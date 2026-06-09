@@ -1,8 +1,11 @@
-# Regenerable / heavy artifacts — not published in-tree.
+# Regenerable / heavy artifacts - not published in-tree.
 # Raw images come from the public Nutrition5K GCS bucket (see tools/fetch_extract_images.py).
 data/images/
 # Raw Nutrition5K metadata CSVs the user downloads (see README "Get the dataset").
 data/metadata/
+# Runtime logs written by the dataset tools.
+data/rotated_ids.txt
+data/image_fetch_failures.txt
 
 # Raw run outputs (per-dish prediction JSON) ship as a release asset, not git.
 runs/
@@ -15,7 +18,7 @@ results/
 predictions/
 FINDINGS.md
 
-# Internal working doc — never publish (PR numbers, costs, /tmp paths).
+# Internal working doc - never publish (PR numbers, costs, /tmp paths).
 BLOG_HANDOFF.md
 
 # Sub-agent run progress state — regenerated per run.

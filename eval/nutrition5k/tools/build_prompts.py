@@ -47,8 +47,6 @@ for d in sel:
         "ingredient_list_paper1_format":"; ".join(names),
         "real_ingredient_list":"; ".join(names),
         "text_descriptions":{"terse":"","detailed":""}}); new+=1; no_cap+=1
-if not os.path.exists("data/prompts_100.json"):
-    json.dump(list(existing.values()),open("data/prompts_100.json","w"))  # backup
 json.dump(out,open("data/prompts.json","w"))
 print(f"wrote data/prompts.json: {len(out)} dishes  (carried {carried}, new {new})")
 print(f"new dishes missing captions: {no_cap}  (text_descriptions empty until caption-gen pass)")
