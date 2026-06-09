@@ -85,6 +85,9 @@ def main() -> int:
                         help="Comma-separated dish IDs (default: all in prompts.json)")
     parser.add_argument("--dishes-file", default=None,
                         help="File with one dish ID per line (# comments ok); merged with --dishes")
+    parser.add_argument("--out-dir", default=None,
+                        help="Write into runs/<out-dir> instead of a fresh timestamped dir; "
+                             "dishes already scored there are skipped (resume without re-paying)")
     parser.add_argument("--temperature", type=float, default=0.1,
                         help="Macroshot prod default")
     parser.add_argument("--max-tokens", type=int, default=8192,
@@ -107,9 +110,12 @@ def main() -> int:
 
 def _run_one_model(model: str, dishes: list[dict], conditions: list[str], args) -> None:
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    run_dir = _BENCH_ROOT / "runs" / f"{model}_{ts}"
+    # --out-dir writes into a fixed dir (resumable: dishes already scored are
+    # skipped, so you can fill a partial run without re-paying); else a fresh
+    # timestamped dir per run.
+    run_dir = _BENCH_ROOT / "runs" / args.out_dir if args.out_dir else _BENCH_ROOT / "runs" / f"{model}_{ts}"
     (run_dir / "predictions").mkdir(parents=True, exist_ok=True)
-    print(f"\n========= MODEL: {model}  ({len(dishes)} dishes × {len(conditions)} conditions) =========")
+    print(f"\n========= MODEL: {model}  ({len(dishes)} dishes × {len(conditions)} conditions)  ->  {run_dir.name} =========")
 
     config = {
         "model": model, "temperature": args.temperature,
@@ -126,6 +132,9 @@ def _run_one_model(model: str, dishes: list[dict], conditions: list[str], args) 
         cond_dir = run_dir / "predictions" / cond_id
         cond_dir.mkdir(parents=True, exist_ok=True)
         for dish in dishes:
+            out_path = cond_dir / f"{dish['dish_id']}.json"
+            if out_path.exists():
+                continue  # resume: already scored, don't re-call the API
             inp = build_inputs(cond_id, dish)
             print(f"[{cond_id}] {dish['dish_id']}", flush=True)
             try:
