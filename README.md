@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/anirudhtopiwala/macroshot/actions/workflows/ci.yml"><img src="https://github.com/anirudhtopiwala/macroshot/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-FSL--1.1--Apache--2.0-blue.svg" alt="License: FSL-1.1-Apache-2.0"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-FSL--1.1--Apache--2.0-blue.svg" alt="License: FSL-1.1-Apache-2.0"></a>
   <img src="https://img.shields.io/badge/status-open%20beta-orange.svg" alt="Status: open beta">
   <img src="https://img.shields.io/badge/python-3.10+-3776ab.svg" alt="Python 3.10+">
   <a href="https://github.com/sponsors/anirudhtopiwala"><img src="https://img.shields.io/badge/sponsor-%E2%9D%A4-ff69b4.svg" alt="Sponsor"></a>
@@ -93,6 +93,17 @@ MacroShot's meal-reading prompt is benchmarked against the published baseline fr
 
 ## Self-Hosting
 
+> **Scope — personal or trusted-circle only.** MacroShot is built for
+> personal use or a small trusted group (you, family, friends). Any
+> email address can sign up and use the app once your instance is
+> reachable. There is no per-user admin role beyond an `ADMIN_EMAIL`
+> allowlist for the read-only metrics dashboard, no per-user quotas
+> beyond the global free/Pro caps, and no tenant isolation beyond
+> per-`user_id` row scoping. If you intend to run a public instance,
+> put auth or IP allowlisting at the reverse proxy in front of it and
+> read [`docs/self-hosting-legal.md`](docs/self-hosting-legal.md)
+> first.
+
 ### Prerequisites
 
 - Python 3.10+
@@ -113,8 +124,13 @@ cp .env.example .env
 chmod 600 .env         # restrict so other users on the box can't read your keys
 $EDITOR .env           # fill in your keys (see Environment variables below)
 cd web && npm install && npm run build && cd ..
-.venv/bin/uvicorn src.web.app:app --host 0.0.0.0 --port 8000
+.venv/bin/uvicorn src.web.app:app --host 127.0.0.1 --port 8000
 ```
+
+> **Why `127.0.0.1`?** Binding to localhost keeps the dev server off
+> your LAN and public IP. For production, use the systemd unit + reverse
+> proxy in [docs/deploy.md](docs/deploy.md). To test on a phone over
+> LAN, swap in `--host 0.0.0.0` **only** on a trusted network.
 
 > **Production note:** before exposing the instance to anyone else,
 > set `JWT_SECRET` to a strong random value (`openssl rand -hex 32`),
@@ -141,6 +157,12 @@ The only required ones are:
 |---|---|
 | `GEMINI_API_KEY` | Google Gemini API key for meal analysis |
 | `JWT_SECRET` | Secret key for signing auth tokens (`openssl rand -hex 32`) |
+
+> ⚠️ **Auth-bypass risk if `JWT_SECRET` is unset.** The app falls back
+> to a hard-coded dev key (`dev-secret-change-in-production`). Anyone
+> who knows this string can mint valid session tokens for your
+> instance. Generate a real value with `openssl rand -hex 32` and set
+> `APP_ENV=production` so the server refuses to boot with the dev key.
 
 Everything else (Google OAuth, Stripe, push notifications, Strava / Fitbit / Oura, Sentry, instance branding strings) is optional and documented inline in [`.env.example`](.env.example). When `STRIPE_SECRET_KEY` is unset, the app runs in self-host mode - all features free, no billing gates.
 
@@ -192,7 +214,7 @@ For security issues, please use GitHub's **Private Vulnerability Reporting** (Se
 
 ## License
 
-[FSL-1.1-Apache-2.0](LICENSE.md) - Functional Source License, converting to Apache 2.0 after 2 years.
+[FSL-1.1-Apache-2.0](LICENSE) - Functional Source License, converting to Apache 2.0 after 2 years.
 
 ## Citation
 
