@@ -9,17 +9,12 @@ Run:  .venv/bin/python -m eval.nutrition5k.tools.build_dashboard
 import json,os,glob,csv,html,sys,statistics as s
 HERE=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # .../nutrition5k
 os.chdir(HERE)
-# Headline metric: AvgMAE (default) or AvgMedPE (pass "medpe" as an arg) -> separate output file
-METRIC = "medpe" if "medpe" in sys.argv else "avgmae"
-PRIMARY = "avgmed" if METRIC=="medpe" else "avgmae"   # colored value in the headline table
-SECOND  = "avgmae" if METRIC=="medpe" else "avgmed"   # shown beneath
-PSUF = "%" if METRIC=="medpe" else ""
-SSUF = "%" if SECOND=="avgmed" else ""
-SLAB = "med" if SECOND=="avgmed" else "MAE"
-PRLBL = "AvgMedPE" if METRIC=="medpe" else "AvgMAE"
-SCLBL = "AvgMAE" if METRIC=="medpe" else "AvgMedPE"
-BAND1,BAND2 = (30,50) if METRIC=="medpe" else (50,70)
-OUTNAME = "runs/FINAL_RESULTS_MEDPE.html" if METRIC=="medpe" else "runs/FINAL_RESULTS.html"
+# Single dashboard, headlined on AvgMedPE (robust median % error); AvgMAE shown beneath.
+METRIC, PRIMARY, SECOND = "medpe", "avgmed", "avgmae"
+PSUF, SSUF, SLAB = "%", "", "MAE"
+PRLBL, SCLBL = "AvgMedPE", "AvgMAE"
+BAND1, BAND2 = 30, 50
+OUTNAME = "runs/FINAL_RESULTS_MEDPE.html"
 M=["calories","mass_g","fat_g","carb_g","protein_g"]; LBL={"calories":"Calories","mass_g":"Mass","fat_g":"Fat","carb_g":"Carbs","protein_g":"Protein"}
 GH="https://github.com/anirudhtopiwala/macroshot/blob/main/src/gemini.py"; WANG="https://doi.org/10.1016/j.crfs.2026.101405"; N5K="https://arxiv.org/abs/2103.03375"
 esc=lambda t: html.escape(t)
@@ -247,6 +242,7 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "<title>MacroShot &mdash; meal-macro accuracy eval</title><style>"+CSS+"</style></head><body><div class=wrap>",
  "<h1>MacroShot &mdash; meal-macro accuracy eval</h1>",
  f"<p class=sub>How accurately can an LLM read calories &amp; macros from a meal photo (and/or a typed description)? Benchmarked on <a href='{N5K}'>Nutrition5K</a> against the published baseline of <a href='{WANG}'>Wang et&nbsp;al. 2026</a>, n=100 dishes stratified by complexity. Lower error is better.</p>",
+ "<p class=sub style='margin-top:-2px'>&rarr; <a href='gallery.html'><b>Per-dish gallery</b></a>: the meals every model nails, and the ones they all miss (best 5 / worst 5, with the photo and each model&rsquo;s read).</p>",
  f"<div class=key style='border-left-color:var(--g)'><b>Key takeaways</b><ul style='margin:8px 0 0;padding-left:18px;color:#cdd6ea'>"
  f"<li><b>The photo is the single biggest lever.</b> With the <i>same</i> user caption, adding the image cut error by ~{photo_fl}% (Gemini&nbsp;2.5&nbsp;Flash-Lite) / ~{photo_op}% (Claude&nbsp;Opus&nbsp;4.8).</li>"
  f"<li><b>Extra information only helps if the prompt knows what to do with it.</b> Handing the <i>generic</i> prompt the true ingredient list made it <span style='color:var(--r)'>worse</span> (+{ingr_fl}% / +{ingr_op}%) &mdash; it stacks standard servings. Giving <i>MacroShot</i> the user&rsquo;s caption made it <span style='color:var(--g)'>better</span> (&minus;{cap_fl}% / &minus;{cap_op}%).</li>"
