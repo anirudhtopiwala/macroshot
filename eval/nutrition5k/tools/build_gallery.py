@@ -159,6 +159,6 @@ H = [
     "</div></body></html>",
 ]
 out = "\n".join(H)
-out = out.replace(" &mdash; ", " - ").replace("&mdash;", " - ").replace(" - ", " - ").replace("-", " - ")
+out = out.replace(" &mdash; ", " - ").replace("&mdash;", " - ").replace("&ndash;", "-")
 open("runs/gallery.html", "w").write(out)
 print(f"wrote runs/gallery.html - best5={best5} worst5={worst5} (n_common={len(common)})")
