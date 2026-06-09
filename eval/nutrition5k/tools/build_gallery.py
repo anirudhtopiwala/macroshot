@@ -58,10 +58,11 @@ def preds_for(globpat):
 MP = {model: preds_for(g) for model, g in GLOB.items()}
 
 # Rank dishes that ALL models predicted, by mean |cal% err| across models.
+ERRM = ["calories", "fat_g", "carb_g", "protein_g"]  # macros shown with signed % error (mass shown plain)
 common = set.intersection(*[set(MP[m]) for m in MODELS]) if all(MP.values()) else set()
-def cal_err(did, model):
-    return abs(MP[model][did]["calories"] - GT[did]["calories"]) / GT[did]["calories"] * 100
-ranked = sorted(common, key=lambda d: s.mean(cal_err(d, m) for m in MODELS))
+def macro_err(did, model):
+    return s.mean(abs(MP[model][did][m] - GT[did][m]) / GT[did][m] * 100 for m in ERRM if GT[did][m])
+ranked = sorted(common, key=lambda d: s.mean(macro_err(d, m) for m in MODELS))
 best5, worst5 = ranked[:5], ranked[-5:][::-1]
 
 
@@ -77,9 +78,7 @@ def thumb(did, w=320):
 
 
 def signed_pct(pred, gt):
-    if not gt:
-        return None
-    return (pred - gt) / gt * 100
+    return None if not gt else (pred - gt) / gt * 100
 
 
 def errcls(p):
@@ -89,10 +88,18 @@ def errcls(p):
     return "g" if a <= 15 else ("y" if a <= 35 else "r")
 
 
-def row(label, vals, cls="", err=None):
-    cells = "".join(f"<td>{round(vals[m])}<span class=u> {UNIT[m]}</span></td>" for m in M)
-    ec = "<td class=na>&mdash;</td>" if err is None else f"<td class={errcls(err)}>{err:+.0f}%</td>"
-    return f"<tr class='{cls}'><td class=l>{label}</td>{cells}{ec}</tr>"
+def cell(m, val, gt, is_gt):
+    """GT and Mass show only the value; the four macros also show signed % error."""
+    if is_gt or m == "mass_g":
+        return f"<td>{round(val)}<span class=u> {UNIT[m]}</span></td>"
+    e = signed_pct(val, gt[m])
+    es = "" if e is None else f" <span class='e {errcls(e)}'>{e:+.0f}%</span>"
+    return f"<td>{round(val)}{es}</td>"
+
+
+def row(label, vals, gt, cls=""):
+    cells = "".join(cell(m, vals[m], gt, cls == "gt") for m in M)
+    return f"<tr class='{cls}'><td class=l>{label}</td>{cells}</tr>"
 
 
 def card(did):
@@ -100,11 +107,11 @@ def card(did):
     cap = Dm[did].get("text_descriptions", {}).get("terse", "")
     b64 = thumb(did)
     img = f"<img alt='{did}' src='data:image/jpeg;base64,{b64}'>" if b64 else "<div class=noimg>no image</div>"
-    rows = row("Ground truth", gt, cls="gt")
+    rows = row("Ground truth", gt, gt, cls="gt")
     for m in MODELS:
         if did in MP[m]:
-            rows += row(m, MP[m][did], err=signed_pct(MP[m][did]["calories"], gt["calories"]))
-    head = "".join(f"<th>{LBL[m]}</th>" for m in M) + "<th>cal err</th>"
+            rows += row(m, MP[m][did], gt)
+    head = "".join(f"<th>{LBL[m]}</th>" for m in M)
     cap_html = f"<div class=cap>&ldquo;{esc(cap)}&rdquo;</div>" if cap else ""
     return (f"<div class=card>{img}<div class=meta><div class=did>{esc(did)}</div>{cap_html}"
             f"<table><thead><tr><th>source</th>{head}</tr></thead><tbody>{rows}</tbody></table></div></div>")
@@ -130,7 +137,7 @@ table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
 th,td{padding:5px 8px;text-align:right;border-bottom:1px solid #20242d;font-size:13px}
 th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
 td.l{color:#cdd6ea}.u{color:var(--mut);font-size:10px}tr.gt td{color:#fff;font-weight:600;background:rgba(122,162,255,.07)}
-td.g{color:var(--g)}td.y{color:var(--y)}td.r{color:var(--r)}td.na{color:var(--mut)}
+.e{font-size:11px;font-weight:600}.e.g{color:var(--g)}.e.y{color:var(--y)}.e.r{color:var(--r)}.e.na{color:var(--mut)}
 @media(max-width:680px){.card{flex-direction:column}.card img,.noimg{width:100%}table{display:block;overflow-x:auto}}
 """
 
@@ -140,10 +147,11 @@ H = [
     "<h1>Per-dish gallery — best &amp; worst</h1>",
     "<p class=sub><a href='index.html'>&larr; back to the accuracy dashboard</a></p>",
     f"<p class=sub>Each model's read on the <b>shipped flow</b> (photo + a terse user caption) vs ground truth, "
-    f"for the dishes the models collectively get <b>closest</b> and <b>furthest</b> on calories. "
-    f"Ranked by mean absolute calorie error across {len(MODELS)} models over {len(common)} dishes all four scored. "
-    f"<b>cal err</b> is signed (+ = over-estimate): <span style='color:var(--g)'>&le;15%</span> / "
-    f"<span style='color:var(--y)'>&le;35%</span> / <span style='color:var(--r)'>&gt;35%</span>.</p>",
+    f"for the dishes the models collectively get <b>closest</b> and <b>furthest</b>. "
+    f"Each macro cell shows the value and its <b>signed % error</b> (+ = over-estimate): "
+    f"<span style='color:var(--g)'>&le;15%</span> / <span style='color:var(--y)'>&le;35%</span> / "
+    f"<span style='color:var(--r)'>&gt;35%</span>. Ranked by mean error across calories, fat, carbs &amp; protein "
+    f"over {len(common)} dishes all {len(MODELS)} models scored; mass shown as grams.</p>",
     section("Best 5 — models nail these", "Simple, well-separated plates where the photo + caption pin the portions.", best5),
     section("Worst 5 — every model misses", "Dense, mixed, or visually ambiguous plates where portion size is hard to read.", worst5),
     f"<p class=sub style='margin-top:34px'>Nutrition5K camera-C frame 10. Condition <code>{COND}</code>. "
