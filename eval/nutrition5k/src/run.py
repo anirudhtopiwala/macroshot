@@ -83,6 +83,8 @@ def main() -> int:
                         help="Comma-separated condition IDs")
     parser.add_argument("--dishes", default="",
                         help="Comma-separated dish IDs (default: all in prompts.json)")
+    parser.add_argument("--dishes-file", default=None,
+                        help="File with one dish ID per line (# comments ok); merged with --dishes")
     parser.add_argument("--temperature", type=float, default=0.1,
                         help="Macroshot prod default")
     parser.add_argument("--max-tokens", type=int, default=8192,
@@ -90,11 +92,11 @@ def main() -> int:
     args = parser.parse_args()
 
     all_dishes = _load_dishes()
-    if args.dishes:
-        wanted = set(args.dishes.split(","))
-        dishes = [d for d in all_dishes if d["dish_id"] in wanted]
-    else:
-        dishes = all_dishes
+    wanted = set(d for d in args.dishes.split(",") if d)
+    if args.dishes_file:
+        wanted |= set(l.strip() for l in open(args.dishes_file)
+                      if l.strip() and not l.startswith("#"))
+    dishes = [d for d in all_dishes if d["dish_id"] in wanted] if wanted else all_dishes
     conditions = args.conditions.split(",")
     models = args.models.split(",") if args.models else [args.model]
 
