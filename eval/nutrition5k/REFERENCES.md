@@ -2,11 +2,11 @@
 
 ## Primary comparison
 
-**Wang et al. 2026** — comparative VLM study on Nutrition5K. Our `BASELINE_*`
+**Wang et al. 2026** - comparative VLM study on Nutrition5K. Our `generic_*`
 conditions reproduce their nutrient-estimation methodology on the same dish set.
 
 > Wang S, Yin J, Liu G, Yang L, Ren K, Tang R, Ge J, Yang Z, Zhao Y, Wang W.
-> A comparative study of vision–language models for food ingredient
+> A comparative study of vision-language models for food ingredient
 > recognition and nutrient estimation.
 > *Current Research in Food Science* 12 (2026) 101405.
 > DOI: [10.1016/j.crfs.2026.101405](https://doi.org/10.1016/j.crfs.2026.101405)
@@ -35,7 +35,7 @@ API. Frame #10 of camera C side-angle video used per dish.
 
 ## Underlying dataset
 
-**Thames et al. 2021** — Nutrition5K.
+**Thames et al. 2021** - Nutrition5K.
 
 > Thames Q, Karpur A, Norris W, Xia F, Panait L, Weyand T, Sim J.
 > Nutrition5k: Towards Automatic Nutritional Understanding of Generic Food.
