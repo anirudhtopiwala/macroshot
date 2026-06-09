@@ -278,7 +278,7 @@ function AppRoutes() {
           <About />
         </Suspense>
       } />
-      <Route path="/*" element={(user || isGuest) ? <AuthenticatedLayout /> : <Navigate to="/login" replace />} />
+      <Route path="/*" element={(user || isGuest) ? <AuthenticatedLayout /> : <Navigate to="/about" replace />} />
     </Routes>
   );
 }
