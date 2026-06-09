@@ -64,4 +64,4 @@ By participating, you agree to abide by the [Code of Conduct](CODE_OF_CONDUCT.md
 ## License
 
 By contributing, you agree that your contributions will be licensed
-under the [FSL-1.1-Apache-2.0](LICENSE) license.
+under the [FSL-1.1-Apache-2.0](LICENSE.md) license.
