@@ -2445,6 +2445,23 @@ async def mark_guest_imported(db_path: str, user_id: int) -> bool:
         return cur.rowcount > 0
 
 
+async def rollback_guest_imported(db_path: str, user_id: int) -> None:
+    """Undo a `mark_guest_imported` claim when zero meals actually landed.
+
+    The once-per-user flag is set BEFORE the insert loop runs (so two
+    racing callers don't both insert duplicates). If every insert raises
+    - lock storm, disk full, schema drift - the user would otherwise be
+    locked out of retrying forever. Clearing the flag back to NULL
+    re-opens the migration window for the next attempt.
+    """
+    async with get_db(db_path) as db:
+        await db.execute(
+            "UPDATE users SET guest_meals_imported_at = NULL WHERE user_id = ?",
+            (user_id,),
+        )
+        await db.commit()
+
+
 async def get_guest_weights_imported_at(db_path: str, user_id: int) -> str | None:
     """Return the timestamp the user imported pre-signup guest weights, or None."""
     async with get_db(db_path) as db:
@@ -2469,6 +2486,16 @@ async def mark_guest_weights_imported(db_path: str, user_id: int) -> bool:
         )
         await db.commit()
         return cur.rowcount > 0
+
+
+async def rollback_guest_weights_imported(db_path: str, user_id: int) -> None:
+    """Counterpart of `rollback_guest_imported` for the weight flag."""
+    async with get_db(db_path) as db:
+        await db.execute(
+            "UPDATE users SET guest_weights_imported_at = NULL WHERE user_id = ?",
+            (user_id,),
+        )
+        await db.commit()
 
 
 async def get_web_user_by_id(db_path: str, user_id: int) -> dict | None:

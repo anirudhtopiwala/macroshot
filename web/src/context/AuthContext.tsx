@@ -184,11 +184,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /**
-   * After a successful real login, migrate any cached guest meals into
-   * the new user's history via /meals/import-guest. Idempotent on the
-   * server (users.guest_meals_imported_at) - safe if the migration
-   * already ran on another device. Best-effort: a network failure here
-   * loses the migration but logs to Sentry so we can investigate.
+   * After a successful real login, migrate any cached guest meals + weights
+   * into the new user's history. Idempotent on the server via
+   * users.guest_meals_imported_at / guest_weights_imported_at, which the
+   * server now ROLLS BACK if zero rows were inserted - so a partial-failure
+   * retry on the next session actually lands data instead of returning
+   * already_imported=true forever.
+   *
+   * Race fix: `isGuest` flips to false synchronously (before the POSTs are
+   * in flight) so Dashboard's mount effect takes the real-user code path
+   * and `/trends`, `/chat`, etc. don't briefly render <SignupPrompt/> to a
+   * signed-in user.
+   *
+   * Data-loss fix: the IDB + guest flag are wiped only when the server
+   * confirms it has the data (imported>0 or already_imported=true). A
+   * network failure or pre-flight throw leaves IDB intact so the next
+   * `checkAuth` retries.
    */
   const migrateGuestMealsIfAny = useCallback(async (): Promise<void> => {
     if (!readGuestFlag()) return;
@@ -196,13 +207,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       listGuestMeals().catch(() => []),
       listGuestWeights().catch(() => []),
     ]);
+    // Flip out of guest mode IMMEDIATELY so Dashboard's mount effect
+    // (which has [] deps - it does NOT re-run when isGuest changes
+    // later) takes the real-user path on first paint. The localStorage
+    // flag stays set until success so retries on the next session
+    // still trigger migration.
+    setIsGuest(false);
+
     if (meals.length === 0 && weights.length === 0) {
-      // Nothing to import, just clear the flag.
+      // Nothing to import - just clear the flag + IDB.
       try { localStorage.removeItem(GUEST_FLAG_KEY); } catch { /* quota */ }
       clearGuestMeals();
-      setIsGuest(false);
+      // Any offline-queued text meal from a guest session is now
+      // worthless: it would 401 on /meals/analyze and clutter Sentry.
+      clearOfflineQueue();
       return;
     }
+
+    let mealsOk = meals.length === 0;
+    let weightsOk = weights.length === 0;
     try {
       // Server caps each payload via Pydantic max_length; trim
       // client-side so a generous local store can still migrate.
@@ -216,12 +239,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         weight_kg: w.weight_kg,
         logged_at: w.logged_at,
       }));
-      // Run in parallel - they're independent and bounded by the
-      // server's per-user once flags so retries are safe.
-      await Promise.all([
-        mealsPayload.length > 0 ? guestApi.importGuestMeals(mealsPayload) : Promise.resolve(),
-        weightsPayload.length > 0 ? guestApi.importGuestWeights(weightsPayload) : Promise.resolve(),
+      // Run in parallel via allSettled so a meals failure doesn't
+      // abandon the weights result (or vice versa) - each gets its
+      // own retry decision.
+      const [mealsRes, weightsRes] = await Promise.allSettled([
+        mealsPayload.length > 0
+          ? guestApi.importGuestMeals(mealsPayload)
+          : Promise.resolve({ imported: 0, already_imported: true }),
+        weightsPayload.length > 0
+          ? guestApi.importGuestWeights(weightsPayload)
+          : Promise.resolve({ imported: 0, already_imported: true }),
       ]);
+      // "Server has it" = the route accepted the call AND the data is
+      // either freshly imported or was already imported on a previous
+      // device. Network errors / 5xx leave the respective `ok` flag
+      // false so we retry next session.
+      mealsOk = mealsRes.status === 'fulfilled'
+        && (mealsRes.value.imported > 0 || mealsRes.value.already_imported);
+      weightsOk = weightsRes.status === 'fulfilled'
+        && (weightsRes.value.imported > 0 || weightsRes.value.already_imported);
+      if (mealsRes.status === 'rejected' || weightsRes.status === 'rejected') {
+        if (Sentry.isInitialized()) {
+          Sentry.captureException(
+            mealsRes.status === 'rejected' ? mealsRes.reason : weightsRes.status === 'rejected' ? weightsRes.reason : new Error('mixed'),
+            {
+              tags: { context: 'guest-migration' },
+              extra: { meals: meals.length, weights: weights.length, mealsOk, weightsOk },
+            },
+          );
+        }
+      }
     } catch (err) {
       if (Sentry.isInitialized()) {
         Sentry.captureException(err, {
@@ -229,14 +276,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           extra: { meals: meals.length, weights: weights.length },
         });
       }
-    } finally {
-      // Always wipe local state - partial-import-then-retry would
-      // duplicate rows in the new account, and the server's
-      // already_imported flag protects against a fresh retry anyway.
+    }
+
+    if (mealsOk && weightsOk) {
+      // Fully migrated (or nothing to migrate) - safe to wipe local state.
       try { localStorage.removeItem(GUEST_FLAG_KEY); } catch { /* quota */ }
       clearGuestMeals();
-      setIsGuest(false);
+      clearOfflineQueue();
     }
+    // If either ok flag is false, IDB + GUEST_FLAG_KEY stay - the next
+    // `checkAuth` (next page load / tab focus refetch) will fire
+    // migration again. The server's once-per-user flag now correctly
+    // tracks "this user has data" (rolled back if zero inserts), so
+    // retries are idempotent.
   }, []);
 
   // wipeLocalSession is used inside checkAuth; it's defined above so the ref

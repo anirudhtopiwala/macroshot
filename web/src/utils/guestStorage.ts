@@ -131,8 +131,15 @@ export async function saveGuestWeight(entry: Omit<GuestWeight, 'id'>): Promise<n
     return await new Promise<number>((resolve, reject) => {
       const tx = db.transaction(STORE_WEIGHTS, 'readwrite');
       const req = tx.objectStore(STORE_WEIGHTS).add(entry);
-      req.onsuccess = () => resolve(req.result as number);
+      let key: number | undefined;
+      req.onsuccess = () => { key = req.result as number; };
+      // Resolve on tx.oncomplete so a quota-exceeded / constraint
+      // abort doesn't leave the caller thinking the row landed - the
+      // optimistic UI would otherwise show a phantom entry until the
+      // next refresh. Matches saveGuestMeal's commit semantics.
+      tx.oncomplete = () => resolve(key as number);
       tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error ?? new Error('tx aborted'));
     });
   } catch {
     return null;

@@ -28,6 +28,7 @@ from src.db import (
     get_meals_paginated,
     get_meal_session,
     mark_guest_imported,
+    rollback_guest_imported,
     update_meal as db_update_meal,
     update_meal_session,
 )
@@ -459,6 +460,16 @@ async def import_guest_meals(
             # The whole call is one-shot; we won't get a retry, but the
             # bulk of legitimate entries should land.
             logger.exception("import-guest: failed to insert meal for user_id=%d", user_id)
+
+    # Catastrophic case: the claim flag was set but every insert raised
+    # (lock storm, disk full, schema drift). Roll back the flag so the
+    # next attempt can run instead of locking the user out forever.
+    if inserted == 0:
+        await rollback_guest_imported(db_path, user_id)
+        logger.warning(
+            "import-guest: zero meals inserted for user_id=%d (requested=%d); flag rolled back",
+            user_id, len(req.meals),
+        )
 
     await log_event(
         db_path, user_id, "guest_meals_imported",

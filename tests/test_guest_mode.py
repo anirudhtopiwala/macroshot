@@ -296,6 +296,37 @@ class TestImportGuest:
         assert after.json()["already_imported"] is True
         assert after.json()["imported_at"]
 
+    @pytest.mark.asyncio
+    async def test_zero_insert_rolls_back_flag(self, auth_client, monkeypatch):
+        """If every db_log_meal call raises, the once-per-user flag must
+        be rolled back so the next attempt can retry. Without this, the
+        client wipes IDB after a partial-failure and the migration is
+        unrecoverable."""
+        async def _boom(*a, **kw):
+            raise RuntimeError("simulated disk full")
+        monkeypatch.setattr("src.web.routes.meals.db_log_meal", _boom)
+
+        resp = await auth_client.post(
+            f"{API}/meals/import-guest",
+            json={"meals": [_meal_payload(0), _meal_payload(1)]},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["imported"] == 0
+        assert body["already_imported"] is False
+
+        ts = await get_guest_imported_at(auth_client._db_path, auth_client._user_id)
+        assert ts is None, "rollback should clear guest_meals_imported_at when zero inserts succeeded"
+
+        # And a retry without the failure injection should succeed.
+        monkeypatch.undo()
+        retry = await auth_client.post(
+            f"{API}/meals/import-guest",
+            json={"meals": [_meal_payload(0), _meal_payload(1)]},
+        )
+        assert retry.status_code == 200
+        assert retry.json()["imported"] == 2
+
 
 # ═══════════════════════════════════════════════════════════════════
 # 3. /weight/import-guest
@@ -364,6 +395,25 @@ class TestImportGuestWeights:
         ]}
         resp = await auth_client.post(f"{API}/weight/import-guest", json=payload)
         assert resp.status_code == 422
+
+    @pytest.mark.asyncio
+    async def test_weights_zero_insert_rolls_back_flag(self, auth_client, monkeypatch):
+        """Same rollback semantics as the meal endpoint."""
+        async def _boom(*a, **kw):
+            raise RuntimeError("simulated lock storm")
+        monkeypatch.setattr("src.web.routes.weight.log_weight", _boom)
+
+        from src.db import get_guest_weights_imported_at
+        resp = await auth_client.post(
+            f"{API}/weight/import-guest",
+            json={"entries": [{"weight_kg": 80.0, "logged_at": "2026-06-01 08:00"}]},
+        )
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["imported"] == 0
+        assert body["already_imported"] is False
+        ts = await get_guest_weights_imported_at(auth_client._db_path, auth_client._user_id)
+        assert ts is None
 
 
 # ═══════════════════════════════════════════════════════════════════
