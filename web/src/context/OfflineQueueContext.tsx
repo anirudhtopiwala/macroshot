@@ -30,6 +30,13 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToQueue = useCallback(async (text: string, mealType: string) => {
+    // Guests have no session cookie - queued meals would 401 on
+    // /meals/analyze when processQueue fires after reconnect. Drop
+    // the enqueue so the queue can't be poisoned with unprocessable
+    // entries that survive past signup migration.
+    try {
+      if (localStorage.getItem('macro_guest_mode') === '1') return;
+    } catch { /* ignore */ }
     await dbQueue(text, mealType);
     await refresh();
   }, [refresh]);
@@ -37,6 +44,12 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
   const processQueue = useCallback(async () => {
     // Use ref to avoid stale closure race - prevent concurrent runs
     if (processingRef.current) return;
+    // Defense in depth: even if a queued meal slipped past addToQueue
+    // somehow (e.g., from a pre-guest-mode session), don't try to
+    // process it while the visitor is currently in guest mode.
+    try {
+      if (localStorage.getItem('macro_guest_mode') === '1') return;
+    } catch { /* ignore */ }
     const items = await getPendingMeals();
     if (items.length === 0) return;
 

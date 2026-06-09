@@ -15,6 +15,7 @@ from src.db import (
     log_event,
     log_weight,
     mark_guest_weights_imported,
+    rollback_guest_weights_imported,
 )
 from src.services import get_user_tz
 from src.web.deps import CurrentUser, DbPath
@@ -138,6 +139,15 @@ async def import_guest_weights(
             inserted += 1
         except Exception:
             logger.exception("import-guest weights: failed to insert for user_id=%d", user_id)
+
+    # Roll back the claim if zero entries landed so the next attempt
+    # can retry instead of returning already_imported=true forever.
+    if inserted == 0:
+        await rollback_guest_weights_imported(db_path, user_id)
+        logger.warning(
+            "import-guest weights: zero entries inserted for user_id=%d (requested=%d); flag rolled back",
+            user_id, len(req.entries),
+        )
 
     await log_event(
         db_path, user_id, "guest_weights_imported",
