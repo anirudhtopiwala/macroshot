@@ -144,8 +144,12 @@ sudo systemctl restart macroshot.service
 ## 8. OAuth token key
 
 `OAUTH_TOKEN_KEY` is the Fernet key that encrypts third-party OAuth
-refresh tokens (Strava, Fitbit, Oura) at rest. Required if you enable
-any of those integrations. Generate one with:
+refresh tokens (Strava, Fitbit, Oura) at rest. **Set this before
+enabling any fitness integration.** If unset, the app silently falls
+back to deriving the key from `JWT_SECRET` — this couples two unrelated
+security surfaces (rotating `JWT_SECRET` then strands every stored
+OAuth token and forces every connected user to reconnect). Generate a
+dedicated key with:
 
 ```bash
 python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"

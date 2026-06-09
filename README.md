@@ -106,8 +106,13 @@ cp .env.example .env
 chmod 600 .env         # restrict so other users on the box can't read your keys
 $EDITOR .env           # fill in your keys (see Environment variables below)
 cd web && npm install && npm run build && cd ..
-.venv/bin/uvicorn src.web.app:app --host 0.0.0.0 --port 8000
+.venv/bin/uvicorn src.web.app:app --host 127.0.0.1 --port 8000
 ```
+
+> **Why `127.0.0.1`?** Binding to localhost keeps the dev server off
+> your LAN and public IP. For production, use the systemd unit + reverse
+> proxy in [docs/deploy.md](docs/deploy.md). To test on a phone over
+> LAN, swap in `--host 0.0.0.0` **only** on a trusted network.
 
 > **Production note:** before exposing the instance to anyone else,
 > set `JWT_SECRET` to a strong random value (`openssl rand -hex 32`),
@@ -134,6 +139,12 @@ The only required ones are:
 |---|---|
 | `GEMINI_API_KEY` | Google Gemini API key for meal analysis |
 | `JWT_SECRET` | Secret key for signing auth tokens (`openssl rand -hex 32`) |
+
+> ⚠️ **Auth-bypass risk if `JWT_SECRET` is unset.** The app falls back
+> to a hard-coded dev key (`dev-secret-change-in-production`). Anyone
+> who knows this string can mint valid session tokens for your
+> instance. Generate a real value with `openssl rand -hex 32` and set
+> `APP_ENV=production` so the server refuses to boot with the dev key.
 
 Everything else (Google OAuth, Stripe, push notifications, Strava / Fitbit / Oura, Sentry, instance branding strings) is optional and documented inline in [`.env.example`](.env.example). When `STRIPE_SECRET_KEY` is unset, the app runs in self-host mode - all features free, no billing gates.
 
