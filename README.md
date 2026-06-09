@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/anirudhtopiwala/macroshot/actions/workflows/ci.yml"><img src="https://github.com/anirudhtopiwala/macroshot/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-FSL--1.1--Apache--2.0-blue.svg" alt="License: FSL-1.1-Apache-2.0"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/license-FSL--1.1--Apache--2.0-blue.svg" alt="License: FSL-1.1-Apache-2.0"></a>
   <img src="https://img.shields.io/badge/status-open%20beta-orange.svg" alt="Status: open beta">
   <img src="https://img.shields.io/badge/python-3.10+-3776ab.svg" alt="Python 3.10+">
   <a href="https://github.com/sponsors/anirudhtopiwala"><img src="https://img.shields.io/badge/sponsor-%E2%9D%A4-ff69b4.svg" alt="Sponsor"></a>
@@ -207,7 +207,7 @@ For security issues, please use GitHub's **Private Vulnerability Reporting** (Se
 
 ## License
 
-[FSL-1.1-Apache-2.0](LICENSE) - Functional Source License, converting to Apache 2.0 after 2 years.
+[FSL-1.1-Apache-2.0](LICENSE.md) - Functional Source License, converting to Apache 2.0 after 2 years.
 
 ## Citation
 
