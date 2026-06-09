@@ -37,7 +37,7 @@ function getStreakStyle(streak: number) {
 }
 
 export default function Header() {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [streak, setStreak] = useState(0);
@@ -65,7 +65,7 @@ export default function Header() {
   // Animated header shield count: tweens from old → new on decrement so the
   // user sees the consume happen, not just a number snap.
   const [displayShields, setDisplayShields] = useState(() => getCached<AchievementSummaryResponse>('achievement_summary')?.shields_available ?? 0);
-  const initial = ((user?.first_name?.[0] || '') + (user?.last_name?.[0] || '')) || user?.email?.[0] || '?';
+  const initial = isGuest ? 'G' : ((user?.first_name?.[0] || '') + (user?.last_name?.[0] || '')) || user?.email?.[0] || '?';
 
   // Listen for gamification toggle changes from Settings (instant, works offline)
   useEffect(() => {
