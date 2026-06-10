@@ -78,7 +78,7 @@ export default function Hero() {
         </p>
 
         <div className="flex flex-wrap gap-3 mb-5 justify-center">
-          <Link to="/">
+          <Link to="/login">
             <Button variant="primary" size="lg">
               Try MacroShot now →
             </Button>

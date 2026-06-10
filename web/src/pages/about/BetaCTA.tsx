@@ -60,7 +60,7 @@ export default function BetaCTA() {
             </span>
           ))}
         </div>
-        <Link to="/" className="inline-block">
+        <Link to="/login" className="inline-block">
           <Button variant="primary" size="lg">
             Try MacroShot now →
           </Button>
