@@ -194,7 +194,7 @@ export default function Settings() {
         </div>
       )}
 
-      <div className={guestOverlay}>
+      <div className={`space-y-4 ${guestOverlay}`}>
         <h2 className="section-heading" style={{ marginTop: '0.25rem' }}>You</h2>
 
       {/* Personal Details - nav row */}
