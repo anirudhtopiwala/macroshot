@@ -464,6 +464,13 @@ async def import_guest_meals(
     # Catastrophic case: the claim flag was set but every insert raised
     # (lock storm, disk full, schema drift). Roll back the flag so the
     # next attempt can run instead of locking the user out forever.
+    #
+    # NOTE: we deliberately only roll back on inserted==0, not on partial
+    # failure. Rolling back after a partial insert would make the next
+    # retry re-insert the rows that DID land -> duplicate meals, which is
+    # more visible/annoying than losing a row in a rare mid-batch failure.
+    # A proper partial-retry needs content-based dedup on insert; tracked
+    # as a follow-up rather than trading silent-loss for duplicates here.
     if inserted == 0:
         await rollback_guest_imported(db_path, user_id)
         logger.warning(

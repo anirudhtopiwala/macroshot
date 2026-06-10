@@ -203,9 +203,9 @@ function AuthenticatedLayout() {
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/log" element={<LogMeal />} />
-                      <Route path="/journal" element={<Journal />} />
-                      <Route path="/meals/:id" element={<MealDetail />} />
-                      <Route path="/saved" element={<SavedMeals />} />
+                      <Route path="/journal" element={isGuest ? <SignupPrompt /> : <Journal />} />
+                      <Route path="/meals/:id" element={isGuest ? <SignupPrompt /> : <MealDetail />} />
+                      <Route path="/saved" element={isGuest ? <SignupPrompt /> : <SavedMeals />} />
                       <Route path="/trends" element={isGuest ? <SignupPrompt /> : <Trends />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/settings/personal" element={isGuest ? <SignupPrompt /> : <SettingsPersonal />} />
