@@ -33,7 +33,7 @@ export default function FinalCTA() {
         >
           Open beta · Limited free spots · No credit card.
         </p>
-        <Link to="/" className="inline-block">
+        <Link to="/login" className="inline-block">
           <Button variant="primary" size="lg">
             Try MacroShot now →
           </Button>
