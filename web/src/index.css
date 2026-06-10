@@ -151,7 +151,13 @@ body {
   .section-heading {
     @apply uppercase text-xs font-bold;
     color: var(--text-secondary);
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
+  }
+
+  @media (min-width: 768px) {
+    .section-heading {
+      letter-spacing: 0.05em;
+    }
   }
 }
 
