@@ -189,6 +189,7 @@ OUR_IMG=[("Flash-Lite","generic_cam"),("Flash-full","generic_cam"),
  ("Opus 4.7","generic_cam"),("Opus 4.8","generic_cam")]
 OUR_CAP=[("Flash-Lite","macroshot_cam_text_terse"),("Opus 4.7","macroshot_cam_text_terse"),("Opus 4.8","macroshot_cam_text_terse")]
 PN=["calories","mass_g","fat_g","carb_g","protein_g"]
+PN_ORDERED=["calories","protein_g","carb_g","fat_g","mass_g"]
 # best MacroShot result (lowest AvgMAE among our comparison rows) - highlighted in both tables
 _avail=[(m,c) for m,c in OUR_IMG+OUR_CAP if F.get(m,{}).get(c)]
 WIN=min(_avail,key=lambda t:F[t[0]][t[1]]["avgmae"]) if _avail else None
@@ -196,31 +197,35 @@ def _maec(v): return "g" if v<=45 else ("y" if v<=60 else "r")
 def _relc(v): return "g" if v<=100 else ("y" if v<=160 else "r")
 def _pnc(v):  return "g" if v<=100 else ("y" if v<=200 else "r")   # per-nutrient rel; fat denominators blow up
 def _grp(txt,span): return f"<tr><td colspan={span} style='text-align:left;color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:15px 9px 5px;border-bottom:1px solid var(--line)'>{txt}</td></tr>"
-def _hl_paper(n): d=PAPER[n]; return f"<tr><td class=l>{n}</td><td>photo</td><td class={_maec(d['avgmae'])}>{d['avgmae']}</td><td class={_relc(d['avgrel'])}>{d['avgrel']}%</td><td>{PAPER_N}</td></tr>"
-def _hl_our(model,cond,inp):
+def _mae_avg(mac_dict): return round(s.mean(mac_dict[m]["mae"] for m in M),1)
+def _hl_paper_mae(n):
+    d=PAPER[n]
+    avg_mae=d["avgmae"]
+    cells="".join(f"<td class={_maec(d['mac'][m])}>{d['mac'][m]}</td>" if m in d['mac'] else "<td class=na>&mdash;</td>" for m in PN_ORDERED)
+    return f"<tr><td class=l>{n}</td><td>photo</td><td class={_maec(avg_mae)}><b>{avg_mae}</b></td>{cells}<td>{PAPER_N}</td></tr>"
+def _hl_our_mae(model,cond,inp):
     x=F.get(model,{}).get(cond)
     if not x: return ""
-    win=WIN==(model,cond); tr=" class=win" if win else ""; star=" <span class=star>&#9733; best MacroShot</span>" if win else ""
-    mae=f"<b>{x['avgmae']}</b>" if win else f"{x['avgmae']}"
-    return f"<tr{tr}><td class=l>{dn(model)}{star}</td><td>{inp}</td><td class={_maec(x['avgmae'])}>{mae}</td><td class={_relc(x['avgrel'])}>{x['avgrel']}%</td><td>{x['n']}</td></tr>"
-def _pn_paper(n): d=PAPER[n]; return f"<tr><td class=l>{n}</td><td>photo</td>"+"".join(f"<td class={_pnc(d['mac'][m])}>{d['mac'][m]}%</td>" for m in PN)+"</tr>"
+    win=WIN==(model,cond); tr=" class=win" if win else ""; star=" <span class=star>&#9733; best</span>" if win else ""
+    avg_val=x["avgmae"]; avg_disp=f"<b>{avg_val}</b>" if win else f"{avg_val}"
+    cells="".join(f"<td class={_maec(x['macros'][m]['mae'])}>{x['macros'][m]['mae']}</td>" for m in PN_ORDERED)
+    return f"<tr{tr}><td class=l>{dn(model)}{star}</td><td>{inp}</td><td class={_maec(avg_val)}>{avg_disp}</td>{cells}<td>{x['n']}</td></tr>"
+def _pn_paper(n): d=PAPER[n]; return f"<tr><td class=l>{n}</td><td>photo</td><td class={_pnc(d['avgrel'])}><b>{d['avgrel']}%</b></td>"+"".join(f"<td class={_pnc(d['mac'][m])}>{d['mac'][m]}%</td>" for m in PN_ORDERED)+f"<td>{PAPER_N}</td></tr>"
 def _pn_our(model,cond,inp):
     x=F.get(model,{}).get(cond)
     if not x: return ""
     win=WIN==(model,cond); tr=" class=win" if win else ""; star=" <span class=star>&#9733; best</span>" if win else ""
-    return f"<tr{tr}><td class=l>{dn(model)}{star}</td><td>{inp}</td>"+"".join(f"<td class={_pnc(x['macros'][m]['rel'])}>{x['macros'][m]['rel']}%</td>" for m in PN)+"</tr>"
-cmp_tbl=("<table><thead><tr><th>model</th><th>input</th>"
- "<th>AvgMAE<br><span class=pct>mean abs error (kcal/g) &middot; lower better</span></th>"
- "<th>AvgRelErr<br><span class=pct>mean % off vs truth &middot; lower better</span></th>"
- "<th>n<br><span class=pct>dishes scored</span></th></tr></thead><tbody>"
- +_grp(f"Published &middot; Wang et al. 2026 (image only, n&asymp;{PAPER_N})",5)+"".join(_hl_paper(n) for n in PAPER_ORDER)
- +_grp("MacroShot &middot; our harness, photo only",5)+"".join(_hl_our(*r,"photo") for r in OUR_IMG)
- +_grp("MacroShot &middot; our harness, photo + user caption (shipped flow)",5)+"".join(_hl_our(*r,"photo + caption") for r in OUR_CAP)
+    avg_disp=f"<b>{x['avgrel']}%</b>" if win else f"{x['avgrel']}%"
+    return f"<tr{tr}><td class=l>{dn(model)}{star}</td><td>{inp}</td><td class={_relc(x['avgrel'])}>{avg_disp}</td>"+"".join(f"<td class={_pnc(x['macros'][m]['rel'])}>{x['macros'][m]['rel']}%</td>" for m in PN_ORDERED)+f"<td>{x['n']}</td></tr>"
+cmp_tbl=("<table><thead><tr><th>model</th><th>input</th><th>Avg MAE<br><span class=pct>mean abs error (kcal/g) &middot; lower better</span></th>"+"".join(f"<th>{LBL[m]}<br><span class=pct>MAE &middot; lower better</span></th>" for m in PN_ORDERED)+"<th>n<br><span class=pct>dishes scored</span></th></tr></thead><tbody>"
+ +_grp(f"Published &middot; Wang et al. 2026 (image only, n&asymp;{PAPER_N})",len(PN_ORDERED)+3)+"".join(_hl_paper_mae(n) for n in PAPER_ORDER)
+ +_grp("MacroShot &middot; our harness, photo only",len(PN_ORDERED)+3)+"".join(_hl_our_mae(*r,"photo") for r in OUR_IMG)
+ +_grp("MacroShot &middot; our harness, photo + user caption (shipped flow)",len(PN_ORDERED)+3)+"".join(_hl_our_mae(*r,"photo + caption") for r in OUR_CAP)
  +"</tbody></table>")
-pn_tbl=("<table><thead><tr><th>model</th><th>input</th>"+"".join(f"<th>{LBL[m]}<br><span class=pct>rel. error % &middot; lower better</span></th>" for m in PN)+"</tr></thead><tbody>"
- +_grp("Published &middot; Wang et al. 2026 (image only)",7)+"".join(_pn_paper(n) for n in PAPER_ORDER)
- +_grp("MacroShot &middot; our harness, photo only",7)+"".join(_pn_our(*r,"photo") for r in OUR_IMG)
- +_grp("MacroShot &middot; our harness, photo + caption",7)+"".join(_pn_our(*r,"photo + caption") for r in OUR_CAP)
+pn_tbl=("<table><thead><tr><th>model</th><th>input</th><th>Avg RelErr<br><span class=pct>mean % off vs truth &middot; lower better</span></th>"+"".join(f"<th>{LBL[m]}<br><span class=pct>rel. error % &middot; lower better</span></th>" for m in PN_ORDERED)+"<th>n<br><span class=pct>dishes scored</span></th></tr></thead><tbody>"
+ +_grp("Published &middot; Wang et al. 2026 (image only)",len(PN_ORDERED)+3)+"".join(_pn_paper(n) for n in PAPER_ORDER)
+ +_grp("MacroShot &middot; our harness, photo only",len(PN_ORDERED)+3)+"".join(_pn_our(*r,"photo") for r in OUR_IMG)
+ +_grp("MacroShot &middot; our harness, photo + caption",len(PN_ORDERED)+3)+"".join(_pn_our(*r,"photo + caption") for r in OUR_CAP)
  +"</tbody></table>")
 _pbn,_pb=min(PAPER.items(),key=lambda kv:kv[1]["avgmae"])  # strongest published model
 if WIN:
