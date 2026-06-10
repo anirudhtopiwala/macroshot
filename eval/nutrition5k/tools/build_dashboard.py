@@ -84,13 +84,13 @@ hrows=WANG_REF+"".join("<tr><td class=l>"+lab+"</td>"+"".join(hcell(m,c) for m i
 def permodel(model):
     pres=[(lab,c) for lab,c,_ in FOCUS if F.get(model,{}).get(c)]
     if not pres: return ""
-    head="".join(f"<th>{LBL[m]}</th>" for m in M); body=""
+    head="".join(f"<th>{LBL[m]}<br><span class=pct>MAE (RelErr% &middot; MedPE%)</span></th>" for m in M); body=""
     for lab,c in pres:
         x=F[model][c]; n=f" <span class=n>n{x['n']}</span>" if x['n']<NMODEL[model] else ""
         mb=lambda v:'na' if v is None else ('g' if v<=30 else ('y' if v<=50 else 'r'))
         cells="".join(f"<td class={mb(x['macros'][m]['med'])}>{x['macros'][m]['mae']}<span class=pct><br>{x['macros'][m]['rel']}% &middot; {x['macros'][m]['med']}%</span></td>" for m in M)
         body+=f"<tr><td class=l>{lab}{n}</td>{cells}<td class=avg>{x['avgmae']}<span class=pct><br>{x['avgrel']}% &middot; {x['avgmed']}%</span></td></tr>"
-    return f"<h3>{dn(model)} <span class=n>n={NMODEL[model]}</span></h3><table><thead><tr><th>option</th>{head}<th>Avg</th></tr></thead><tbody>{body}</tbody></table>"
+    return f"<h3>{dn(model)} <span class=n>n={NMODEL[model]}</span></h3><table><thead><tr><th>option</th>{head}<th>Avg<br><span class=pct>AvgMAE (AvgRelErr% &middot; AvgMedPE%)</span></th></tr></thead><tbody>{body}</tbody></table>"
 permodel_html="".join(permodel(m) for m in models)
 # --- deltas / "what moves the needle" ---
 def dpct(model,fr,to):
@@ -124,7 +124,8 @@ def dmac_avg(model,fr,to):
     p=(bv-av)/av*100
     return f'<td class={"g" if p<0 else "r"}>{"&#9660;" if p<0 else "&#9650;"} {p:+.0f}%<span class=pct><br>{av:.0f}{PSUF}&rarr;{bv:.0f}{PSUF}</span></td>'
 def needle_macro(model):
-    head="".join(f"<th>{LBL[m]}</th>" for m in M4)+"<th>Avg (4)</th>"
+    metric_name = "MedPE%" if METRIC=="medpe" else "MAE"
+    head="".join(f"<th>{LBL[m]}<br><span class=pct>% change in {metric_name}</span></th>" for m in M4)+"<th>Avg (4)<br><span class=pct>% change in {metric_name}</span></th>"
     body="".join(f"<tr><td class=l>{lab}</td>"+"".join(dmac(model,fr,to,m) for m in M4)+dmac_avg(model,fr,to)+"</tr>" for lab,fr,to in COMPS)
     return f"<h3>{dn(model)}</h3><table><thead><tr><th>change</th>{head}</tr></thead><tbody>{body}</tbody></table>"
 needle_macro_html="".join(needle_macro(m) for m in ["Flash-Lite","Opus 4.8"])
@@ -212,7 +213,7 @@ def _hl_our_mae(model,cond,inp):
     avg_disp+=f"<span class=pct><br>({avg_rel}%)</span>"
     cells="".join(f"<td class={_maec(x['macros'][m]['mae'])}>{x['macros'][m]['mae']}<span class=pct><br>({x['macros'][m]['rel']}%)</span></td>" for m in PN_ORDERED)
     return f"<tr{tr}><td class=l>{dn(model)}{star}</td><td>{inp}</td><td class={_maec(avg_val)}>{avg_disp}</td>{cells}<td>{x['n']}</td></tr>"
-cmp_tbl=("<table><thead><tr><th>model</th><th>input</th><th>Avg MAE<br><span class=pct>mean abs error (kcal/g) &middot; lower better</span></th>"+"".join(f"<th>{LBL[m]}<br><span class=pct>MAE &middot; lower better</span></th>" for m in PN_ORDERED)+"<th>n<br><span class=pct>dishes scored</span></th></tr></thead><tbody>"
+cmp_tbl=("<table><thead><tr><th>model</th><th>input</th><th>Avg MAE<br><span class=pct>mean abs error (kcal/g) · RelErr%</span></th>"+"".join(f"<th>{LBL[m]}<br><span class=pct>MAE / RelErr%</span></th>" for m in PN_ORDERED)+"<th>n<br><span class=pct>dishes scored</span></th></tr></thead><tbody>"
  +_grp(f"Published &middot; Wang et al. 2026 (image only, n&asymp;{PAPER_N})",len(PN_ORDERED)+3)+"".join(_hl_paper_mae(n) for n in PAPER_ORDER)
  +_grp("MacroShot &middot; our harness, photo only",len(PN_ORDERED)+3)+"".join(_hl_our_mae(*r,"photo") for r in OUR_IMG)
  +_grp("MacroShot &middot; our harness, photo + user caption (shipped flow)",len(PN_ORDERED)+3)+"".join(_hl_our_mae(*r,"photo + caption") for r in OUR_CAP)
