@@ -185,9 +185,9 @@ export default function Login() {
               try {
                 await authApi.googleAuth(response.credential);
                 await authApi.acceptTos();
-                await refetchRef.current();
-                // Exit guest mode synchronously to update React state
+                // Exit guest mode BEFORE refetch so checkAuth actually fetches user
                 exitGuestMode();
+                await refetchRef.current();
                 navigate('/', { replace: true });
               } catch (err: unknown) {
                 const googleEmail = emailFromGoogleCredential(response.credential);
@@ -212,9 +212,9 @@ export default function Login() {
               try {
                 await authApi.googleAuth(response.credential);
                 await authApi.acceptTos();
-                await refetchRef.current();
-                // Exit guest mode synchronously to update React state
+                // Exit guest mode BEFORE refetch so checkAuth actually fetches user
                 exitGuestMode();
+                await refetchRef.current();
                 navigate('/', { replace: true });
               } catch (err: unknown) {
                 const googleEmail = emailFromGoogleCredential(response.credential);
@@ -307,9 +307,9 @@ export default function Login() {
     try {
       await authApi.verifyPin(email, pin, firstName.trim() || undefined, lastName.trim() || undefined);
       await authApi.acceptTos();
-      await refetch();
-      // Exit guest mode synchronously to update React state
+      // Exit guest mode BEFORE refetch so checkAuth actually fetches user
       exitGuestMode();
+      await refetch();
       navigate('/', { replace: true });
     } catch (err: unknown) {
       if (handleStagingRedirect(err)) return;
