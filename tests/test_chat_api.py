@@ -35,7 +35,7 @@ from src.web.deps import get_db_path, get_current_user
 def db_path(tmp_path):
     """Create a temporary SQLite database."""
     path = str(tmp_path / "test.db")
-    asyncio.get_event_loop().run_until_complete(init_db(path))
+    asyncio.run(init_db(path))
     return path
 
 
@@ -155,7 +155,7 @@ async def test_send_message_generates_title(mock_chat, mock_title, auth_client):
         data={"text": "What should I eat for dinner?"},
     )
     assert resp.status_code == 200
-    # Immediate response carries no title — title gen runs in the background.
+    # Immediate response carries no title - title gen runs in the background.
     assert resp.json()["title"] == ""
 
     # Poll the session's history endpoint up to ~1s for the title to land.

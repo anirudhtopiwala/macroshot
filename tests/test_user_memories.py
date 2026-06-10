@@ -865,7 +865,7 @@ async def test_upsert_marker_memory_does_not_clobber_other_users(db):
 
 @pytest.mark.asyncio
 async def test_upsert_marker_memory_does_not_clobber_user_authored(db):
-    """User-created memories starting with the same prefix must NOT be deleted —
+    """User-created memories starting with the same prefix must NOT be deleted -
     upsert is scoped to source='coach_suggested'."""
     from src.db import upsert_marker_memory, ONBOARDING_TARGETS_MARKER
 
@@ -882,7 +882,7 @@ async def test_upsert_marker_memory_does_not_clobber_user_authored(db):
 
 @pytest.mark.asyncio
 async def test_upsert_marker_memory_rejects_missing_marker_prefix(db):
-    """text must literally start with marker — otherwise next upsert can't find it."""
+    """text must literally start with marker - otherwise next upsert can't find it."""
     from src.db import upsert_marker_memory, ONBOARDING_TARGETS_MARKER
     with pytest.raises(ValueError, match="marker"):
         await upsert_marker_memory(

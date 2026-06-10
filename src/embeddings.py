@@ -31,7 +31,7 @@ _QUERY_TASK = "RETRIEVAL_QUERY"
 
 
 def _meal_text(item_name: str | None, meal_description: str | None) -> str:
-    """Canonical text used for both embed-on-log and backfill — keep in sync."""
+    """Canonical text used for both embed-on-log and backfill - keep in sync."""
     name = (item_name or "").strip()
     desc = (meal_description or "").strip()
     if name and desc:

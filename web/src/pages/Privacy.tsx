@@ -26,7 +26,7 @@ export default function Privacy() {
 
         {isSelfHost ? (
           <div className="text-xs p-3 rounded-lg" style={{ background: 'rgba(245,158,11,0.12)', color: 'var(--text-primary)', border: '1px solid rgba(245,158,11,0.45)' }}>
-            <strong>⚠️ Operator notice.</strong> This is a self-hosted MacroShot instance. The policy below is a <em>starter template</em> describing what the MacroShot software collects. The <strong>operator of this instance</strong> — not the upstream developer — is the data controller for your data, and is responsible for publishing storage location, retention periods, breach-notification procedure, and any region-specific rights (CCPA, GDPR). Before exposing this instance to any user other than yourself, replace this page. See <code>docs/self-hosting-legal.md</code> in the source.
+            <strong>⚠️ Operator notice.</strong> This is a self-hosted MacroShot instance. The policy below is a <em>starter template</em> describing what the MacroShot software collects. The <strong>operator of this instance</strong> - not the upstream developer - is the data controller for your data, and is responsible for publishing storage location, retention periods, breach-notification procedure, and any region-specific rights (CCPA, GDPR). Before exposing this instance to any user other than yourself, replace this page. See <code>docs/self-hosting-legal.md</code> in the source.
           </div>
         ) : (
           <div className="text-xs p-3 rounded-lg" style={{ background: 'var(--bg-elevated)', color: 'var(--text-secondary)', border: '1px solid var(--border-glass)' }}>
@@ -57,7 +57,7 @@ export default function Privacy() {
             <li>Daily macro targets and dietary goals</li>
             <li>Weight log history</li>
             <li>Saved meals (quick-log shortcuts you create)</li>
-            <li>Coach memory entries — durable facts you ask the AI coach to remember across chats (allergies, dietary restrictions, food preferences, free-text notes). The coach may suggest entries during conversations; you confirm before any save. You can view, edit, and delete entries at any time in Settings &gt; Coach Memory.</li>
+            <li>Coach memory entries - durable facts you ask the AI coach to remember across chats (allergies, dietary restrictions, food preferences, free-text notes). The coach may suggest entries during conversations; you confirm before any save. You can view, edit, and delete entries at any time in Settings &gt; Coach Memory.</li>
           </ul>
 
           <p className="font-semibold mt-3">Fitness Data (if you connect Strava, Fitbit, or Oura)</p>

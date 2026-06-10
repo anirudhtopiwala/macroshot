@@ -562,7 +562,7 @@ class TestGeminiAnalyzeMeal:
         assert mock_aclient.models.generate_content.call_count == 1
 
     async def test_first_call_is_plain_not_grounded(self):
-        """First call must be plain (no google_search tool) — grounding is a fallback."""
+        """First call must be plain (no google_search tool) - grounding is a fallback."""
         resp = _make_response([{"text": _VALID_JSON}])
         client_cls, mock_aclient = _make_mock_client([resp])
 
@@ -923,7 +923,7 @@ class TestQuestionsField:
 
 
 # ---------------------------------------------------------------------------
-# gemini_suggest_targets — single-call structured-output path
+# gemini_suggest_targets - single-call structured-output path
 # ---------------------------------------------------------------------------
 
 

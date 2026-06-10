@@ -37,7 +37,7 @@ function getStreakStyle(streak: number) {
 }
 
 export default function Header() {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [streak, setStreak] = useState(0);
@@ -65,7 +65,7 @@ export default function Header() {
   // Animated header shield count: tweens from old → new on decrement so the
   // user sees the consume happen, not just a number snap.
   const [displayShields, setDisplayShields] = useState(() => getCached<AchievementSummaryResponse>('achievement_summary')?.shields_available ?? 0);
-  const initial = ((user?.first_name?.[0] || '') + (user?.last_name?.[0] || '')) || user?.email?.[0] || '?';
+  const initial = isGuest ? 'G' : ((user?.first_name?.[0] || '') + (user?.last_name?.[0] || '')) || user?.email?.[0] || '?';
 
   // Listen for gamification toggle changes from Settings (instant, works offline)
   useEffect(() => {
@@ -124,7 +124,7 @@ export default function Header() {
       if (cancelled) return;
       // Shield earned detection: shield count increased between fetches.
       // Surface as a full-screen celebration (not a toast) so the user actually
-      // notices banking the reward — a 4s chip in the header was easy to miss
+      // notices banking the reward - a 4s chip in the header was easy to miss
       // and didn't match the consume-side ShieldCelebration treatment.
       const shieldEarnedKey = `shield_earned_celebration_${new Date().toISOString().slice(0, 10)}`;
       if (
@@ -201,7 +201,7 @@ export default function Header() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-    // displayShields intentionally not in deps — we only retrigger when the
+    // displayShields intentionally not in deps - we only retrigger when the
     // *target* (shields) changes; the rAF loop drives displayShields itself.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shields]);
@@ -256,7 +256,7 @@ export default function Header() {
               </span>
             </button>
           )}
-          {/* Streak flame — also hidden when gamification=off, for parity
+          {/* Streak flame - also hidden when gamification=off, for parity
               with the shield chip and the celebration popups. The flame is
               gamification UI, even though pre-fix it was rendered always. */}
           {gamification === 'full' && (
@@ -286,7 +286,7 @@ export default function Header() {
         </div>
       </div>
       {/* Shield earned/used both show full-screen celebrations (rendered below).
-          Comeback still uses a header toast — it's a softer event without a
+          Comeback still uses a header toast - it's a softer event without a
           banked reward to dramatize. */}
       {comebackToast && (
         <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 px-4 py-2 rounded-xl text-xs font-semibold animate-fade-in"

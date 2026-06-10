@@ -34,7 +34,7 @@ const GOAL_LABELS: Record<string, string> = {
 export default function Settings() {
   const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
-  const { user: authUser, logout: authLogout } = useAuth();
+  const { user: authUser, logout: authLogout, isGuest } = useAuth();
   // `foundingMember` is a legacy alias of `isOG` (same value - the context
   // exposes both for backward compat). Prefer `isOG` in new code.
   const { isPremium, foundingMember, isOG, betaMode, plan, status: subStatus, imageUsage, textMealUsage, chatUsage, savedMealsUsage, trialEndsAt, currentPeriodEnd } = useSubscription();
@@ -59,7 +59,7 @@ export default function Settings() {
   const [updatePhase, setUpdatePhase] = useState<UpdateProgressPhase | null>(null);
   const [updateProgress, setUpdateProgress] = useState({ done: 0, total: 0 });
   // Aborts an in-flight checkForUpdate on unmount so a route change away from
-  // Settings doesn't leave the SW lifecycle subscription dangling — and, more
+  // Settings doesn't leave the SW lifecycle subscription dangling - and, more
   // importantly, doesn't fire applyUpdate() (which triggers a page reload)
   // under a user who is now mid-task on another page.
   const updateAbortRef = useRef<AbortController | null>(null);
@@ -167,11 +167,21 @@ export default function Settings() {
 
   const firstName = authUser?.first_name || authUser?.email?.split('@')[0] || '';
 
+  const guestOverlay = isGuest ? 'opacity-60 pointer-events-none' : '';
+
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Settings</h1>
 
-      <h2 className="section-heading" style={{ marginTop: '0.25rem' }}>You</h2>
+      {isGuest && (
+        <div className="p-4 rounded-2xl" style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+          <p className="text-sm font-semibold text-emerald-400">Sign up to save your settings</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>Create an account to unlock personalized goals, reminders, and sync across devices</p>
+        </div>
+      )}
+
+      <div className={guestOverlay}>
+        <h2 className="section-heading" style={{ marginTop: '0.25rem' }}>You</h2>
 
       {/* Personal Details - nav row */}
       <Link to="/settings/personal" className="glass-card-hover flex items-center gap-3 p-4 !rounded-2xl">
@@ -853,7 +863,7 @@ export default function Settings() {
             setUpdateProgress(getPrecacheProgress());
             const unsubProgress = onPrecacheProgress((p) => setUpdateProgress(p));
 
-            // Already-precached update from a previous tab — skip to apply.
+            // Already-precached update from a previous tab - skip to apply.
             if (isUpdateAvailable()) {
               setUpdatePhase('applying');
               applyUpdate();
@@ -1004,6 +1014,7 @@ export default function Settings() {
         <p className="text-[10px] tabular-nums" style={{ color: 'var(--text-muted)' }}>
           {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}
         </p>
+      </div>
       </div>
 
       {/* Delete Account - isolated at bottom */}

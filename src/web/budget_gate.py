@@ -17,7 +17,7 @@ Design notes:
 - **Fail-closed when within 5% of cap.** A DB error inside the safety
   band is treated as "over". Far below the cap, a transient DB error
   still fails open so an isolated SQLite hiccup doesn't take the app
-  down — the kill-switch / Sentry alerts are the catastrophic backstop.
+  down - the kill-switch / Sentry alerts are the catastrophic backstop.
 - **Per-call reservation.** We subtract a small estimated cost from the
   cached value before returning allowed, so a burst of concurrent calls
   starting in the same 60s cache window can't all see "under cap" and
@@ -39,11 +39,11 @@ _CACHE_TTL_SECONDS = 60.0
 # Estimated cost reserved per in-flight Gemini call. A typical chat turn
 # costs ~$0.001-$0.01; reserving 1¢ per call deflates the cached cost so a
 # concurrent burst can't all squeeze under the cap. The reservation is
-# pessimistic on purpose — actual cost is logged via log_gemini_call and
+# pessimistic on purpose - actual cost is logged via log_gemini_call and
 # the next cache refresh corrects to truth.
 _PER_CALL_RESERVATION_USD = 0.01
 
-# How close to the cap we treat as "danger zone" — within this band, a DB
+# How close to the cap we treat as "danger zone" - within this band, a DB
 # error fails CLOSED instead of open.
 _FAIL_CLOSED_BAND_FRACTION = 0.95
 
@@ -84,7 +84,7 @@ async def assert_gemini_budget(db_path: str) -> None:
         try:
             cost = await get_monthly_gemini_cost_usd(db_path)
         except Exception:
-            # Within 5% of the cap we cannot afford to fail open — a transient
+            # Within 5% of the cap we cannot afford to fail open - a transient
             # DB hiccup at the worst possible moment would let unbounded spend
             # through. Outside the band, fail open to keep the app available.
             danger_threshold = MONTHLY_GEMINI_BUDGET_USD * _FAIL_CLOSED_BAND_FRACTION

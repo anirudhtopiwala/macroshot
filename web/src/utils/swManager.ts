@@ -102,7 +102,7 @@ function notifyPrecacheProgress(p: PrecacheProgress) {
  * that the long-lived updatefound listener (initServiceWorker) and the
  * UpdateToast rely on. The previous approach polled reg.installing /
  * reg.waiting for 3s after reg.update() resolved and bailed if neither was
- * set — a structural blind spot, because the browser (especially iOS Safari)
+ * set - a structural blind spot, because the browser (especially iOS Safari)
  * routinely resolves update() before transitioning the new worker into
  * `installing`. The install would complete seconds later, the long-lived
  * listener would fire notifyUpdateAvailable, and the user would see the
@@ -116,7 +116,7 @@ function notifyPrecacheProgress(p: PrecacheProgress) {
  *    The post-update() state-machine race resolves within 3-5s on even slow
  *    networks; 10s is generous cover. The UpdateToast remains subscribed
  *    via the long-lived listener, so a late-arriving install is still
- *    surfaced — just not by this modal.
+ *    surfaced - just not by this modal.
  *  - 60s total cap: once an install is observably in flight, give the
  *    ~10 MB precache enough time to complete on slow mobile networks.
  */
@@ -160,15 +160,15 @@ export async function checkForUpdate(
     const unsubAvailable = onUpdateAvailable(() => finish(true));
 
     // Load-bearing for two cases:
-    //  (a) onDownloading callback — fires the moment the browser transitions
+    //  (a) onDownloading callback - fires the moment the browser transitions
     //      a worker into `installing`. There's no DOM event for that
     //      null→installing transition on the registration, so we poll.
-    //  (b) First-install fallback — notifyUpdateAvailable in the long-lived
+    //  (b) First-install fallback - notifyUpdateAvailable in the long-lived
     //      updatefound listener (line ~314) gates on
     //      navigator.serviceWorker.controller being truthy, so on a brand-new
     //      install (no prior controller) it never fires even when the SW
     //      reaches waiting. The `if (reg.waiting) finish(true)` below is the
-    //      only path that catches that — do NOT remove it as "redundant".
+    //      only path that catches that - do NOT remove it as "redundant".
     const installingWatcher = setInterval(() => {
       if (settled) return;
       if (reg.waiting) {
@@ -187,7 +187,7 @@ export async function checkForUpdate(
       if (!reg.installing && !reg.waiting) finish(false);
     }, 10_000);
 
-    // Hard cap once an install IS in flight — covers slow precache downloads.
+    // Hard cap once an install IS in flight - covers slow precache downloads.
     const totalTimeoutId = setTimeout(() => finish(!!reg.waiting), 60_000);
   });
 }
@@ -205,7 +205,7 @@ export async function checkForUpdate(
 // over; the controllerchange that follows is OURS, please reload." Without
 // this gate, iOS Safari has been seen to fire spurious controllerchange
 // events on PWA reloads (likely a race between SW takeover bookkeeping and
-// the new page's controller binding) — the legacy handler honored them and
+// the new page's controller binding) - the legacy handler honored them and
 // triggered a second window.location.reload() mid-mount, which tore down
 // the Suspense subtree and left the user with header + bottom nav but a
 // blank route content area. Only honoring our own intent eliminates that.
@@ -223,7 +223,7 @@ export function applyUpdate(): void {
     const onState = () => {
       if (installing.state === 'installed') {
         installing.removeEventListener('statechange', onState);
-        // Now in waiting state — re-read from registration to be safe.
+        // Now in waiting state - re-read from registration to be safe.
         const w = _registration?.waiting ?? installing;
         try { sessionStorage.setItem(SW_APPLY_INTENT_KEY, '1'); } catch { /* ignore */ }
         w.postMessage({ type: 'SKIP_WAITING' });
@@ -284,7 +284,7 @@ export function initServiceWorker(): void {
       // `updateViaCache: 'none'` forces the browser to bypass the HTTP
       // cache when fetching sw.js (both at register and on every
       // reg.update() call). Default ('imports') only bypasses cache for
-      // import scripts, not the main worker — and iOS Safari has been
+      // import scripts, not the main worker - and iOS Safari has been
       // seen to serve cached sw.js to update checks despite the spec,
       // which silently masked real updates as "no new version".
       _registration = await navigator.serviceWorker.register('/macro_app/sw.js', {
@@ -308,7 +308,7 @@ export function initServiceWorker(): void {
       if (!newWorker) return;
 
       newWorker.addEventListener('statechange', () => {
-        // The new SW installed and is now waiting — precache complete,
+        // The new SW installed and is now waiting - precache complete,
         // reload would be instant.
         if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
           notifyUpdateAvailable();
@@ -346,10 +346,10 @@ export function initServiceWorker(): void {
   //   c) iOS spurious: post-reload controller binding races without a real SW takeover
   //
   // The old heuristic `hadController` flipped on the moment any controller
-  // existed at module init — which is true for EVERY warm reload after the
+  // existed at module init - which is true for EVERY warm reload after the
   // first install. That let case (c) through, triggering a second
   // window.location.reload() mid-mount that left header + bottom nav painted
-  // but the lazy Suspense subtree torn down — the user saw a "blank middle"
+  // but the lazy Suspense subtree torn down - the user saw a "blank middle"
   // until they exited and reopened the PWA process.
   //
   // The new gate: only honor controllerchange when WE explicitly asked for a

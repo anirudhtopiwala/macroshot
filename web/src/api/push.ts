@@ -4,7 +4,7 @@ import { api } from './client';
 // on `window.load`, but on a fresh PWA install (or any code path that reaches
 // here before that listener fires) there's nothing to find. Register on demand
 // so a user-gesture-initiated subscribe never silently fails for missing SW.
-// Returns { reg, debug } where debug describes which state we ended in — so
+// Returns { reg, debug } where debug describes which state we ended in - so
 // the caller can surface the failure mode in the user-visible toast.
 async function getReadyRegistration(): Promise<{ reg: ServiceWorkerRegistration | null; debug: string }> {
   if (!('serviceWorker' in navigator)) return { reg: null, debug: 'no-sw-api' };
@@ -45,7 +45,7 @@ async function getReadyRegistration(): Promise<{ reg: ServiceWorkerRegistration 
 
   if (reg.waiting) return { reg: null, debug: `stuck-waiting-${source}` };
 
-  // No active, no installing, no waiting — try `ready` once as a last resort.
+  // No active, no installing, no waiting - try `ready` once as a last resort.
   const ready = await Promise.race([
     navigator.serviceWorker.ready,
     new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000)),

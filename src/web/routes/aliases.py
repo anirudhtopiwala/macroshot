@@ -153,7 +153,7 @@ async def reorder_aliases_route(request: Request, req: AliasReorderRequest, user
 async def create_alias_edit_session(request: Request, name: str, user: CurrentUser, db_path: DbPath, sub: SubInfo):
     """Create an analysis session from a saved meal for AI editing.
 
-    B7: gated against the daily text_meal cap — this triggers a Gemini call
+    B7: gated against the daily text_meal cap - this triggers a Gemini call
     server-side via create_session_from_alias, so it must consume the same
     text-meal quota a typed analysis does.
     """

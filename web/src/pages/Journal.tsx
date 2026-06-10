@@ -72,7 +72,7 @@ export default function Journal() {
   const deleteMeal = useCallback((id: number) => {
     // Search-mode swipe deletes go through here too. The meal may live only
     // in searchResults (if it's older than the paginated journal slice) or
-    // only in meals (no active search) — look in both.
+    // only in meals (no active search) - look in both.
     const meal =
       mealsRef.current.find((m) => m.id === id)
       ?? searchResultsRef.current?.find((m) => m.id === id);
@@ -92,7 +92,7 @@ export default function Journal() {
             prev.some((m) => m.id === meal.id) ? prev : [...prev, meal].sort((a, b) => b.id - a.id),
           );
           // Restore to the search list too so the card reappears in place
-          // when the user is mid-search. Prepend rather than re-rank — we
+          // when the user is mid-search. Prepend rather than re-rank - we
           // didn't capture the original score index, and prepending matches
           // the user's mental model ("the thing I just undeleted is on top").
           setSearchResults((prev) =>
@@ -338,7 +338,7 @@ export default function Journal() {
         // Reserve a stable min-height for the results region while a search
         // is active. Without this, pages with no/few hits would visibly
         // collapse vs pages with many hits, and the page itself would
-        // shrink — causing the visible chrome (input, calendar above, page
+        // shrink - causing the visible chrome (input, calendar above, page
         // bottom) to lurch up/down between keystrokes. With the min-height,
         // empty space below the results absorbs the variance silently.
         <div style={search ? { minHeight: '60vh' } : undefined}>

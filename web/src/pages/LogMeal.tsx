@@ -27,6 +27,8 @@ import { trackEvent } from '../utils/analytics';
 import { track } from '../api/analytics';
 import { useSubscription } from '../context/SubscriptionContext';
 import { useCapState } from '../hooks/useCapState';
+import { useAuth } from '../context/AuthContext';
+import { guestApi } from '../api/guest';
 import UpgradeCard from '../components/UpgradeCard';
 import UsageMeter from '../components/UsageMeter';
 import Button from '../components/Button';
@@ -128,6 +130,7 @@ export default function LogMeal() {
   const savedMealsCap = useCapState('saved_meals');
   const atImageLimit = imageCap.atLimit;
 
+  const { isGuest } = useAuth();
   const session = useMealSession();
   const [editedNutrition, setEditedNutrition] = useState<Nutrition | null>(null);
   const [modified, setModified] = useState(false);
@@ -286,10 +289,12 @@ export default function LogMeal() {
   };
 
   const refreshAliases = useCallback(async () => {
+    // Aliases require auth - guests have none and the request would 401.
+    if (isGuest) return;
     const data = await aliasesApi.list();
     setAliases(data);
     setCache('saved_meals', data);
-  }, []);
+  }, [isGuest]);
 
   useRegisterRefresh(refreshAliases);
 
@@ -297,15 +302,16 @@ export default function LogMeal() {
     refreshAliases().catch(() => {});
   }, [refreshAliases]);
 
-  // Fetch recent unique meals on mount
+  // Fetch recent unique meals on mount (skip for guests - endpoint 401s).
   useEffect(() => {
+    if (isGuest) return;
     mealsApi.recentUnique().then((data) => {
       if (data.length > 0) {
         setRecentMeals(data);
         setCache('recent_meals', data);
       }
     }).catch(() => {});
-  }, []);
+  }, [isGuest]);
 
   const openEditAlias = (alias: Alias) => {
     const items = alias.items.length > 0
@@ -469,6 +475,41 @@ export default function LogMeal() {
     }
 
     try {
+      // Guests hit /guest/barcode which returns the same product
+      // metadata shape but no session_id. We mint a synthetic id
+      // (matching the GUEST_SESSION_PREFIX convention in
+      // useMealSession) so applyBarcodeResult -> session.setSessionId
+      // routes through the existing review/accept UI without forking.
+      if (isGuest) {
+        const res = await guestApi.barcodeLookup(barcode, 1);
+        if (res.error || !res.nutrition) {
+          setBarcodeNotFound(true);
+          if (cached) setBaseNutrition(null);
+          hapticWarning();
+          return;
+        }
+        hapticSuccess();
+        setCachedBarcode(
+          barcode,
+          res.nutrition,
+          res.nutrition.item_name,
+          res.image_url ?? null,
+        );
+        const fakeId = `guest:${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+        // Seed mealType so the guest accept path tags the IDB entry
+        // with the user's selection. applyBarcodeResult itself only
+        // sets nutrition/session - mealType lives on the hook.
+        session.setPendingMealType(mealType);
+        applyBarcodeResult(
+          res.nutrition, fakeId, res.image_url ?? null, [],
+          res.serving_label ?? undefined, res.serving_size_g ?? undefined,
+          res.serving_size_unit ?? null,
+          false, null,
+          false, null, preserveServings,
+        );
+        return;
+      }
+
       const res = await mealsApi.barcodeLookup(barcode, 1, mealType);
       if (res.error || !res.nutrition) {
         setBarcodeNotFound(true);
@@ -504,7 +545,7 @@ export default function LogMeal() {
       setBarcodeLoading(false);
       barcodeLoadingRef.current = false;
     }
-  }, [mealType, applyBarcodeResult, resetBarcodeUiState]);
+  }, [mealType, applyBarcodeResult, resetBarcodeUiState, isGuest]);
 
   // QR-code scan handler - server classifies the payload.
   //   digits 8–14  → server delegates to barcode flow; response shape matches.

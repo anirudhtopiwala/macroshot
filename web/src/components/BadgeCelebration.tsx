@@ -61,7 +61,7 @@ export default function BadgeCelebration({ badges, onDone, onView }: Props) {
     clearTimeout(timerRef.current);
     clearTimeout(fadeTimerRef.current);
     // Let the parent settle any pre-navigation state (e.g. onboarding flag)
-    // before the route changes — otherwise a route guard may bounce us back.
+    // before the route changes - otherwise a route guard may bounce us back.
     onView?.();
     // Run onDone next so any parent-side navigation in onDone doesn't
     // clobber our navigate to the achievements page.

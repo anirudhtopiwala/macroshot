@@ -63,7 +63,7 @@ async def update_targets(request: Request, req: TargetsRequest, user: CurrentUse
     # Mirror the saved targets into user_memories so the chat coach sees
     # the user's current baseline. Overwrites any prior "Targets baseline:"
     # memory (single-slot semantics). Skipped for skip=True onboarding
-    # defaults — those aren't a real user choice. See targets.accept_targets
+    # defaults - those aren't a real user choice. See targets.accept_targets
     # for the matching write on the AI-suggest path (which also writes a
     # "Goal context:" memory from the refine chat).
     if not req.skip:
@@ -219,7 +219,7 @@ async def upload_avatar(request: Request, file: UploadFile, user: CurrentUser, d
 
         def _process() -> None:
             img = PILImage.open(io.BytesIO(data))
-            # B35: reject animated avatars — re-encoding silently drops
+            # B35: reject animated avatars - re-encoding silently drops
             # frames (matches meals.py policy).
             if getattr(img, "is_animated", False):
                 raise HTTPException(status_code=415, detail="Animated images not supported")

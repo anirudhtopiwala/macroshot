@@ -8,7 +8,7 @@ export default function SelfHost() {
   const hasGithub = Boolean(github_url);
   const cloneTarget = hasGithub
     ? GITHUB_URL.replace('https://', '')
-    : 'github.com/your-org/macro_app';
+    : 'github.com/your-org/macroshot';
 
   return (
     <section className="py-12 md:py-20">
@@ -72,7 +72,7 @@ export default function SelfHost() {
           </div>
           <div className="space-y-1.5">
             <div><span style={{ color: '#10b981' }}>$</span> git clone {cloneTarget}</div>
-            <div><span style={{ color: '#10b981' }}>$</span> cd macro_app</div>
+            <div><span style={{ color: '#10b981' }}>$</span> cd macroshot</div>
             <div><span style={{ color: '#10b981' }}>$</span> python3 -m venv .venv</div>
             <div><span style={{ color: '#10b981' }}>$</span> .venv/bin/pip install -r requirements.txt</div>
             <div><span style={{ color: '#10b981' }}>$</span> cd web && npm install && npm run build</div>

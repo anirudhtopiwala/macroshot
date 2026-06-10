@@ -84,7 +84,25 @@ Three things make MacroShot different:
 - **A coach that actually reads your data.** Not a chatbot that gives generic advice - an AI coach with structured access (via [MCP](https://modelcontextprotocol.io)) to your meals, targets, weight history, and connected workouts (Strava / Fitbit / Oura). Ask "did I hit protein this week?" and it answers from your real numbers.
 - **Open source. Your data, your call.** Use the hosted version for zero-setup convenience, or self-host for total control. Either way the code is open and the data model is yours to inspect.
 
+## Accuracy
+
+MacroShot's meal-reading prompt is benchmarked against the published baseline from Wang et al. 2026 on the public [Nutrition5K](https://arxiv.org/abs/2103.03375) dataset - measuring how closely it reads calories and macros from a photo.
+
+- **[Live results dashboard →](https://anirudhtopiwala.github.io/macroshot/macroshot_eval/)** - accuracy across models, plus a per-dish gallery of the meals the models nail and the ones they miss.
+- **[Reproducible eval harness](eval/nutrition5k/)** - the conditions, metrics, and dataset pipeline, runnable against any Gemini or Claude model.
+
 ## Self-Hosting
+
+> **Scope — personal or trusted-circle only.** MacroShot is built for
+> personal use or a small trusted group (you, family, friends). Any
+> email address can sign up and use the app once your instance is
+> reachable. There is no per-user admin role beyond an `ADMIN_EMAIL`
+> allowlist for the read-only metrics dashboard, no per-user quotas
+> beyond the global free/Pro caps, and no tenant isolation beyond
+> per-`user_id` row scoping. If you intend to run a public instance,
+> put auth or IP allowlisting at the reverse proxy in front of it and
+> read [`docs/self-hosting-legal.md`](docs/self-hosting-legal.md)
+> first.
 
 ### Prerequisites
 
@@ -106,8 +124,13 @@ cp .env.example .env
 chmod 600 .env         # restrict so other users on the box can't read your keys
 $EDITOR .env           # fill in your keys (see Environment variables below)
 cd web && npm install && npm run build && cd ..
-.venv/bin/uvicorn src.web.app:app --host 0.0.0.0 --port 8000
+.venv/bin/uvicorn src.web.app:app --host 127.0.0.1 --port 8000
 ```
+
+> **Why `127.0.0.1`?** Binding to localhost keeps the dev server off
+> your LAN and public IP. For production, use the systemd unit + reverse
+> proxy in [docs/deploy.md](docs/deploy.md). To test on a phone over
+> LAN, swap in `--host 0.0.0.0` **only** on a trusted network.
 
 > **Production note:** before exposing the instance to anyone else,
 > set `JWT_SECRET` to a strong random value (`openssl rand -hex 32`),
@@ -134,6 +157,12 @@ The only required ones are:
 |---|---|
 | `GEMINI_API_KEY` | Google Gemini API key for meal analysis |
 | `JWT_SECRET` | Secret key for signing auth tokens (`openssl rand -hex 32`) |
+
+> ⚠️ **Auth-bypass risk if `JWT_SECRET` is unset.** The app falls back
+> to a hard-coded dev key (`dev-secret-change-in-production`). Anyone
+> who knows this string can mint valid session tokens for your
+> instance. Generate a real value with `openssl rand -hex 32` and set
+> `APP_ENV=production` so the server refuses to boot with the dev key.
 
 Everything else (Google OAuth, Stripe, push notifications, Strava / Fitbit / Oura, Sentry, instance branding strings) is optional and documented inline in [`.env.example`](.env.example). When `STRIPE_SECRET_KEY` is unset, the app runs in self-host mode - all features free, no billing gates.
 

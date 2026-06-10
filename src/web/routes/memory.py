@@ -3,7 +3,7 @@
 These endpoints back the /settings/memory page where users review and
 manage the durable facts the AI coach remembers across chats. Memory
 writes also flow through the chat /confirm-action path when the coach
-proposes a fact via remember_fact / forget_fact tools — that path uses
+proposes a fact via remember_fact / forget_fact tools - that path uses
 the same DB helpers as this router.
 """
 

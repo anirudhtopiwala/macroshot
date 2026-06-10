@@ -1,5 +1,5 @@
 // Module-scoped pending-delete scheduler. Lives outside React so the
-// 5s grace timer keeps running across SPA navigation / unmount — the
+// 5s grace timer keeps running across SPA navigation / unmount - the
 // previous in-component setTimeout was being cleared on unmount, which
 // silently swallowed delete requests when users left Journal/Dashboard
 // during the undo window.
