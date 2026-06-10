@@ -149,9 +149,9 @@ body {
   }
 
   .section-heading {
-    @apply uppercase tracking-wider text-xs font-bold;
+    @apply uppercase text-xs font-bold;
     color: var(--text-secondary);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.05em;
   }
 }
 
