@@ -357,7 +357,7 @@ export function initServiceWorker(): void {
   // before posting SKIP_WAITING. Consume the flag on first read so a
   // subsequent spurious event can't re-trigger the reload.
   let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', async () => {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing) return;
     let intentSet = false;
     try {
@@ -367,10 +367,11 @@ export function initServiceWorker(): void {
     if (!intentSet) return; // Spurious / first-install controllerchange
     refreshing = true;
     localStorage.setItem('app-just-updated', '1');
+    // Fire cache clearing in background without waiting. caches.delete() can hang
+    // on some devices, blocking the reload. Since new SW already has fresh cache,
+    // this is just cleanup. Reload is more important than waiting for cleanup.
     if (navigator.onLine) {
-      try {
-        await narrowClearApiCaches();
-      } catch { /* best effort - still reload */ }
+      narrowClearApiCaches().catch(() => {});
     }
     window.location.reload();
   });
