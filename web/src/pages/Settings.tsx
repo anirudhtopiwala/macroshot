@@ -99,6 +99,11 @@ export default function Settings() {
 
 
   useEffect(() => {
+    // Skip API calls for guests - they're not authenticated for these endpoints
+    if (isGuest) {
+      setLoading(false);
+      return;
+    }
     Promise.allSettled([
       api.get<Targets>('/settings/targets'),
       api.get<Prefs>('/settings/prefs'),
@@ -117,7 +122,7 @@ export default function Settings() {
       if (authUser) setCache('settings_main', { user: authUser, targets: t, prefs: prefsDirtyRef.current ? prefs : p, profile: pr });
     }).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser]);
+  }, [authUser, isGuest]);
 
   const logout = async () => {
     await authLogout();
@@ -189,7 +194,7 @@ export default function Settings() {
           <img src={authUser.avatar_url} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover ring-1 ring-emerald-500/40 shrink-0" />
         ) : (
           <div className="w-10 h-10 rounded-full bg-emerald-600/30 border border-emerald-500/40 flex items-center justify-center text-sm font-bold text-emerald-400 uppercase shrink-0">
-            {firstName?.[0] || '?'}
+            {isGuest ? 'G' : (firstName?.[0] || '?')}
           </div>
         )}
         <div className="flex-1 min-w-0">
