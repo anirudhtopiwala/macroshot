@@ -111,7 +111,7 @@ export default function Settings() {
     ]).then(([tRes, pRes, prRes]) => {
       const t = tRes.status === 'fulfilled' ? tRes.value : targets;
       const p = pRes.status === 'fulfilled' ? pRes.value : prefs;
-      const pr = prRes.status === 'fulfilled' ? pRes.value : profile;
+      const pr = prRes.status === 'fulfilled' ? prRes.value : profile;
       if (tRes.status === 'fulfilled') setTargets(t);
       // Only overwrite prefs from API if user hasn't modified them yet
       if (pRes.status === 'fulfilled' && !prefsDirtyRef.current) {
