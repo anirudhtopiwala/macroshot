@@ -185,6 +185,8 @@ export default function Login() {
                 await authApi.googleAuth(response.credential);
                 await authApi.acceptTos();
                 await refetchRef.current();
+                // Explicitly clear guest flag after successful login
+                try { localStorage.removeItem('macro_guest_mode'); } catch { /* quota */ }
                 navigate('/', { replace: true });
               } catch (err: unknown) {
                 const googleEmail = emailFromGoogleCredential(response.credential);
@@ -210,6 +212,8 @@ export default function Login() {
                 await authApi.googleAuth(response.credential);
                 await authApi.acceptTos();
                 await refetchRef.current();
+                // Explicitly clear guest flag after successful login
+                try { localStorage.removeItem('macro_guest_mode'); } catch { /* quota */ }
                 navigate('/', { replace: true });
               } catch (err: unknown) {
                 const googleEmail = emailFromGoogleCredential(response.credential);
@@ -303,6 +307,8 @@ export default function Login() {
       await authApi.verifyPin(email, pin, firstName.trim() || undefined, lastName.trim() || undefined);
       await authApi.acceptTos();
       await refetch();
+      // Explicitly clear guest flag after successful login
+      try { localStorage.removeItem('macro_guest_mode'); } catch { /* quota */ }
       navigate('/', { replace: true });
     } catch (err: unknown) {
       if (handleStagingRedirect(err)) return;
