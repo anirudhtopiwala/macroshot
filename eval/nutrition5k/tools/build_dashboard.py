@@ -21,6 +21,11 @@ esc=lambda t: html.escape(t)
 P=json.load(open('data/prompts.json')); ds=P['dishes'] if isinstance(P,dict) and 'dishes' in P else P
 Dm=ds if isinstance(ds,dict) else {x['dish_id']:x for x in ds}
 GT={d:Dm[d]['ground_truth']['totals'] for d in Dm}
+Meta=json.load(open('data/selected_500_meta.json')) if os.path.exists('data/selected_500_meta.json') else {}
+def get_complexity(dish_id):
+    n=Meta.get(dish_id,{}).get('n_real_ingr',0)
+    if isinstance(n,int): return 'simple' if n<=5 else ('medium' if n<=9 else 'complex')
+    return None
 def rows_from_dir(run,cond):
     out=[]
     for f in glob.glob(f"{run}/predictions/{cond}/*.json"):
@@ -40,6 +45,21 @@ def rows_csv(path,cond):
     for r in csv.DictReader(open(path)):
         if r["condition"]==cond: out.append(({m:float(r[f"pred_{m}"]) for m in M},{m:float(r[f"gt_{m}"]) for m in M}))
     return out
+def metrics_for_complexity(globpat,cond):
+    """Get metrics by complexity level for a given model/condition"""
+    out={'simple':{},'medium':{},'complex':{}}
+    for run in glob.glob(globpat):
+        for f in glob.glob(f"{run}/predictions/{cond}/*.json"):
+            try:d=json.load(open(f))
+            except:continue
+            did=os.path.basename(f)[:-5]; p=d.get('parsed') if isinstance(d.get('parsed'),dict) else d
+            if did in GT and all(isinstance(p.get(m),(int,float)) for m in M):
+                comp=get_complexity(did)
+                if comp: out[comp][did]=(p,GT[did])
+    result={}
+    for comp in ['simple','medium','complex']:
+        result[comp]=metrics(list(out[comp].values())) if out[comp] else None
+    return result
 def metrics(rows):
     if not rows: return None
     mac={}
@@ -47,6 +67,12 @@ def metrics(rows):
         ae=[abs(p[m]-g[m]) for p,g in rows]; pe=[abs(p[m]-g[m])/g[m] for p,g in rows if g[m]]
         mac[m]={"mae":round(s.mean(ae),1),"rel":round(s.mean(pe)*100) if pe else None,"med":round(s.median(pe)*100) if pe else None}
     return {"avgmae":round(s.mean(mac[m]["mae"] for m in M),1),"avgrel":round(s.mean(mac[m]["rel"] for m in M)),"avgmed":round(s.mean(mac[m]["med"] for m in M)),"macros":mac,"n":len(rows)}
+def metrics_by_complexity(rows_with_ids):
+    out={}
+    for comp in ['simple','medium','complex']:
+        rows=[r for d,r in rows_with_ids if get_complexity(d)==comp]
+        out[comp]=metrics(rows) if rows else None
+    return out
 O47="runs/claude-opus-4-7-subagent_n100_20260527_060817/per_dish.csv"
 GLOB={"Flash-Lite":"runs/gemini-2.5-flash-lite_*","Flash-full":"runs/gemini-2.5-flash_2*","Opus 4.7":"runs/opus-4-7-*","Opus 4.8":"runs/opus-4-8-*"}
 models=["Flash-Lite","Flash-full","Opus 4.7","Opus 4.8"]
@@ -60,14 +86,17 @@ FOCUS=[("Generic Cam","generic_cam","Generic Wang-style prompt &middot; photo on
  ("MacroShot Text Terse","macroshot_text_terse","MacroShot text-only prompt &middot; terse description, no photo"),
  ("MacroShot Text Detailed","macroshot_text_detailed","MacroShot text-only prompt &middot; detailed description, no photo")]
 F={}
+COMPLEXITY={}  # complexity breakdown: [model][cond][complexity] = metrics
 for model in models:
     F[model]={}
+    COMPLEXITY[model]={}
     for lab,c,_ in FOCUS:
         if model=="Opus 4.7":
             rows = rows_csv(O47,c) or best_dir(GLOB[model],c)
         else:
             rows = best_dir(GLOB[model],c)
         F[model][c]=metrics(rows)
+        COMPLEXITY[model][c]=metrics_for_complexity(GLOB[model],c)
 def band(v): return "na" if v is None else ("g" if v<=BAND1 else ("y" if v<=BAND2 else "r"))
 def mb(v): return "na" if v is None else ("g" if v<=30 else ("y" if v<=50 else "r"))  # MedPE bands
 HMAX=max([F[m][c][PRIMARY] for m in models for _,c,_ in FOCUS if F.get(m,{}).get(c)] or [1])
@@ -259,6 +288,17 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "<div class=key><b>Same caption, with vs without the photo.</b> The identical <b>terse</b> caption feeds BOTH <b>MacroShot Cam Text Terse</b> (photo prompt + image + caption) and <b>MacroShot Text Terse</b> (text prompt + caption, no image) &mdash; so comparing them isolates what the <b>photo</b> adds, holding the user&rsquo;s words constant.</div>",
  "<h2>Results &mdash; per-macro detail</h2><p class=sub>Each cell: <b>MAE</b> with <span class=pct>RelErr% &middot; MedPE%</span> beneath, colored by MedPE: <span class='chip g'></span>&le;30% <span class='chip y'></span>&le;50% <span class='chip r'></span>&gt;50%. AvgMAE over five nutrients over-weights Mass; for a nutrition app, Calories / Protein / Fat matter most.</p>",
  permodel_html,
+ "<h2>Accuracy by dish complexity</h2>",
+ "<p class=sub>How do Flash-Lite and Opus 4.8 perform on simple vs. complex dishes? Dishes are stratified by ingredient count: simple &le;5, medium 6-9, complex &ge;10. MAE is in native units (kcal for Calories, grams for the rest).</p>",
+ "<table><thead><tr><th>model</th><th>variant</th><th>complexity</th><th>Avg MAE<br><span class=pct>error (kcal/g)<br>RelErr%</span></th><th>Calories<br><span class=pct>MAE<br>RelErr%</span></th><th>Protein<br><span class=pct>MAE<br>RelErr%</span></th><th>Carbs<br><span class=pct>MAE<br>RelErr%</span></th><th>Fat<br><span class=pct>MAE<br>RelErr%</span></th><th>Mass<br><span class=pct>MAE<br>RelErr%</span></th><th>n</th></tr></thead><tbody>" +
+ "".join(
+   f"<tr><td class=l>{dn(m)}</td><td class=l>{lab}</td><td class=l><b>{comp.capitalize()}</b></td>" +
+   (f"<td class={_maec(x['avgmae'])}>{x['avgmae']}<span class=pct><br>({x['avgrel']}%)</span></td>" if x else "<td class=na>&mdash;</td>") +
+   ("".join(f"<td class={_maec(x['macros'][nu]['mae'])}>{x['macros'][nu]['mae']}<span class=pct><br>({x['macros'][nu]['rel']}%)</span></td>" for nu in PN_ORDERED) if x else "".join("<td class=na>&mdash;</td>" for _ in PN_ORDERED)) +
+   (f"<td>{x['n']}</td></tr>" if x else "<td>&mdash;</td></tr>")
+   for m in ["Flash-Lite","Opus 4.8"] for lab,c,_ in FOCUS for comp,x in [(k,COMPLEXITY[m][c].get(k)) for k in ['simple','medium','complex']] if x
+ ) +
+ "</tbody></table>",
  "<h2>Methodology &amp; definitions</h2>",
  "<h3>Metrics</h3><dl class=glossary><dt>MAE &mdash; Mean Absolute Error</dt><dd>Average gap between the estimate and the truth, in native units (kcal or grams). The most direct read, though it counts a 50&nbsp;kcal miss the same whether the meal is 200 or 900&nbsp;kcal.</dd>",
  "<dt>RelErr &mdash; Relative Error (MAPE)</dt><dd>That gap as a percent of the true value, averaged over dishes: mean(|pred &minus; truth| / truth) &times; 100%. Comparable across dishes of any size, but a few tiny-value items (say, 2&nbsp;g of fat) can inflate it.</dd>",
