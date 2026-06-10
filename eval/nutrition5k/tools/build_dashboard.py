@@ -125,7 +125,7 @@ def dmac_avg(model,fr,to):
     return f'<td class={"g" if p<0 else "r"}>{"&#9660;" if p<0 else "&#9650;"} {p:+.0f}%<span class=pct><br>{av:.0f}{PSUF}&rarr;{bv:.0f}{PSUF}</span></td>'
 def needle_macro(model):
     metric_name = "MedPE%" if METRIC=="medpe" else "MAE"
-    head="".join(f"<th>{LBL[m]}<br><span class=pct>% change in {metric_name}</span></th>" for m in M4)+"<th>Avg (4)<br><span class=pct>% change in {metric_name}</span></th>"
+    head="".join(f"<th>{LBL[m]}<br><span class=pct>% change in {metric_name}</span></th>" for m in M4)+f"<th>Avg (4)<br><span class=pct>% change in {metric_name}</span></th>"
     body="".join(f"<tr><td class=l>{lab}</td>"+"".join(dmac(model,fr,to,m) for m in M4)+dmac_avg(model,fr,to)+"</tr>" for lab,fr,to in COMPS)
     return f"<h3>{dn(model)}</h3><table><thead><tr><th>change</th>{head}</tr></thead><tbody>{body}</tbody></table>"
 needle_macro_html="".join(needle_macro(m) for m in ["Flash-Lite","Opus 4.8"])
