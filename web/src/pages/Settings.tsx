@@ -76,6 +76,15 @@ export default function Settings() {
   // Admin probe - the server gate already enforces access; this is just a UX
   // hint so admins see the metrics link. 404 means "not admin".
   useEffect(() => {
+    // Guests are never admins. Skip the probe (it would 401, which our
+    // catch below does NOT treat as "not admin" - only 404 does - so a
+    // stale macro_is_admin flag from a prior admin session on this shared
+    // device would otherwise keep showing the admin link to a guest).
+    if (isGuest) {
+      setIsAdmin(false);
+      localStorage.removeItem('macro_is_admin');
+      return;
+    }
     let cancelled = false;
     adminApi.whoami()
       .then(() => {
@@ -91,7 +100,7 @@ export default function Settings() {
         }
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [isGuest]);
 
   // Prefs dirty tracking - prevents GET response from overwriting user's toggle
   const savedPrefsRef = useRef<string>('');
@@ -989,7 +998,7 @@ export default function Settings() {
       </Link>
 
       {/* Admin metrics - visible only to admin users (server still enforces access) */}
-      {isAdmin && (
+      {isAdmin && !isGuest && (
         <Link to="/admin/metrics" className="glass-card-hover flex items-center gap-3 p-4 !rounded-2xl">
           <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)' }}>
             <Lock className="w-5 h-5" style={{ color: '#3b82f6' }} />
