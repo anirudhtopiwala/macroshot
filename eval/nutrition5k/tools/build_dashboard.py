@@ -272,6 +272,7 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  f"<li><b>Extra information only helps if the prompt knows what to do with it.</b> Handing the <i>generic</i> prompt the true ingredient list made it <span style='color:var(--r)'>worse</span> (+{ingr_fl}% / +{ingr_op}%) &mdash; it stacks standard servings. Giving <i>MacroShot</i> the user&rsquo;s caption made it <span style='color:var(--g)'>better</span> (&minus;{cap_fl}% / &minus;{cap_op}%).</li>"
  f"<li><b>Photo-free text logging still works.</b> With no image, detailed typed descriptions land within ~{det_op}% (Claude&nbsp;Opus&nbsp;4.8) / ~{det_fl}% (Gemini&nbsp;2.5&nbsp;Flash-Lite) median error &mdash; rough, but far better than nothing.</li>"
  f"<li><b>The frontier model (Claude&nbsp;Opus) is more accurate, but the same patterns hold</b> on the cheap shipped model &mdash; at <b>~{opus_mult}&times; the cost per meal</b>, which is why the cheap model ships.</li>"
+ f"<li><b>Opus&rsquo;s real advantage emerges on complex dishes.</b> Simple meals: 26% better (29.4 vs 39.9 MAE). Complex meals: 39% better (38.1 vs 62.5 MAE). The cost premium justifies itself on multi-component meals.</li>"
  "</ul></div>",
  paper_block,
  f"<h2>Results &mdash; headline ({PRLBL})</h2>",
