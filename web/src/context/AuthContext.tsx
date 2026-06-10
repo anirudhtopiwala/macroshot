@@ -294,12 +294,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // wipeLocalSession is used inside checkAuth; it's defined above so the ref
   // is stable. Listed as a dep to satisfy the hook-lint invariant.
   const checkAuth = useCallback(async () => {
-    // Guest mode: never probe /auth/me. The visitor has no cookie and
-    // the 401-interceptor would redirect them off the app shell.
-    if (readGuestFlag() && !getCachedUser()) {
-      setIsGuest(true);
-      setLoading(false);
-      return;
+    // Guest mode: check if user just logged in. If cached user exists,
+    // they logged in so clear the guest flag. Otherwise stay in guest mode.
+    if (readGuestFlag()) {
+      if (!getCachedUser()) {
+        // Still guest mode, no cached user yet
+        setIsGuest(true);
+        setLoading(false);
+        return;
+      } else {
+        // User logged in, clear guest flag immediately
+        try { localStorage.removeItem(GUEST_FLAG_KEY); } catch { /* quota */ }
+        setIsGuest(false);
+      }
     }
     try {
       const me = await authApi.me();
