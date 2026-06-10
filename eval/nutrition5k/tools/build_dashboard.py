@@ -290,13 +290,15 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  permodel_html,
  "<h2>Accuracy by dish complexity</h2>",
  "<p class=sub>How do Flash-Lite and Opus 4.8 perform on simple vs. complex dishes? Dishes are stratified by ingredient count: simple &le;5, medium 6-9, complex &ge;10.</p>",
- "<p class=leg><b>Read the table:</b> <span class='chip g'></span>&le;30 <span class='chip y'></span>&le;50 <span class='chip r'></span>&gt;50 (all units: kcal/g MAE, lower is better). RelErr% shown in parentheses below each MAE value. Sample size (n) shown for each complexity level.</p>",
- "<table><thead><tr><th colspan=2></th>" + "".join(f"<th>{lab}<br><span class=pct>Avg MAE<br>error (kcal/g)<br>RelErr%<br>n dishes</span></th>" for lab,c,_ in FOCUS) + "</tr></thead><tbody>" +
+ "<p class=leg><b>Read the table:</b> <span class='chip g'></span>&le;30 <span class='chip y'></span>&le;50 <span class='chip r'></span>&gt;50 (all units: kcal/g MAE, lower is better). RelErr% shown in parentheses below each MAE value.</p>",
+ "<table><thead><tr><th colspan=2></th>" + "".join(f"<th>{lab}<br><span class=pct>Avg MAE<br>error (kcal/g)<br>RelErr%</span></th>" for lab,c,_ in FOCUS) + "</tr></thead><tbody>" +
  "".join(
    (f"<tr><td class=l rowspan=3 style='vertical-align:middle'><b>{dn(m)}</b></td>" if i==0 else "<tr>") +
-   f"<td class=l><b>{comp.capitalize()}</b></td>" +
+   (lambda n_val: f"<td class=l><b>{comp.capitalize()} (n={n_val})</b></td>")(
+     next((COMPLEXITY[m][c].get(comp)['n'] for lab,c,_ in FOCUS if COMPLEXITY[m][c].get(comp)), '?')
+   ) +
    "".join(f"<td class={_maec(COMPLEXITY[m][c].get(comp)['avgmae']) if COMPLEXITY[m][c].get(comp) else 'na'}>" +
-           (f"{COMPLEXITY[m][c].get(comp)['avgmae']}<span class=pct><br>({COMPLEXITY[m][c].get(comp)['avgrel']}%)<br>n={COMPLEXITY[m][c].get(comp)['n']}</span>" if COMPLEXITY[m][c].get(comp) else "&mdash;") +
+           (f"{COMPLEXITY[m][c].get(comp)['avgmae']}<span class=pct><br>({COMPLEXITY[m][c].get(comp)['avgrel']}%)</span>" if COMPLEXITY[m][c].get(comp) else "&mdash;") +
            "</td>" for lab,c,_ in FOCUS) +
    "</tr>"
    for m in ["Flash-Lite","Opus 4.8"] for i,comp in enumerate(['simple','medium','complex'])
