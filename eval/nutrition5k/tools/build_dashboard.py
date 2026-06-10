@@ -179,10 +179,10 @@ code{background:#0c0e12;border:1px solid var(--line);border-radius:4px;padding:1
 """
 # ---- Versus published baselines: Wang et al. 2026 Tables 4-5 (image-only / "w/o ingredients"), n=3466 ----
 PAPER_N="3,466"
-PAPER={  # avgmae, avgrel% (Table 4); mac = per-nutrient RelErr% (Table 5)
+PAPER={  # avgmae, avgrel% from Table 4 (image-only / w/o ingredients); mac = per-nutrient RelErr% from Table 5
  "Doubao-1.5-vision-pro":{"avgmae":38.0,"avgrel":99, "mac":{"calories":66,"mass_g":44,"fat_g":223,"carb_g":90, "protein_g":74}},
  "GPT-4.1 mini":         {"avgmae":39.2,"avgrel":119,"mac":{"calories":77,"mass_g":43,"fat_g":288,"carb_g":102,"protein_g":86}},
- "Gemini 2.5 Flash":     {"avgmae":45.6,"avgrel":161,"mac":{"calories":93,"mass_g":47,"fat_g":482,"carb_g":90, "protein_g":94}},
+ "Gemini 2.5 Flash":     {"avgmae":45.55,"avgrel":161,"mac":{"calories":93,"mass_g":47,"fat_g":482,"carb_g":90, "protein_g":94}},
 }
 PAPER_ORDER=["Doubao-1.5-vision-pro","GPT-4.1 mini","Gemini 2.5 Flash"]
 OUR_IMG=[("Flash-Lite","generic_cam"),("Flash-full","generic_cam"),
@@ -200,15 +200,17 @@ def _grp(txt,span): return f"<tr><td colspan={span} style='text-align:left;color
 def _mae_avg(mac_dict): return round(s.mean(mac_dict[m]["mae"] for m in M),1)
 def _hl_paper_mae(n):
     d=PAPER[n]
-    avg_mae=d["avgmae"]
-    cells="".join(f"<td class={_maec(d['mac'][m])}>{d['mac'][m]}</td>" if m in d['mac'] else "<td class=na>&mdash;</td>" for m in PN_ORDERED)
-    return f"<tr><td class=l>{n}</td><td>photo</td><td class={_maec(avg_mae)}><b>{avg_mae}</b></td>{cells}<td>{PAPER_N}</td></tr>"
+    avg_mae=d["avgmae"]; avg_rel=d["avgrel"]
+    avg_disp=f"<b>{avg_mae}</b><span class=pct><br>({avg_rel}%)</span>"
+    cells="".join(f"<td class={_pnc(d['mac'][m])}>&mdash;<span class=pct><br>({d['mac'][m]}%)</span></td>" if m in d['mac'] else "<td class=na>&mdash;</td>" for m in PN_ORDERED)
+    return f"<tr><td class=l>{n}</td><td>photo only</td><td class={_maec(avg_mae)}>{avg_disp}</td>{cells}<td>{PAPER_N}</td></tr>"
 def _hl_our_mae(model,cond,inp):
     x=F.get(model,{}).get(cond)
     if not x: return ""
     win=WIN==(model,cond); tr=" class=win" if win else ""; star=" <span class=star>&#9733; best</span>" if win else ""
-    avg_val=x["avgmae"]; avg_disp=f"<b>{avg_val}</b>" if win else f"{avg_val}"
-    cells="".join(f"<td class={_maec(x['macros'][m]['mae'])}>{x['macros'][m]['mae']}</td>" for m in PN_ORDERED)
+    avg_val=x["avgmae"]; avg_rel=x["avgrel"]; avg_disp=f"<b>{avg_val}</b>" if win else f"{avg_val}"
+    avg_disp+=f"<span class=pct><br>({avg_rel}%)</span>"
+    cells="".join(f"<td class={_maec(x['macros'][m]['mae'])}>{x['macros'][m]['mae']}<span class=pct><br>({x['macros'][m]['rel']}%)</span></td>" for m in PN_ORDERED)
     return f"<tr{tr}><td class=l>{dn(model)}{star}</td><td>{inp}</td><td class={_maec(avg_val)}>{avg_disp}</td>{cells}<td>{x['n']}</td></tr>"
 cmp_tbl=("<table><thead><tr><th>model</th><th>input</th><th>Avg MAE<br><span class=pct>mean abs error (kcal/g) &middot; lower better</span></th>"+"".join(f"<th>{LBL[m]}<br><span class=pct>MAE &middot; lower better</span></th>" for m in PN_ORDERED)+"<th>n<br><span class=pct>dishes scored</span></th></tr></thead><tbody>"
  +_grp(f"Published &middot; Wang et al. 2026 (image only, n&asymp;{PAPER_N})",len(PN_ORDERED)+3)+"".join(_hl_paper_mae(n) for n in PAPER_ORDER)
@@ -228,13 +230,13 @@ paper_block="\n".join([
  f"<p class=sub>The strongest vision models from <a href='{WANG}'>Wang et&nbsp;al. 2026</a> (image-only, n&asymp;{PAPER_N}) next to MacroShot&rsquo;s eval. MAE (Mean Absolute Error) is the average gap between the estimate and ground truth in native units (kcal or grams) &mdash; the most direct read of accuracy. Color: <span class='chip g'></span>&le;45 <span class='chip y'></span>&le;60 <span class='chip r'></span>&gt;60.</p>",
  win_callout,
  cmp_tbl,
- "<div class=key><b>How to read this.</b> <b>Avg MAE</b> (leftmost data column) averages error across all five nutrients. The nutrient columns show per-macro MAE: how far off the estimate is on average for that nutrient alone, in its native units (kcal for Calories; grams for the rest). A smaller MAE is better. Published rows are the figures reported by Wang et&nbsp;al.; MacroShot rows are from this eval &mdash; different runs, so treat the published baseline as a reference point rather than a direct head-to-head.</div>",
+ "<div class=key><b>How to read this.</b> Each cell shows <b>MAE</b> with <b>RelErr%</b> in parentheses below. <b>Avg MAE</b> (leftmost data column) averages error across all five nutrients. The nutrient columns show per-macro error: for published baselines, MAE is unavailable (shown as &mdash;) and only RelErr% is shown; for MacroShot, both MAE and RelErr% are shown. MAE is in native units (kcal for Calories; grams for the rest). A smaller value is better. Published rows are from Wang et&nbsp;al. 2026 Table 4&ndash;5; MacroShot rows are from this eval &mdash; different runs, so treat the published baseline as a reference point rather than direct comparison.</div>",
 ])
 H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>",
  "<title>MacroShot &mdash; meal-macro accuracy eval</title><style>"+CSS+"</style></head><body><div class=wrap>",
  "<h1>MacroShot &mdash; meal-macro accuracy eval</h1>",
  f"<p class=sub>How accurately can an LLM read calories &amp; macros from a meal photo (and/or a typed description)? Benchmarked on <a href='{N5K}'>Nutrition5K</a> against the published baseline of <a href='{WANG}'>Wang et&nbsp;al. 2026</a>, dishes stratified by complexity (seed 42). <b>Gemini&nbsp;2.5&nbsp;Flash-Lite (the shipped model) is evaluated on the full n={NMODEL['Flash-Lite']}</b>; the other models are at n&asymp;100 previews. Each model column shows its n. Lower error is better.</p>",
- "<p class=sub style='margin-top:-2px'>&rarr; <a href='gallery.html'><b>Per-dish gallery</b></a>: the meals every model nails, and the ones they all miss (best 5 / worst 5, with the photo and each model&rsquo;s read).</p>",
+ "<p class=sub style='margin-top:-2px'>&rarr; <a href='gallery.html'><b>Per-dish gallery</b></a>: the meals every model nails, and the ones they all miss (best 5 / worst 5, with the photo and each model&rsquo;s read). &nbsp;&middot;&nbsp; <a href='https://github.com/anirudhtopiwala/macroshot/releases/latest'><b>Download the full results bundle</b></a>: every prediction file, ground truth, scoring scripts, and source images (~100&nbsp;MB zip).</p>",
  f"<div class=key style='border-left-color:var(--g)'><b>Key takeaways</b><ul style='margin:8px 0 0;padding-left:18px;color:#cdd6ea'>"
  f"<li><b>The photo is the single biggest lever.</b> With the <i>same</i> user caption, adding the image cut error by ~{photo_fl}% (Gemini&nbsp;2.5&nbsp;Flash-Lite) / ~{photo_op}% (Claude&nbsp;Opus&nbsp;4.8).</li>"
  f"<li><b>Extra information only helps if the prompt knows what to do with it.</b> Handing the <i>generic</i> prompt the true ingredient list made it <span style='color:var(--r)'>worse</span> (+{ingr_fl}% / +{ingr_op}%) &mdash; it stacks standard servings. Giving <i>MacroShot</i> the user&rsquo;s caption made it <span style='color:var(--g)'>better</span> (&minus;{cap_fl}% / &minus;{cap_op}%).</li>"
