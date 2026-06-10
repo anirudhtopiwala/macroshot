@@ -125,6 +125,7 @@ export default function Login() {
   const {
     refetch,
     enterGuestMode,
+    exitGuestMode,
     waitlistedEmail,
     waitlistedMessage,
     markWaitlisted,
@@ -184,6 +185,8 @@ export default function Login() {
               try {
                 await authApi.googleAuth(response.credential);
                 await authApi.acceptTos();
+                // Exit guest mode BEFORE refetch so checkAuth actually fetches user
+                exitGuestMode();
                 await refetchRef.current();
                 navigate('/', { replace: true });
               } catch (err: unknown) {
@@ -209,6 +212,8 @@ export default function Login() {
               try {
                 await authApi.googleAuth(response.credential);
                 await authApi.acceptTos();
+                // Exit guest mode BEFORE refetch so checkAuth actually fetches user
+                exitGuestMode();
                 await refetchRef.current();
                 navigate('/', { replace: true });
               } catch (err: unknown) {
@@ -302,6 +307,8 @@ export default function Login() {
     try {
       await authApi.verifyPin(email, pin, firstName.trim() || undefined, lastName.trim() || undefined);
       await authApi.acceptTos();
+      // Exit guest mode BEFORE refetch so checkAuth actually fetches user
+      exitGuestMode();
       await refetch();
       navigate('/', { replace: true });
     } catch (err: unknown) {

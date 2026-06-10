@@ -15,9 +15,10 @@ credentials.json
 service-account*.json
 gcs-key*.json
 
-# Operator-only Claude Code instructions - never commit. Defensive ignore
-# in case a fork uses Claude Code locally and accidentally `git add`s
-# their CLAUDE.md.
+# Operator-only Claude Code configuration - never commit. Defensive ignore
+# in case a fork uses Claude Code locally. Includes instructions, settings,
+# keybindings, worktrees, and other user-specific Claude Code artifacts.
+.claude/
 CLAUDE.md
 CLAUDE.local.md
 CLAUDE.*.local.md
