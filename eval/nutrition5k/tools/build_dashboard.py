@@ -289,14 +289,16 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "<h2>Results &mdash; per-macro detail</h2><p class=sub>Each cell: <b>MAE</b> with <span class=pct>RelErr% &middot; MedPE%</span> beneath, colored by MedPE: <span class='chip g'></span>&le;30% <span class='chip y'></span>&le;50% <span class='chip r'></span>&gt;50%. AvgMAE over five nutrients over-weights Mass; for a nutrition app, Calories / Protein / Fat matter most.</p>",
  permodel_html,
  "<h2>Accuracy by dish complexity</h2>",
- "<p class=sub>How do Flash-Lite and Opus 4.8 perform on simple vs. complex dishes? Dishes are stratified by ingredient count: simple &le;5, medium 6-9, complex &ge;10. MAE is in native units (kcal for Calories, grams for the rest).</p>",
- "<table><thead><tr><th>model</th><th>variant</th><th>complexity</th><th>Avg MAE<br><span class=pct>error (kcal/g)<br>RelErr%</span></th><th>Calories<br><span class=pct>MAE<br>RelErr%</span></th><th>Protein<br><span class=pct>MAE<br>RelErr%</span></th><th>Carbs<br><span class=pct>MAE<br>RelErr%</span></th><th>Fat<br><span class=pct>MAE<br>RelErr%</span></th><th>Mass<br><span class=pct>MAE<br>RelErr%</span></th><th>n</th></tr></thead><tbody>" +
+ "<p class=sub>How do Flash-Lite and Opus 4.8 perform on simple vs. complex dishes? Dishes are stratified by ingredient count: simple &le;5, medium 6-9, complex &ge;10.</p>",
+ "<table><thead><tr><th colspan=2></th>" + "".join(f"<th>{lab}<br><span class=pct>Avg MAE<br>error (kcal/g)<br>RelErr%</span></th>" for lab,c,_ in FOCUS) + "</tr></thead><tbody>" +
  "".join(
-   f"<tr><td class=l>{dn(m)}</td><td class=l>{lab}</td><td class=l><b>{comp.capitalize()}</b></td>" +
-   (f"<td class={_maec(x['avgmae'])}>{x['avgmae']}<span class=pct><br>({x['avgrel']}%)</span></td>" if x else "<td class=na>&mdash;</td>") +
-   ("".join(f"<td class={_maec(x['macros'][nu]['mae'])}>{x['macros'][nu]['mae']}<span class=pct><br>({x['macros'][nu]['rel']}%)</span></td>" for nu in PN_ORDERED) if x else "".join("<td class=na>&mdash;</td>" for _ in PN_ORDERED)) +
-   (f"<td>{x['n']}</td></tr>" if x else "<td>&mdash;</td></tr>")
-   for m in ["Flash-Lite","Opus 4.8"] for lab,c,_ in FOCUS for comp,x in [(k,COMPLEXITY[m][c].get(k)) for k in ['simple','medium','complex']] if x
+   (f"<tr><td class=l rowspan=3 style='vertical-align:middle'><b>{dn(m)}</b></td>" if i==0 else "<tr>") +
+   f"<td class=l><b>{comp.capitalize()}</b></td>" +
+   "".join(f"<td class={_maec(COMPLEXITY[m][c].get(comp)['avgmae']) if COMPLEXITY[m][c].get(comp) else 'na'}>" +
+           (f"{COMPLEXITY[m][c].get(comp)['avgmae']}<span class=pct><br>({COMPLEXITY[m][c].get(comp)['avgrel']}%)</span>" if COMPLEXITY[m][c].get(comp) else "&mdash;") +
+           "</td>" for lab,c,_ in FOCUS) +
+   "</tr>"
+   for m in ["Flash-Lite","Opus 4.8"] for i,comp in enumerate(['simple','medium','complex'])
  ) +
  "</tbody></table>",
  "<h2>Methodology &amp; definitions</h2>",
