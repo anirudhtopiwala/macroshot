@@ -290,6 +290,7 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  permodel_html,
  "<h2>Accuracy by dish complexity</h2>",
  "<p class=sub>How do Flash-Lite and Opus 4.8 perform on simple vs. complex dishes? Dishes are stratified by ingredient count: simple &le;5, medium 6-9, complex &ge;10.</p>",
+ "<p class=leg><b>Read the table:</b> <span class='chip g'></span>&le;30 <span class='chip y'></span>&le;50 <span class='chip r'></span>&gt;50 (all units: kcal/g MAE, lower is better). RelErr% shown in parentheses below each MAE value.</p>",
  "<table><thead><tr><th colspan=2></th>" + "".join(f"<th>{lab}<br><span class=pct>Avg MAE<br>error (kcal/g)<br>RelErr%</span></th>" for lab,c,_ in FOCUS) + "</tr></thead><tbody>" +
  "".join(
    (f"<tr><td class=l rowspan=3 style='vertical-align:middle'><b>{dn(m)}</b></td>" if i==0 else "<tr>") +
