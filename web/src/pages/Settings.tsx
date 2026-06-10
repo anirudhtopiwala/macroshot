@@ -194,7 +194,7 @@ export default function Settings() {
           <img src={authUser.avatar_url} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover ring-1 ring-emerald-500/40 shrink-0" />
         ) : (
           <div className="w-10 h-10 rounded-full bg-emerald-600/30 border border-emerald-500/40 flex items-center justify-center text-sm font-bold text-emerald-400 uppercase shrink-0">
-            {firstName?.[0] || '?'}
+            {isGuest ? 'G' : (firstName?.[0] || '?')}
           </div>
         )}
         <div className="flex-1 min-w-0">
