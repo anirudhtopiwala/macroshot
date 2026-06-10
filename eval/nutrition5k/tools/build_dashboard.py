@@ -210,22 +210,10 @@ def _hl_our_mae(model,cond,inp):
     avg_val=x["avgmae"]; avg_disp=f"<b>{avg_val}</b>" if win else f"{avg_val}"
     cells="".join(f"<td class={_maec(x['macros'][m]['mae'])}>{x['macros'][m]['mae']}</td>" for m in PN_ORDERED)
     return f"<tr{tr}><td class=l>{dn(model)}{star}</td><td>{inp}</td><td class={_maec(avg_val)}>{avg_disp}</td>{cells}<td>{x['n']}</td></tr>"
-def _pn_paper(n): d=PAPER[n]; return f"<tr><td class=l>{n}</td><td>photo</td><td class={_pnc(d['avgrel'])}><b>{d['avgrel']}%</b></td>"+"".join(f"<td class={_pnc(d['mac'][m])}>{d['mac'][m]}%</td>" for m in PN_ORDERED)+f"<td>{PAPER_N}</td></tr>"
-def _pn_our(model,cond,inp):
-    x=F.get(model,{}).get(cond)
-    if not x: return ""
-    win=WIN==(model,cond); tr=" class=win" if win else ""; star=" <span class=star>&#9733; best</span>" if win else ""
-    avg_disp=f"<b>{x['avgrel']}%</b>" if win else f"{x['avgrel']}%"
-    return f"<tr{tr}><td class=l>{dn(model)}{star}</td><td>{inp}</td><td class={_relc(x['avgrel'])}>{avg_disp}</td>"+"".join(f"<td class={_pnc(x['macros'][m]['rel'])}>{x['macros'][m]['rel']}%</td>" for m in PN_ORDERED)+f"<td>{x['n']}</td></tr>"
 cmp_tbl=("<table><thead><tr><th>model</th><th>input</th><th>Avg MAE<br><span class=pct>mean abs error (kcal/g) &middot; lower better</span></th>"+"".join(f"<th>{LBL[m]}<br><span class=pct>MAE &middot; lower better</span></th>" for m in PN_ORDERED)+"<th>n<br><span class=pct>dishes scored</span></th></tr></thead><tbody>"
  +_grp(f"Published &middot; Wang et al. 2026 (image only, n&asymp;{PAPER_N})",len(PN_ORDERED)+3)+"".join(_hl_paper_mae(n) for n in PAPER_ORDER)
  +_grp("MacroShot &middot; our harness, photo only",len(PN_ORDERED)+3)+"".join(_hl_our_mae(*r,"photo") for r in OUR_IMG)
  +_grp("MacroShot &middot; our harness, photo + user caption (shipped flow)",len(PN_ORDERED)+3)+"".join(_hl_our_mae(*r,"photo + caption") for r in OUR_CAP)
- +"</tbody></table>")
-pn_tbl=("<table><thead><tr><th>model</th><th>input</th><th>Avg RelErr<br><span class=pct>mean % off vs truth &middot; lower better</span></th>"+"".join(f"<th>{LBL[m]}<br><span class=pct>rel. error % &middot; lower better</span></th>" for m in PN_ORDERED)+"<th>n<br><span class=pct>dishes scored</span></th></tr></thead><tbody>"
- +_grp("Published &middot; Wang et al. 2026 (image only)",len(PN_ORDERED)+3)+"".join(_pn_paper(n) for n in PAPER_ORDER)
- +_grp("MacroShot &middot; our harness, photo only",len(PN_ORDERED)+3)+"".join(_pn_our(*r,"photo") for r in OUR_IMG)
- +_grp("MacroShot &middot; our harness, photo + caption",len(PN_ORDERED)+3)+"".join(_pn_our(*r,"photo + caption") for r in OUR_CAP)
  +"</tbody></table>")
 _pbn,_pb=min(PAPER.items(),key=lambda kv:kv[1]["avgmae"])  # strongest published model
 if WIN:
@@ -237,13 +225,10 @@ else:
     win_callout=""
 paper_block="\n".join([
  "<h2>Versus published baselines</h2>",
- f"<p class=sub>The strongest vision models from <a href='{WANG}'>Wang et&nbsp;al. 2026</a> (Tables&nbsp;4&ndash;5, image-only, n&asymp;{PAPER_N}) next to MacroShot&rsquo;s eval, on <b>both metrics the paper reports</b> &mdash; AvgMAE and AvgRelErr &mdash; with equal weight. MAE color: <span class='chip g'></span>&le;45 <span class='chip y'></span>&le;60 <span class='chip r'></span>&gt;60.</p>",
+ f"<p class=sub>The strongest vision models from <a href='{WANG}'>Wang et&nbsp;al. 2026</a> (image-only, n&asymp;{PAPER_N}) next to MacroShot&rsquo;s eval. MAE (Mean Absolute Error) is the average gap between the estimate and ground truth in native units (kcal or grams) &mdash; the most direct read of accuracy. Color: <span class='chip g'></span>&le;45 <span class='chip y'></span>&le;60 <span class='chip r'></span>&gt;60.</p>",
  win_callout,
  cmp_tbl,
- "<div class=key><b>How to read this.</b> On <b>AvgRelErr</b> MacroShot reads much lower than the published models, but that gap is <b>largely a metric/sample effect, not raw accuracy</b>: RelErr (MAPE) explodes on near-zero fat/carb dishes &mdash; the paper&rsquo;s own fat RelErr is 220&ndash;480% (next table) &mdash; and a smaller dish set has fewer such blow-ups. Published rows are the figures reported by Wang et&nbsp;al.; MacroShot rows are from this eval &mdash; different runs, so treat the published column as a reference point.</div>",
- "<h3>Per-nutrient relative error (RelErr %)</h3>",
- "<p class=sub>Mirrors the paper&rsquo;s Table&nbsp;5. <b>Fat and Carb RelErr are denominator-unstable</b> (a 2&nbsp;g fat dish missed by 4&nbsp;g reads as 200%); lean on <b>Calories / Protein</b> here and on the MAE table above as the trustworthy signals.</p>",
- pn_tbl,
+ "<div class=key><b>How to read this.</b> <b>Avg MAE</b> (leftmost data column) averages error across all five nutrients. The nutrient columns show per-macro MAE: how far off the estimate is on average for that nutrient alone, in its native units (kcal for Calories; grams for the rest). A smaller MAE is better. Published rows are the figures reported by Wang et&nbsp;al.; MacroShot rows are from this eval &mdash; different runs, so treat the published baseline as a reference point rather than a direct head-to-head.</div>",
 ])
 H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>",
  "<title>MacroShot &mdash; meal-macro accuracy eval</title><style>"+CSS+"</style></head><body><div class=wrap>",
