@@ -302,6 +302,7 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
    for m in ["Flash-Lite","Opus 4.8"] for i,comp in enumerate(['simple','medium','complex'])
  ) +
  "</tbody></table>",
+ "<div class=key><b>Opus&rsquo;s real advantage emerges on complex dishes.</b> Simple meals: 26% better (29.4 vs 39.9 MAE). Complex meals: 39% better (38.1 vs 62.5 MAE). The cost premium justifies itself on multi-component meals.</div>",
  "<h2>Methodology &amp; definitions</h2>",
  "<h3>Metrics</h3><dl class=glossary><dt>MAE &mdash; Mean Absolute Error</dt><dd>Average gap between the estimate and the truth, in native units (kcal or grams). The most direct read, though it counts a 50&nbsp;kcal miss the same whether the meal is 200 or 900&nbsp;kcal.</dd>",
  "<dt>RelErr &mdash; Relative Error (MAPE)</dt><dd>That gap as a percent of the true value, averaged over dishes: mean(|pred &minus; truth| / truth) &times; 100%. Comparable across dishes of any size, but a few tiny-value items (say, 2&nbsp;g of fat) can inflate it.</dd>",
