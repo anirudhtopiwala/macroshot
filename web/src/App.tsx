@@ -20,6 +20,7 @@ import Button from './components/Button';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import GuestBanner from './components/GuestBanner';
+import GuestGate from './components/GuestGate';
 import SignupPrompt from './pages/SignupPrompt';
 import lazyWithRetry from './utils/lazyWithRetry';
 
@@ -203,10 +204,18 @@ function AuthenticatedLayout() {
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
                       <Route path="/log" element={<LogMeal />} />
-                      <Route path="/journal" element={<Journal />} />
-                      <Route path="/meals/:id" element={<MealDetail />} />
-                      <Route path="/saved" element={<SavedMeals />} />
-                      <Route path="/trends" element={isGuest ? <SignupPrompt /> : <Trends />} />
+                      <Route path="/journal" element={isGuest ? (
+                        <GuestGate title="Sign up to see your journal" subtitle="Your full meal history, searchable and editable, lives here once you have an account.">
+                          <Journal />
+                        </GuestGate>
+                      ) : <Journal />} />
+                      <Route path="/meals/:id" element={isGuest ? <SignupPrompt /> : <MealDetail />} />
+                      <Route path="/saved" element={isGuest ? <SignupPrompt /> : <SavedMeals />} />
+                      <Route path="/trends" element={isGuest ? (
+                        <GuestGate title="Sign up to unlock trends" subtitle="Weight, calories, and macro trends over time appear here once you start logging with an account.">
+                          <Trends />
+                        </GuestGate>
+                      ) : <Trends />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/settings/personal" element={isGuest ? <SignupPrompt /> : <SettingsPersonal />} />
                       <Route path="/settings/goals" element={isGuest ? <SignupPrompt /> : <SettingsGoals />} />

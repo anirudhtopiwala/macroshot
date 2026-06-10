@@ -133,6 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(SUB_CACHE_KEY);
     clearCache();
     clearOfflineQueue();
+    // Clear guest meals too - otherwise an account switch (different
+    // user_id) would leave the prior session's guest IndexedDB intact,
+    // and a later guest->signup on this device would migrate one user's
+    // meals into another user's account.
+    clearGuestMeals();
     if (navigator.serviceWorker?.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
     }
@@ -388,12 +393,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Server unreachable - still clear local session
     }
     localStorage.removeItem(USER_CACHE_KEY);
+    // Clear the guest flag too so a stale '1' from before this user signed
+    // in can't put the next page load back into guest mode.
+    try { localStorage.removeItem(GUEST_FLAG_KEY); } catch { /* quota */ }
     clearCache(); // Wipe all cached API data (dashboard, settings, etc.)
     clearOfflineQueue(); // Wipe IndexedDB offline meal queue
+    clearGuestMeals(); // Wipe guest IndexedDB so it can't migrate to the next user
     // Tell the service worker to clear its runtime cache
     if (navigator.serviceWorker?.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' });
     }
+    setIsGuest(false);
     setUser(null);
   }, []);
 
