@@ -184,7 +184,7 @@ export default function Settings() {
   const guestOverlay = isGuest ? 'opacity-60 pointer-events-none' : '';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h1 className="text-xl font-bold">Settings</h1>
 
       {isGuest && (
