@@ -99,6 +99,11 @@ export default function Settings() {
 
 
   useEffect(() => {
+    // Skip API calls for guests - they're not authenticated for these endpoints
+    if (isGuest) {
+      setLoading(false);
+      return;
+    }
     Promise.allSettled([
       api.get<Targets>('/settings/targets'),
       api.get<Prefs>('/settings/prefs'),
@@ -106,7 +111,7 @@ export default function Settings() {
     ]).then(([tRes, pRes, prRes]) => {
       const t = tRes.status === 'fulfilled' ? tRes.value : targets;
       const p = pRes.status === 'fulfilled' ? pRes.value : prefs;
-      const pr = prRes.status === 'fulfilled' ? prRes.value : profile;
+      const pr = prRes.status === 'fulfilled' ? pRes.value : profile;
       if (tRes.status === 'fulfilled') setTargets(t);
       // Only overwrite prefs from API if user hasn't modified them yet
       if (pRes.status === 'fulfilled' && !prefsDirtyRef.current) {
@@ -117,7 +122,7 @@ export default function Settings() {
       if (authUser) setCache('settings_main', { user: authUser, targets: t, prefs: prefsDirtyRef.current ? prefs : p, profile: pr });
     }).finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authUser]);
+  }, [authUser, isGuest]);
 
   const logout = async () => {
     await authLogout();
