@@ -158,6 +158,9 @@ CSS="""
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14.5px/1.6 -apple-system,Segoe UI,Roboto,sans-serif}
 .wrap{max-width:1020px;margin:0 auto;padding:36px 22px 100px}h1{font-size:28px;margin:0 0 6px}h2{font-size:19px;margin:38px 0 10px;border-bottom:1px solid var(--line);padding-bottom:7px}h3{font-size:14px;color:var(--blue);margin:20px 0 4px}
 .sub{color:var(--mut);max-width:860px}a{color:var(--blue)}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.try-btn{flex:none;display:inline-block;background:var(--blue);color:#0f1115;font-weight:700;font-size:13px;text-decoration:none;padding:9px 16px;border-radius:8px;white-space:nowrap;margin-top:2px}
+.try-btn:hover{filter:brightness(1.08)}
 table{width:100%;border-collapse:collapse;margin:8px 0 16px;font-variant-numeric:tabular-nums}th,td{padding:7px 9px;text-align:right;border-bottom:1px solid #20242d;font-size:13px}th:first-child,td:first-child{text-align:left}
 th{color:var(--mut);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px}td.l{color:#cdd6ea}.or{color:var(--mut);font-style:italic}
 tr.win td{background:rgba(52,211,153,.10)}tr.win td.l{box-shadow:inset 3px 0 0 var(--g);font-weight:600;color:#eafff5}.star{color:var(--g);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;margin-left:5px}
@@ -240,7 +243,7 @@ paper_block="\n".join([
 ])
 H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>",
  "<title>MacroShot &mdash; meal-macro accuracy eval</title><style>"+CSS+"</style></head><body><div class=wrap>",
- "<h1>MacroShot &mdash; meal-macro accuracy eval</h1>",
+ "<div class=topbar><h1>MacroShot &mdash; meal-macro accuracy eval</h1><a class=try-btn href='https://macro.anirudhtopiwala.com/macro_app/login'>Try MacroShot &rarr;</a></div>",
  f"<p class=sub>How accurately can an LLM read calories &amp; macros from a meal photo (and/or a typed description)? Benchmarked on <a href='{N5K}'>Nutrition5K</a> against the published baseline of <a href='{WANG}'>Wang et&nbsp;al. 2026</a>, n=100 dishes stratified by complexity. Lower error is better.</p>",
  "<p class=sub style='margin-top:-2px'>&rarr; <a href='gallery.html'><b>Per-dish gallery</b></a>: the meals every model nails, and the ones they all miss (best 5 / worst 5, with the photo and each model&rsquo;s read).</p>",
  f"<div class=key style='border-left-color:var(--g)'><b>Key takeaways</b><ul style='margin:8px 0 0;padding-left:18px;color:#cdd6ea'>"
@@ -283,7 +286,7 @@ H=["<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport c
  "</div></body></html>"]
 _html="\n".join(H)
 # no em dashes anywhere (user preference): collapse spaced/unspaced em dashes to a hyphen
-_html=_html.replace(" &mdash; "," - ").replace("&mdash;"," - ").replace(" - "," - ").replace("-"," - ")
+_html=_html.replace(" &mdash; "," - ").replace("&mdash;"," - ")
 open(OUTNAME,"w").write(_html)
 print(f"regenerated {OUTNAME} (headline metric: {PRLBL}) - discovered cells:")
 for m in models:
