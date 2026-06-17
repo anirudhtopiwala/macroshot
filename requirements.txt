@@ -19,7 +19,7 @@ httpx>=0.25.0,<1.0.0
 
 # Web App (FastAPI + auth)
 fastapi>=0.136.1,<1.0.0
-uvicorn[standard]>=0.27.0,<1.0.0
+uvicorn[standard]>=0.47.0,<1.0.0
 # python-jose: pin upper bound. <4 to keep JWS compat. Watch CVEs:
 # python-jose has had algorithm-confusion + DoS issues in older versions.
 python-jose[cryptography]>=3.3.0,<4.0.0
