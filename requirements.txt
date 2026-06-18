@@ -44,7 +44,7 @@ slowapi>=0.1.9,<1.0.0
 stripe>=5.0.0,<13.0.0
 
 # Error monitoring
-sentry-sdk[fastapi]>=2.58.0,<3.0.0
+sentry-sdk[fastapi]>=2.60.0,<3.0.0
 
 # Google Cloud Storage (image serving from GCS)
 google-cloud-storage>=2.14.0,<4.0.0
